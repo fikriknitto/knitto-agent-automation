@@ -1,0 +1,160 @@
+import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import puppeteer, { type Browser, type Page } from "puppeteer";
+import { ToolError } from "../../core/index.js";
+import config from "../config.js";
+
+let browser: Browser | null = null;
+let page: Page | null = null;
+
+const BROWSER_STATE_DIR = join(tmpdir(), "knitto-automation-browser");
+const BROWSER_STATE_FILE = join(BROWSER_STATE_DIR, "state.json");
+
+type BrowserState = { wsEndpoint: string };
+
+function writeBrowserState(wsEndpoint: string): void {
+  try {
+    mkdirSync(BROWSER_STATE_DIR, { recursive: true });
+    writeFileSync(BROWSER_STATE_FILE, JSON.stringify({ wsEndpoint } satisfies BrowserState));
+  } catch {
+    // ignore — cleanup is best-effort
+  }
+}
+
+function clearBrowserState(): void {
+  try {
+    unlinkSync(BROWSER_STATE_FILE);
+  } catch {
+    // ignore
+  }
+}
+
+async function launchBrowser(): Promise<Browser> {
+  if (browser?.connected) return browser;
+  browser = await puppeteer.launch({
+    headless: config.headless,
+    slowMo: config.slowMoMs > 0 ? config.slowMoMs : undefined,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+  writeBrowserState(browser.wsEndpoint());
+  process.on("exit", () => {
+    void browser?.close().catch(() => undefined);
+  });
+  return browser;
+}
+
+export async function getPage(): Promise<Page> {
+  if (page && !page.isClosed()) return page;
+  const b = await launchBrowser();
+  const pages = await b.pages();
+  page = pages[0] ?? (await b.newPage());
+  await page.setViewport({
+    width: config.viewportWidth,
+    height: config.viewportHeight,
+  });
+  page.setDefaultTimeout(config.browserTimeoutMs);
+  return page;
+}
+
+export async function navigatePage(
+  url: string,
+  waitUntil: "load" | "domcontentloaded" | "networkidle0" | "networkidle2"
+): Promise<{ url: string; title: string }> {
+  const p = await getPage();
+  await p.goto(url, { waitUntil, timeout: config.browserTimeoutMs });
+  return { url: p.url(), title: await p.title() };
+}
+
+export async function getPageText(): Promise<string> {
+  const p = await getPage();
+  return p.evaluate(() => document.body?.innerText ?? "");
+}
+
+export async function goBack(): Promise<{ url: string; title: string }> {
+  const p = await getPage();
+  await p.goBack({ waitUntil: "domcontentloaded", timeout: config.browserTimeoutMs });
+  return { url: p.url(), title: await p.title() };
+}
+
+export async function goForward(): Promise<{ url: string; title: string }> {
+  const p = await getPage();
+  await p.goForward({ waitUntil: "domcontentloaded", timeout: config.browserTimeoutMs });
+  return { url: p.url(), title: await p.title() };
+}
+
+export async function closeBrowser(): Promise<void> {
+  if (page && !page.isClosed()) {
+    await page.close().catch(() => undefined);
+  }
+  page = null;
+  if (browser) {
+    await browser.close().catch(() => undefined);
+    browser = null;
+  }
+  clearBrowserState();
+}
+
+/** Capture PNG base64 from the live browser via saved WebSocket endpoint (Cursor SDK path). */
+export async function captureScreenshotFromStateFile(): Promise<string | undefined> {
+  let state: BrowserState;
+  try {
+    state = JSON.parse(readFileSync(BROWSER_STATE_FILE, "utf8")) as BrowserState;
+  } catch {
+    return undefined;
+  }
+
+  if (!state.wsEndpoint) return undefined;
+
+  try {
+    const remote = await puppeteer.connect({ browserWSEndpoint: state.wsEndpoint });
+    try {
+      const pages = await remote.pages();
+      const active = pages.find((p) => !p.isClosed()) ?? pages[0];
+      if (!active || active.isClosed()) return undefined;
+
+      const buffer = (await active.screenshot({
+        fullPage: false,
+        type: "png",
+        encoding: "binary",
+      })) as Buffer;
+      return buffer.toString("base64");
+    } finally {
+      remote.disconnect();
+    }
+  } catch {
+    return undefined;
+  }
+}
+
+/** Close browser from another process via saved WebSocket endpoint (Cursor SDK path). */
+export async function closeBrowserFromStateFile(): Promise<boolean> {
+  let state: BrowserState;
+  try {
+    state = JSON.parse(readFileSync(BROWSER_STATE_FILE, "utf8")) as BrowserState;
+  } catch {
+    return false;
+  }
+
+  if (!state.wsEndpoint) return false;
+
+  try {
+    const remote = await puppeteer.connect({ browserWSEndpoint: state.wsEndpoint });
+    await remote.close();
+    clearBrowserState();
+    if (browser?.connected) {
+      browser = null;
+      page = null;
+    }
+    return true;
+  } catch {
+    clearBrowserState();
+    return false;
+  }
+}
+
+export function assertPageOpen(): void {
+  if (!page || page.isClosed()) {
+    throw new ToolError("No browser page open. Call automation_navigate first.");
+  }
+}
