@@ -1,158 +1,161 @@
-# Knitto Browser Agent 🤖🕸️
+# Knitto Browser Agent
 
-Aplikasi agen otomatisasi browser lokal mandiri yang dirancang khusus untuk menjelajahi dan menguji sistem internal Knitto (`knitto.co.id`, `portal.knitto.org`, dan CMS lokal) menggunakan **Cursor SDK Agent** + **Puppeteer MCP Server**.
+Aplikasi otomatisasi browser untuk menjelajahi dan menguji sistem internal Knitto (`knitto.co.id`, CMS lokal, dll.) menggunakan AI agent + Puppeteer.
 
-Aplikasi ini menggunakan pola arsitektur *bridge* yang terinspirasi dari plugin Figma Knitto, dikemas ulang ke dalam proyek mandiri berbasis web agar mudah dijalankan secara lokal tanpa dependensi monorepo.
-
----
-
-## 🏗️ Arsitektur Sistem
-
-Proyek ini berjalan melalui koordinasi 4 komponen utama:
-
-```
-[ Web UI (React + Vite) ]
-         ▲
-         │ (WebSocket Connection - Port 3077)
-         ▼
-[ WebSocket Relay Server ]
-         ▲
-         │ (Job & Progress Events)
-         ▼
-[ Bridge Client (Cursor SDK) ] ◄──► [ Puppeteer MCP Server ] ◄──► [ Chrome / Chromium ]
-```
-
-1. **Web UI (React + Vite)**: Halaman obrolan interaktif bergaya ChatGPT yang memiliki panel kontrol koneksi, panel credential model AI, status progress pengerjaan, live preview screenshot, dan jalan pintas (*shortcuts*) untuk tugas-tugas Knitto.
-2. **WebSocket Relay Server**: Hub perantara yang mendistribusikan instruksi dari Web UI ke Bridge Client, serta mengalirkan log proses serta screenshot kembali ke Web UI.
-3. **Bridge Client**: Otak AI utama yang menginisialisasi Agen dari `@cursor/sdk` (menggunakan model pilihan Anda, contoh: `composer-2.5`) dan menautkan MCP server lokal untuk mengendalikan browser.
-4. **Puppeteer MCP Server**: Pelaksana teknis yang menyediakan set *actions* browser lokal (buka halaman, klik tombol, isi formulir, ambil tangkapan layar, dsb.) dalam bentuk tool terstandar Model Context Protocol (MCP) yang dapat dipanggil otomatis oleh model AI.
+Arsitektur **monorepo**: React frontend dan Express backend terpisah, berkomunikasi lewat REST + WebSocket.
 
 ---
 
-## 📁 Struktur Folder Proyek
+## Arsitektur
+
+```
+[ Frontend — React + Vite :3000 ]
+         │  /api/*  +  /ws (proxy)
+         ▼
+[ Backend — Express + WS :3080 ]
+    ├── Bridge Gemini   (in-process Puppeteer)
+    ├── Bridge Cursor   (Cursor SDK + MCP stdio)
+    └── Bridge 9Router  (in-process Puppeteer)
+         ▼
+[ Chrome / Chromium ]
+```
+
+**1 proses backend** menggantikan socket relay + 3 bridge terpisah. Gemini dan 9Router memanggil Puppeteer langsung in-process; Cursor SDK masih men-spawn MCP stdio entry di backend.
+
+---
+
+## Struktur folder
 
 ```
 knitto-browser-agent/
-├── src/
-│   ├── bridge/                # Proses jembatan antara AI SDK dan socket
-│   │   ├── cursor/            # Runner & konfigurasi spesifik Cursor SDK
-│   │   │   ├── agent-runner.ts
-│   │   │   ├── config.ts
-│   │   │   └── ws-client.ts
-│   │   ├── shared/            # Type definitions & helper bersama
-│   │   │   ├── queue.ts
-│   │   │   └── prompt-builder.ts
-│   │   └── bridge.ts          # Entry point untuk memulai Bridge Client
-│   │
-│   ├── mcp/                   # Server Model Context Protocol (MCP)
-│   │   ├── core/              # Kerangka dasar server MCP (JSON-RPC stdio)
-│   │   │   ├── server.ts
-│   │   │   └── logger.ts
-│   │   ├── libs/              # Implementasi browser Puppeteer & memori
-│   │   │   ├── browser/       # Logika Puppeteer (session, snapshot, screenshot)
-│   │   │   ├── memory/        # Penyimpanan berkas memori pengujian (.md)
-│   │   │   ├── tools/         # Defini 16 tool browser (click, fill, navigate, dll.)
-│   │   │   └── registry.ts    # Pendaftaran tool MCP
-│   │   └── index.ts           # Entry point untuk memulai MCP Server
-│   │
-│   ├── socket/                # Server perantara WebSocket Relay
-│   │   └── server.ts
-│   │
-│   └── webapp/                # Kode Frontend Web (React + Vite)
-│       ├── components/        # Komponen UI (Chat, Credentials, Screenshot)
-│       ├── lib/               # WS client & protokol komunikasi frontend
-│       ├── App.tsx            # Halaman utama aplikasi web
-│       ├── main.tsx
-│       └── styles.css         # Styling modern glassmorphism dark theme
-│
-├── index.html                 # Entry point HTML untuk Vite
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
+├── apps/
+│   ├── frontend/              # React + Vite
+│   │   └── src/
+│   └── backend/               # Express + TypeScript + Puppeteer
+│       └── src/
+│           ├── automation/    # Browser tools (lift dari MCP)
+│           ├── controllers/   # MVC controllers
+│           ├── services/      # Bridge runners, queue, prompt builder
+│           ├── websocket/     # WS hub
+│           └── server.ts
+├── packages/
+│   └── shared/                # Zod schemas + types (@knitto/shared)
+├── prompt-shortcuts/          # Template prompt Knitto (.md)
+├── memory/                    # Memori otomatisasi per app
+├── screenshoot/               # Screenshot + uploads
+├── .env                       # (opsional) legacy — gunakan apps/*/.env
+└── package.json
 ```
 
 ---
 
-## ⚙️ Variabel Lingkungan (Environment Variables)
+## Prasyarat
 
-Anda dapat mengonfigurasi variabel berikut melalui file `.env` di root direktori proyek, atau mengekspornya langsung di terminal sebelum menjalankan proses:
-
-| Nama Variabel | Deskripsi | Nilai Bawaan |
-|---|---|---|
-| `CURSOR_API_KEY` | API Key dari akun Cursor Pro/Business Anda untuk menjalankan model AI | (Kosong, dapat diinput via Web UI) |
-| `AUTOMATION_HEADLESS` | Menjalankan Puppeteer dalam mode tanpa kepala (`true`) atau headed/terlihat (`false`) | `false` (Headed, agar Anda dapat melihat aksi browser) |
-| `AUTOMATION_WS_PORT` | Port untuk server perantara WebSocket Relay | `3077` |
-| `AUTOMATION_WS_SERVER`| Host dari WebSocket Relay server | `localhost` |
-| `KNITTO_BRIDGE_MODEL` | Default model AI yang digunakan oleh Cursor SDK | `composer-2.5` |
-| `AUTOMATION_BROWSER_TIMEOUT_MS` | Timeout maksimal interaksi browser dalam milidetik | `30000` (30 detik) |
+- Node.js 20+ (disarankan 24.x)
+- pnpm 9+
+- API key: Gemini dan/atau Cursor (bisa diisi lewat Web UI)
+- 9Router opsional (`NINEROUTER_BASE_URL`)
 
 ---
 
-## 🚀 Cara Instalasi & Menjalankan Proyek
+## Instalasi & menjalankan
 
-### Prasyarat
-* Node.js versi `24.x` atau lebih baru.
-* Akun Cursor Pro/Business untuk mendapatkan `CURSOR_API_KEY`.
-
-### 1. Instalasi Dependensi
-Jalankan perintah berikut di root folder proyek:
 ```bash
-npm install
+pnpm install
+pnpm dev
 ```
 
-### 2. Jalankan Layanan (Butuh 3 Terminal Berbeda)
+| Layanan | URL |
+|---------|-----|
+| Web UI | http://localhost:3000 |
+| Backend API | http://localhost:3080/api/health |
+| WebSocket | ws://localhost:3000/ws (via proxy Vite) |
 
-Buka 3 jendela terminal di root proyek `knitto-browser-agent/`:
+**Production:**
 
-* **Terminal 1: WebSocket Relay Server**
-  ```bash
-  npm run start:socket
-  ```
-  *Output sukses:* `[INFO][automation-socket] Automation socket relay listening on ws://0.0.0.0:3077`
-
-* **Terminal 2: Bridge Client (Cursor SDK)**
-  *(Jika API key belum di-set di `.env`, Anda dapat menginputkannya secara interaktif lewat Web UI nanti)*
-  ```bash
-  npm run start:bridge
-  ```
-  *Output sukses:* `[INFO][bridge-cursor-ws] Connected to socket server` & `Bridge registered: cursor-xxx`
-
-* **Terminal 3: React Web UI (Vite Dev Server)**
-  ```bash
-  npm run dev
-  ```
-  *Output sukses:* `  ➜  Local:   http://localhost:3000/`
+```bash
+pnpm build
+pnpm start
+```
 
 ---
 
-## 🎯 Cara Penggunaan di Web UI
+## Environment variables
 
-1. Buka browser dan akses **[http://localhost:3000](http://localhost:3000)**.
-2. Periksa status indikator di panel sebelah kiri:
-   * **Socket**: Harus berstatus `connected` (berwarna hijau).
-   * **Bridge**: Harus berstatus `Online` (berwarna hijau).
-3. Di panel **Bridge credentials** (kiri bawah):
-   * Masukkan **Cursor API Key** Anda jika belum dikonfigurasi melalui `.env`.
-   * Klik tombol **Save to Cursor bridge** (koneksi AI akan diverifikasi secara real-time).
-4. Mulai berinteraksi:
-   * Ketik instruksi alami di chatbox, contoh: `"buka knitto.co.id lalu cari produk combed 30s"` dan tekan tombol **Send prompt**.
-   * Atau, gunakan salah satu tombol pintasan **Knitto Shortcuts** di bawah kolom chat untuk pengetesan instan pada target situs Knitto.
-5. Anda dapat melihat:
-   * Jendela Chrome/Chromium otomatis terbuka secara lokal dan mulai mengetik/menjelajahi halaman secara otomatis.
-   * Langkah kerja AI tampil secara langsung di UI obrolan: `🔧 Using automation_navigate…`
-   * Progress bar berjalan secara real-time.
-   * Tangkapan layar browser paling aktual akan tampil di panel **Live screenshot** sisi kiri.
+Salin `.env` per app dari contoh di masing-masing folder:
+
+```bash
+cp apps/backend/.env.example apps/backend/.env
+cp apps/frontend/.env.example apps/frontend/.env
+```
+
+### Backend (`apps/backend/.env`)
+
+| Variabel | Deskripsi | Default |
+|----------|-----------|---------|
+| `BACKEND_PORT` | Port HTTP + WebSocket backend | `3080` |
+| `GEMINI_API_KEY` | API key Gemini | — |
+| `CURSOR_API_KEY` | API key Cursor | — |
+| `NINEROUTER_BASE_URL` | Base URL 9Router | `http://localhost:20128` |
+| `KNITTO_BRIDGE_MODEL` | Model default | `gemini-2.5-flash` |
+| `AUTOMATION_HEADLESS` | `true` = headless, `false` = browser terlihat | `false` |
+| `AUTOMATION_VIEWPORT_WIDTH` | Lebar viewport | `1280` |
+| `AUTOMATION_VIEWPORT_HEIGHT` | Tinggi viewport | `720` |
+| `AUTOMATION_MEMORY_DIR` | Folder memori | `memory/` |
+| `AUTOMATION_SCREENSHOT_DIR` | Folder screenshot | `screenshoot/` |
+
+### Frontend (`apps/frontend/.env`)
+
+| Variabel | Deskripsi | Default |
+|----------|-----------|---------|
+| `VITE_DEV_PORT` | Port Vite dev server | `3000` |
+| `VITE_BACKEND_HOST` | Host backend (proxy) | `localhost` |
+| `VITE_BACKEND_PORT` | Port backend (proxy) | `3080` |
+| `VITE_WS_HOST` | Default host panel koneksi | `localhost` |
+| `VITE_WS_PORT` | Default port panel koneksi | `3080` |
+| `VITE_DEFAULT_CHANNEL` | Channel WebSocket default | `automation-default` |
 
 ---
 
-## 🛠️ Panduan Semantic Locator (Untuk Penulisan Prompt)
+## REST API
 
-Agen ini tidak bergantung pada atribut sensitif kode seperti `data-testid` atau selector CSS yang rumit. Agen menggunakan **Semantic Locators** untuk mengenali elemen seperti manusia:
+| Method | Path | Fungsi |
+|--------|------|--------|
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/bridges` | Daftar bridge + model |
+| `GET` | `/api/shortcuts` | Prompt shortcuts |
+| `GET` | `/api/config/public` | Konfigurasi publik |
 
-* **Ref Snapshot**: Mengacu pada nomor elemen interaktif hasil pemindaian otomatis, contoh: `e1` untuk kotak pencarian, `e12` untuk tombol submit (sangat direkomendasikan).
-* **Role + Name**: Kombinasi peran elemen dan teks yang terlihat, contoh: `role="button"`, `name="Cari"`.
-* **Label**: Teks pada tag `<label>` yang terikat pada input, contoh: `label="Email"`.
-* **Placeholder**: Teks placeholder pada form input, contoh: `placeholder="Masukkan nama kain..."`.
-* **Text**: Teks umum yang terlihat pada layar, contoh: `text="Combed 30s Putih"`.
+---
 
-Ketika menulis prompt kustom, Anda dapat memberikan panduan langsung berdasarkan teks yang Anda lihat di layar untuk membantu pemahaman model AI.
+## Penggunaan Web UI
+
+1. Buka http://localhost:3000
+2. Pastikan status **Socket** = connected dan **Bridge** = Online
+3. Isi credentials di panel kiri (Gemini / Cursor / 9Router)
+4. Pilih bridge + model, ketik prompt atau gunakan **Knitto Shortcuts**
+5. Pantau progress, tool calls, dan live screenshot di panel kiri
+
+---
+
+## Scripts
+
+| Command | Fungsi |
+|---------|--------|
+| `pnpm dev` | Frontend + backend |
+| `pnpm dev:frontend` | Frontend saja |
+| `pnpm dev:backend` | Backend saja |
+| `pnpm build` | Build semua workspace |
+| `pnpm start` | Jalankan backend (production) |
+
+---
+
+## Semantic locator (penulisan prompt)
+
+Agen memakai semantic locator, bukan CSS selector:
+
+- **Ref snapshot**: `e12` dari hasil `automation_get_page_snapshot`
+- **Role + name**: `role="button"`, `name="Simpan"`
+- **Label / placeholder / text**: teks yang terlihat di halaman
+
+Lihat juga file di `memory/` untuk pola navigasi CMS Knitto.

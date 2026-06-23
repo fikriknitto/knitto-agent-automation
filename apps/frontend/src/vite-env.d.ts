@@ -1,0 +1,14 @@
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_DEV_PORT: string;
+  readonly VITE_BACKEND_HOST: string;
+  readonly VITE_BACKEND_PORT: string;
+  readonly VITE_WS_HOST: string;
+  readonly VITE_WS_PORT: string;
+  readonly VITE_DEFAULT_CHANNEL: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

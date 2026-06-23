@@ -8,3 +8,5 @@ dist/
 package-lock.json
 screenshoot/*
 screenshoot/uploads/
+storage/*
+!storage/**/.gitkeep

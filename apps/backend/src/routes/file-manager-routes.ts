@@ -1,0 +1,29 @@
+import { Router } from "express";
+import multer from "multer";
+import { FileManagerController } from "../controllers/file-manager-controller.js";
+import { loadStorageEnv } from "../config/storage-env.js";
+
+export function createFileManagerRoutes(): Router {
+  const router = Router();
+  const controller = new FileManagerController();
+  const env = loadStorageEnv();
+
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: env.STORAGE_MAX_UPLOAD_BYTES,
+      files: 20,
+    },
+  });
+
+  router.get("/file-manager/entries", (req, res) => void controller.listEntries(req, res));
+  router.get("/file-manager/files/content", (req, res) => void controller.getFileContent(req, res));
+  router.post(
+    "/file-manager/upload",
+    upload.array("files"),
+    (req, res) => void controller.upload(req, res)
+  );
+  router.post("/file-manager/folders", (req, res) => void controller.createFolder(req, res));
+
+  return router;
+}

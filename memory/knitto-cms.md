@@ -113,3 +113,14 @@ Contoh: user minta "Content Manager" → klik item yang text/name mengandung "Co
 - Scroll up inside modal (locator e20) to reach Simpan (e22 in modal context)
 - After Simpan: modal closes, returns to banner list; row 4 shows "ini adalah automation ID" with expanded preview
 - Screenshots: banner4-webp-uploaded.png, banner4-saved.png
+
+## Session 2026-06-23 (banner item 1 text update)
+- Channel: automation-default
+- Task: update banner item 1 Text Banner ID/EN fields
+- Login fikri/11221122 → /content-manager (Banner page)
+- Edit row 1: middle edit button ref e10 in list context (y~349); LEFT button (e9) is DELETE — avoid!
+- In edit modal: Text Banner ID ref e22 (placeholder "Input Text Banner Bahasa Indonesia"); Text Banner EN ref e23 (placeholder "Input Text Banner Bahasa Inggris")
+- Values set: ID="Beli Bahan kualiatas dewa", EN="Buy premium-quality materials."
+- Scroll up inside modal (locator e8) to reach Simpan (e10 in modal context)
+- After Simpan: modal closes, row 1 list shows "Beli Bahan kualiatas dewa"
+- Screenshot: banner1-text-updated.png
