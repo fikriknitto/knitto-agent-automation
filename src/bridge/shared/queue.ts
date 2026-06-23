@@ -27,6 +27,7 @@ export class JobQueue {
       text: msg.text,
       strategy: msg.strategy,
       model: msg.model,
+      attachments: msg.attachments,
     });
   }
 

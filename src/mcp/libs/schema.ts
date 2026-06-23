@@ -64,6 +64,7 @@ export const snapshotElementShape = {
   tag: z.string(),
   text: z.string().nullable(),
   placeholder: z.string().nullable(),
+  inputType: z.string().nullable(),
   visible: z.boolean(),
   disabled: z.boolean(),
   inViewport: z.boolean(),
@@ -139,7 +140,12 @@ export const assertVisibleOutputShape = {
 
 export const takeScreenshotInputSchema = {
   fullPage: z.boolean().optional().default(false),
-  path: z.string().optional(),
+  path: z
+    .string()
+    .optional()
+    .describe(
+      "Optional PNG filename only (e.g. menu-open.png). Always saved under the screenshot directory (screenshoot/), not the project root."
+    ),
 } as const;
 
 export const takeScreenshotOutputShape = {
@@ -206,6 +212,21 @@ export const waitForOutputShape = {
 export const historyOutputShape = {
   url: z.string(),
   title: z.string(),
+} as const;
+
+export const uploadFileInputSchema = {
+  locator: locatorObjectSchema,
+  filePath: z
+    .string()
+    .min(1)
+    .describe("Absolute path to the file on disk (from Attached files in the prompt)"),
+} as const;
+
+export const uploadFileOutputShape = {
+  success: z.boolean(),
+  locator: z.object(locatorSchema),
+  filePath: z.string(),
+  fileName: z.string(),
 } as const;
 
 export const closeBrowserOutputShape = {

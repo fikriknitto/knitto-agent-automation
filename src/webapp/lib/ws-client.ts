@@ -75,6 +75,12 @@ export class AutomationWsClient {
     text: string;
     strategy: string;
     model: string;
+    attachments?: Array<{
+      data: string;
+      mimeType: string;
+      name: string;
+      kind: "image" | "file";
+    }>;
   }): void {
     this.send({
       type: "user_prompt",
@@ -84,6 +90,7 @@ export class AutomationWsClient {
       text: payload.text,
       strategy: payload.strategy,
       model: payload.model,
+      ...(payload.attachments?.length ? { attachments: payload.attachments } : {}),
     });
   }
 

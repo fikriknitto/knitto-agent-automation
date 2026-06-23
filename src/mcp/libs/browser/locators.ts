@@ -1,4 +1,4 @@
-import type { Page } from "puppeteer";
+import type { ElementHandle, Page } from "puppeteer";
 import { ToolError } from "../../core/index.js";
 import type { SemanticLocator } from "../schema.js";
 
@@ -106,18 +106,103 @@ async function resolveByLabel(page: Page, label: string) {
   return labeled[0]!;
 }
 
-async function resolveByText(page: Page, text: string) {
-  const xpath = `//*[not(self::script or self::style) and contains(normalize-space(.), ${escapeXPathText(text)})]`;
-  const handles = await page.$$(`xpath/${xpath}`);
-  if (!handles.length) {
+async function resolveByText(page: Page, text: string): Promise<ElementHandle<Element>> {
+  const handle = await page.evaluateHandle((searchText) => {
+    function escapeXPathLiteral(value: string) {
+      if (!value.includes("'")) return `'${value}'`;
+      if (!value.includes('"')) return `"${value}"`;
+      return `concat('${value.replace(/'/g, "',\"'\",'")}')`;
+    }
+
+    function isPointer(el: Element) {
+      return window.getComputedStyle(el).cursor === "pointer";
+    }
+
+    function isVisible(el: Element) {
+      const style = window.getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return (
+        style.visibility !== "hidden" &&
+        style.display !== "none" &&
+        rect.width > 0 &&
+        rect.height > 0
+      );
+    }
+
+    function normalizeText(el: Element) {
+      return (el.textContent || "").replace(/\s+/g, " ").trim();
+    }
+
+    function titleHint(el: Element) {
+      if (el.getAttribute("title")) return el.getAttribute("title")!.trim();
+      const titled = el.querySelector("[title]");
+      if (titled?.getAttribute("title")) return titled.getAttribute("title")!.trim();
+      return null;
+    }
+
+    function pickClickTarget(node: Element): Element {
+      let best = node;
+      let current: Element | null = node;
+
+      while (current) {
+        const tag = current.tagName.toLowerCase();
+        if (tag === "div" || tag === "span" || tag === "a" || tag === "button") {
+          if (isVisible(current) && normalizeText(current).includes(searchText.trim())) {
+            if (isPointer(current)) best = current;
+            else if (!isPointer(best)) best = current;
+          }
+        }
+        current = current.parentElement;
+      }
+
+      return best;
+    }
+
+    const xpath = `//*[not(self::script or self::style) and contains(normalize-space(.), ${escapeXPathLiteral(searchText)})]`;
+    const result = document.evaluate(
+      xpath,
+      document,
+      null,
+      XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+      null
+    );
+
+    const deduped = new Map<Element, Element>();
+    for (let i = 0; i < result.snapshotLength; i++) {
+      const node = result.snapshotItem(i);
+      if (!(node instanceof Element) || !isVisible(node)) continue;
+      const target = pickClickTarget(node);
+      if (!isVisible(target)) continue;
+      deduped.set(target, target);
+    }
+
+    const candidates = Array.from(deduped.keys());
+    if (!candidates.length) return null;
+
+    candidates.sort((a, b) => {
+      const aPointer = isPointer(a) ? 1 : 0;
+      const bPointer = isPointer(b) ? 1 : 0;
+      if (aPointer !== bPointer) return bPointer - aPointer;
+
+      const aTitle = titleHint(a) === searchText.trim() ? 1 : 0;
+      const bTitle = titleHint(b) === searchText.trim() ? 1 : 0;
+      if (aTitle !== bTitle) return bTitle - aTitle;
+
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      return bRect.width * bRect.height - aRect.width * aRect.height;
+    });
+
+    return candidates[0]!;
+  }, text);
+
+  const element = handle.asElement() as ElementHandle<Element> | null;
+  await handle.dispose();
+  if (!element) {
     throw new ToolError(`No element found containing text="${text}".`);
   }
-  if (handles.length > 1) {
-    throw new ToolError(
-      `Ambiguous text locator "${text}" (${handles.length} matches). Use snapshot ref or role+name.`
-    );
-  }
-  return handles[0]!;
+
+  return element;
 }
 
 export async function resolveOptionByText(page: Page, text: string) {
@@ -129,7 +214,10 @@ export async function resolveOptionByText(page: Page, text: string) {
   return handles[0]!;
 }
 
-export async function resolveLocator(page: Page, locator: SemanticLocator) {
+export async function resolveLocator(
+  page: Page,
+  locator: SemanticLocator
+): Promise<ElementHandle<Element>> {
   if (locator.ref) return resolveByRef(page, locator.ref);
   if (locator.role) return resolveByRoleName(page, locator.role, locator.name);
   if (locator.placeholder) return resolveByPlaceholder(page, locator.placeholder);

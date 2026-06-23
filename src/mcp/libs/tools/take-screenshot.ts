@@ -5,7 +5,7 @@ import { takeScreenshotInputSchema, takeScreenshotOutputShape } from "../schema.
 export const automation_take_screenshot = defineTool({
   name: "automation_take_screenshot",
   description:
-    "Capture a PNG screenshot as evidence. Returns file path and base64 for vision models and the web app live panel.",
+    "Capture a PNG screenshot as evidence. Optional path is a filename only — file is always written to the screenshot directory (screenshoot/). Returns path and base64 for vision models and the web app live panel.",
   inputSchema: takeScreenshotInputSchema,
   outputSchema: takeScreenshotOutputShape,
   handler: async (args) => {

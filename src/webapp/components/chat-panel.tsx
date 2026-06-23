@@ -1,3 +1,4 @@
+import type { PromptAttachment } from "../lib/prompt-attachment";
 import { STRATEGIES } from "../lib/protocol";
 import type { BridgeSummary, ChatLine, ConnectionState } from "../lib/types";
 import { ChatHistory } from "./job-progress";
@@ -9,6 +10,7 @@ type ChatPanelProps = {
   selectedModel: string;
   strategy: string;
   prompt: string;
+  promptAttachments: PromptAttachment[];
   workerState: "idle" | "busy";
   connectionState: ConnectionState;
   chatLines: ChatLine[];
@@ -16,6 +18,7 @@ type ChatPanelProps = {
   onSelectModel: (id: string) => void;
   onStrategyChange: (id: string) => void;
   onPromptChange: (value: string) => void;
+  onPromptAttachmentsChange: (attachments: PromptAttachment[]) => void;
   onSend: () => void;
   onCancel: () => void;
 };
@@ -40,6 +43,7 @@ export function ChatPanel({
   selectedModel,
   strategy,
   prompt,
+  promptAttachments,
   workerState,
   connectionState,
   chatLines,
@@ -47,6 +51,7 @@ export function ChatPanel({
   onSelectModel,
   onStrategyChange,
   onPromptChange,
+  onPromptAttachmentsChange,
   onSend,
   onCancel,
 }: ChatPanelProps) {
@@ -101,10 +106,12 @@ export function ChatPanel({
         <span className="prompt-label-text">Prompt</span>
         <PromptEditor
           value={prompt}
+          attachments={promptAttachments}
           connectionState={connectionState}
           selectedBridgeId={selectedBridgeId}
           workerState={workerState}
           onChange={onPromptChange}
+          onAttachmentsChange={onPromptAttachmentsChange}
           onSend={onSend}
           onCancel={onCancel}
         />

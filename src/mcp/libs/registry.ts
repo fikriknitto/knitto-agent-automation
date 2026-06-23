@@ -15,4 +15,5 @@ export { automation_select_option } from "./tools/select-option.js";
 export { automation_wait_for } from "./tools/wait-for.js";
 export { automation_go_back } from "./tools/go-back.js";
 export { automation_go_forward } from "./tools/go-forward.js";
+export { automation_upload_file } from "./tools/upload-file.js";
 export { automation_close_browser } from "./tools/close-browser.js";

@@ -1,6 +1,6 @@
 export const STRATEGIES = [
-  { id: "automation_e2e_strategy", label: "E2E test" },
-  { id: "automation_explore_strategy", label: "Explore site" },
+  // { id: "automation_e2e_strategy", label: "E2E test" },
+  // { id: "automation_explore_strategy", label: "Explore site" },
   { id: "automation_human_strategy", label: "Human-like browse" },
 ] as const;
 

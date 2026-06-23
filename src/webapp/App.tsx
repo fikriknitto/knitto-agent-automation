@@ -3,6 +3,10 @@ import { BridgeCredentials } from "./components/bridge-credentials";
 import { ChatPanel } from "./components/chat-panel";
 import { ConnectionPanel } from "./components/connection-panel";
 import { PromptShortcutsPanel } from "./components/prompt-shortcuts-panel";
+import {
+  formatAttachmentSummary,
+  type PromptAttachment,
+} from "./lib/prompt-attachment";
 import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
@@ -57,6 +61,7 @@ export function App() {
   const [selectedModel, setSelectedModel] = useState(persisted.selectedModel ?? "");
   const [strategy, setStrategy] = useState(persisted.strategy ?? "automation_e2e_strategy");
   const [prompt, setPrompt] = useState("");
+  const [promptAttachments, setPromptAttachments] = useState<PromptAttachment[]>([]);
   const [chatLines, setChatLines] = useState<ChatLine[]>([]);
   const [workerState, setWorkerState] = useState<"idle" | "busy">("idle");
   const [cursorKey, setCursorKey] = useState(persisted.cursorKey ?? "");
@@ -165,7 +170,7 @@ export function App() {
 
   const handleSend = () => {
     const text = prompt.trim();
-    if (!text || !selectedBridgeId) return;
+    if ((!text && !promptAttachments.length) || !selectedBridgeId) return;
 
     const bridge = bridges.find((b) => b.bridgeId === selectedBridgeId);
     const model =
@@ -177,16 +182,20 @@ export function App() {
     const id = jobId();
     activeJobId.current = id;
 
-    setChatLines((prev) => [...prev, { id: `u-${id}`, role: "user", text }]);
+    const userLine =
+      text || (promptAttachments.length ? formatAttachmentSummary(promptAttachments) : "");
+    setChatLines((prev) => [...prev, { id: `u-${id}`, role: "user", text: userLine }]);
     setWorkerState("busy");
     setPrompt("");
+    setPromptAttachments([]);
 
     wsRef.current?.sendUserPrompt({
       id,
       bridgeId: selectedBridgeId,
-      text,
+      text: text || "Gunakan lampiran sesuai instruksi di prompt user.",
       strategy,
       model,
+      attachments: promptAttachments.length ? promptAttachments : undefined,
     });
   };
 
@@ -277,6 +286,7 @@ export function App() {
             selectedModel={selectedModel}
             strategy={strategy}
             prompt={prompt}
+            promptAttachments={promptAttachments}
             workerState={workerState}
             connectionState={connectionState}
             chatLines={chatLines}
@@ -284,6 +294,7 @@ export function App() {
             onSelectModel={setSelectedModel}
             onStrategyChange={setStrategy}
             onPromptChange={setPrompt}
+            onPromptAttachmentsChange={setPromptAttachments}
             onSend={handleSend}
             onCancel={handleCancel}
           />

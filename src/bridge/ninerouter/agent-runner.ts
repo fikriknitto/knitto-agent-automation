@@ -1,6 +1,10 @@
 import { createLogger } from "../../mcp/core/index.js";
 import { connectAutomationMcp } from "../shared/automation-mcp-client.js";
 import { buildAgentPrompt, buildOpenAIUserContent } from "../shared/prompt-builder.js";
+import {
+  cleanupJobAttachments,
+  persistJobAttachments,
+} from "../shared/persist-attachments.js";
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../shared/tool-screenshot.js";
 import { closeAutomationBrowser } from "../shared/mcp-browser.js";
 import type { AgentJobMessage, BridgeJob } from "../shared/types.js";
@@ -43,11 +47,13 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       );
     }
 
+    const savedAttachments = await persistJobAttachments(job.id, job.attachments);
     const promptInput = buildAgentPrompt({
       channel: job.channel,
       text: job.text,
       strategy: job.strategy,
-      images: job.images,
+      attachments: job.attachments,
+      savedAttachments,
     });
 
     const modelId = job.model ?? config.modelId;
@@ -180,6 +186,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       clearTimeout(timeout);
       await closeAutomationBrowser(mcpClient);
       await mcpClient.close().catch(() => undefined);
+      await cleanupJobAttachments(job.id);
     }
   })();
 

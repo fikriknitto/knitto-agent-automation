@@ -2,6 +2,10 @@ import { Agent, CursorAgentError } from "@cursor/sdk";
 import { createLogger } from "../../mcp/core/index.js";
 import { automationMcpEnv, automationMcpSpawnArgs } from "../shared/automation-mcp-config.js";
 import { buildAgentPrompt, buildCursorSdkMessage } from "../shared/prompt-builder.js";
+import {
+  cleanupJobAttachments,
+  persistJobAttachments,
+} from "../shared/persist-attachments.js";
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../shared/tool-screenshot.js";
 import { closeAutomationBrowser } from "../shared/mcp-browser.js";
 import type { AgentJobMessage, BridgeJob } from "../shared/types.js";
@@ -58,11 +62,13 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       );
     }
 
+    const savedAttachments = await persistJobAttachments(job.id, job.attachments);
     const promptInput = buildAgentPrompt({
       channel: job.channel,
       text: job.text,
       strategy: job.strategy,
-      images: job.images,
+      attachments: job.attachments,
+      savedAttachments,
     });
 
     const modelId = job.model ?? config.modelId;
@@ -238,6 +244,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       const dispose = agent[Symbol.asyncDispose];
       if (typeof dispose === "function") await dispose.call(agent);
       await closeAutomationBrowser();
+      await cleanupJobAttachments(job.id);
     }
   })();
 

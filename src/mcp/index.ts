@@ -18,6 +18,7 @@ import {
   automation_wait_for,
   automation_go_back,
   automation_go_forward,
+  automation_upload_file,
   automation_close_browser,
 } from "./libs/registry.js";
 
@@ -44,6 +45,7 @@ async function main(): Promise<void> {
   server.registerTool(automation_wait_for);
   server.registerTool(automation_go_back);
   server.registerTool(automation_go_forward);
+  server.registerTool(automation_upload_file);
   server.registerTool(automation_close_browser);
 
   await server.start();

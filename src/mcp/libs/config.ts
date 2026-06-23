@@ -38,6 +38,12 @@ export default {
   get screenshotDir() {
     return envStr("AUTOMATION_SCREENSHOT_DIR") || join(resolveProjectRoot(), "screenshoot");
   },
+  get uploadDir() {
+    return envStr("AUTOMATION_UPLOAD_DIR") || join(this.screenshotDir, "uploads");
+  },
+  get uploadMaxBytes() {
+    return envInt("AUTOMATION_UPLOAD_MAX_BYTES", 10 * 1024 * 1024);
+  },
   get viewportWidth() {
     return envInt("AUTOMATION_VIEWPORT_WIDTH", 1280);
   },

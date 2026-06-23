@@ -22,10 +22,11 @@ export interface BridgeInfo {
   browserHeaded?: boolean;
 }
 
-export interface PromptImage {
+export interface PromptAttachment {
   data: string;
   mimeType: string;
-  name?: string;
+  name: string;
+  kind: "image" | "file";
 }
 
 export interface UserPromptMessage {
@@ -36,6 +37,7 @@ export interface UserPromptMessage {
   text: string;
   strategy?: string;
   model?: string;
+  attachments?: PromptAttachment[];
 }
 
 export interface AgentJobCancelMessage {
@@ -64,5 +66,5 @@ export interface BridgeJob {
   text: string;
   strategy?: string;
   model?: string;
-  images?: PromptImage[];
+  attachments?: PromptAttachment[];
 }

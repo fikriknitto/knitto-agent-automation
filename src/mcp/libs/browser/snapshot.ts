@@ -8,6 +8,7 @@ export type SnapshotElement = {
   tag: string;
   text: string | null;
   placeholder: string | null;
+  inputType: string | null;
   visible: boolean;
   disabled: boolean;
   inViewport: boolean;
@@ -60,9 +61,19 @@ const SNAPSHOT_SCRIPT = `(interactiveOnly, maxElements) => {
     return window.getComputedStyle(el).cursor === "pointer";
   }
 
+  function titleHint(el) {
+    if (el.getAttribute("title")) return el.getAttribute("title").trim();
+    const titled = el.querySelector("[title]");
+    if (titled && titled.getAttribute("title")) return titled.getAttribute("title").trim();
+    return null;
+  }
+
   function accessibleName(el) {
     const labelled = el.getAttribute("aria-label") || el.getAttribute("title") || el.getAttribute("alt");
     if (labelled) return labelled.trim();
+
+    const fromTitle = titleHint(el);
+    if (fromTitle) return fromTitle.slice(0, 120);
 
     const labelledBy = el.getAttribute("aria-labelledby");
     if (labelledBy) {
@@ -99,7 +110,32 @@ const SNAPSHOT_SCRIPT = `(interactiveOnly, maxElements) => {
       return "button";
     }
     if (isMenuToggle(el)) return "button";
+    if ((tag === "div" || tag === "span") && isPointerTarget(el) && accessibleName(el)) {
+      return "menuitem";
+    }
     return tag;
+  }
+
+  function isPointerMenuRow(el) {
+    if (el.tagName !== "DIV" && el.tagName !== "SPAN") return false;
+    if (!visible(el) || !isPointerTarget(el)) return false;
+    const name = accessibleName(el);
+    if (!name || name.length < 2) return false;
+    const rowText = (el.textContent || "").replace(/\\s+/g, " ").trim();
+    if (!rowText) return false;
+    let parent = el.parentElement;
+    while (parent) {
+      if (
+        (parent.tagName === "DIV" || parent.tagName === "SPAN") &&
+        visible(parent) &&
+        isPointerTarget(parent)
+      ) {
+        const parentText = (parent.textContent || "").replace(/\\s+/g, " ").trim();
+        if (parentText === rowText) return false;
+      }
+      parent = parent.parentElement;
+    }
+    return true;
   }
 
   const seen = new Set();
@@ -121,6 +157,7 @@ const SNAPSHOT_SCRIPT = `(interactiveOnly, maxElements) => {
       tag: el.tagName.toLowerCase(),
       text: (el.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 120) || null,
       placeholder: el.getAttribute("placeholder"),
+      inputType: el.tagName.toLowerCase() === "input" ? el.getAttribute("type") : null,
       visible: visible(el),
       disabled: el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true",
       inViewport: inViewport(el),
@@ -140,16 +177,20 @@ const SNAPSHOT_SCRIPT = `(interactiveOnly, maxElements) => {
   }
 
   for (const el of document.querySelectorAll("div, span")) {
-    if (!wrapsSvgIcon(el)) continue;
-    if (
-      !isPointerTarget(el) &&
-      !isMenuToggle(el) &&
-      !el.hasAttribute("aria-expanded") &&
-      !el.hasAttribute("aria-haspopup")
-    ) {
+    if (wrapsSvgIcon(el)) {
+      if (
+        isPointerTarget(el) ||
+        isMenuToggle(el) ||
+        el.hasAttribute("aria-expanded") ||
+        el.hasAttribute("aria-haspopup")
+      ) {
+        addElement(el);
+      }
       continue;
     }
-    addElement(el);
+    if (isPointerMenuRow(el)) {
+      addElement(el);
+    }
   }
 
   results.sort((a, b) => Number(b.inViewport) - Number(a.inViewport));
@@ -173,13 +214,14 @@ export async function capturePageSnapshot(args: {
   registerRefs(raw.map((item) => ({ ref: item.ref, selector: item.selector, index: item.index })));
 
   const elements: SnapshotElement[] = raw.map(
-    ({ ref, role, name, tag, text, placeholder, visible, disabled, inViewport, bbox }) => ({
+    ({ ref, role, name, tag, text, placeholder, inputType, visible, disabled, inViewport, bbox }) => ({
       ref,
       role,
       name,
       tag,
       text,
       placeholder,
+      inputType,
       visible,
       disabled,
       inViewport,
