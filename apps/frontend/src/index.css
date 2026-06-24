@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply m-0 bg-[#090a0f] font-sans text-slate-200 antialiased;
+    background-image: radial-gradient(circle at top, #141824 0%, #090a0f 100%);
+    background-attachment: fixed;
+  }
+
+}
+
+@layer components {
+  .prompt-editor-content {
+    overflow-wrap: anywhere;
+    @apply min-h-24 text-sm leading-relaxed text-slate-100 outline-none ring-0;
+  }
+
+  .prompt-editor-content:focus,
+  .prompt-editor-content:focus-visible {
+    @apply outline-none ring-0;
+  }
+
+  .prompt-editor-content .tiptap,
+  .prompt-editor-content .tiptap:focus,
+  .prompt-editor-content .ProseMirror,
+  .prompt-editor-content .ProseMirror:focus,
+  .prompt-editor-content .ProseMirror-focused {
+    @apply outline-none ring-0;
+  }
+
+  .prompt-editor-content p {
+    @apply mb-1.5;
+  }
+
+  .prompt-editor-content p:last-child {
+    @apply mb-0;
+  }
+
+  .prompt-editor-content ul,
+  .prompt-editor-content ol {
+    @apply my-1 mb-1.5 ml-[1.1rem] list-outside p-0 pl-1;
+  }
+
+  .prompt-editor-content ul {
+    @apply list-disc;
+  }
+
+  .prompt-editor-content ol {
+    @apply list-decimal;
+  }
+
+  .prompt-editor-content li {
+    @apply text-slate-100;
+  }
+
+  .prompt-editor-content li::marker {
+    @apply text-white;
+  }
+  .prompt-editor-content code {
+    @apply rounded bg-white/6 px-1 py-0.5 font-mono text-[0.85em];
+  }
+
+  .prompt-editor-content pre {
+    @apply my-1.5 overflow-x-auto rounded-md bg-black/35 p-2.5;
+  }
+
+  .prompt-editor-content pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .prompt-editor-content p.is-editor-empty:first-child::before {
+    @apply pointer-events-none float-left h-0 text-slate-500;
+    content: attr(data-placeholder);
+  }
+}

@@ -1,4 +1,5 @@
 import type { AgentJobMessage, BridgeInfo } from "@knitto/shared";
+import type { PromptAttachment } from "@knitto/shared";
 
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "error";
 
@@ -10,6 +11,7 @@ export type ChatLine = {
   id: string;
   role: "user" | "agent" | "system";
   text: string;
+  attachments?: PromptAttachment[];
   status?: AgentJobMessage["status"];
   progress?: number;
   result?: string;

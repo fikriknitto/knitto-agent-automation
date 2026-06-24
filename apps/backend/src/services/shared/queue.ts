@@ -1,4 +1,5 @@
 import type { AgentJobMessage, BridgeJob, UserPromptMessage } from "@knitto/shared";
+import { agentMessages } from "./agent-messages.js";
 
 export type JobEmitter = (msg: AgentJobMessage) => void;
 
@@ -37,7 +38,7 @@ export class JobQueue {
       id: job.id,
       channel: job.channel,
       status: "queued",
-      message: "Waiting in queue…",
+      message: agentMessages.waitingInQueue,
       progress: 0,
     });
 
@@ -58,7 +59,7 @@ export class JobQueue {
           id: jobId,
           channel,
           status: "cancelled",
-          message: "Cancelled while queued",
+          message: agentMessages.cancelledWhileQueued,
         });
         return true;
       }

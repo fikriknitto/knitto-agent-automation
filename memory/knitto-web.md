@@ -80,3 +80,109 @@
 - Post-login verification: Log out + User buttons visible on dashboard (/)
 - Screenshots: login-form-filled.png, login-success-dashboard.png
 - Note: No inputType=file found on login or dashboard; "terapkan file" interpreted as executing Login.md test scenario, not file upload
+
+## Knitto Design System Docs (port 11111)
+
+### Overview
+- **URL:** http://192.168.20.15:11111/
+- **Title:** intro | Knitto Design System
+- **Type:** Docusaurus-style documentation site (not the login app on :5588)
+
+### Header Elements
+| Element | Locator | Notes |
+|---------|---------|-------|
+| Logo/brand | `role: link, name: "Design System"` | Top-left |
+| Dokumentasi nav | `role: link, name: "Dokumentasi"` | Header nav |
+| Changelog nav | `role: link, name: "Changelog"` | Header nav |
+| Dark/light toggle | `role: button, name: "Ubah antara modus gelap dan modus terang (saat ini system mode)"` | Top-right |
+| Search | `placeholder: "Search"` | Top-right |
+
+### Sidebar Navigation
+- Introduction, Changelog, Foundation (expandable), Components (expandable)
+- No hamburger menu on desktop viewport — sidebar is always visible
+- Right-side table of contents with anchor links (Isi dokumentasi, Foundation, Components, etc.)
+
+### Page Content (Introduction)
+- Main heading area with demo link to `192.168.20.15:5588`
+- Long scrollable doc with sections: Foundation (Colors, Typography), Components (Button, Select, etc.), Instalasi, Setup, Penggunaan, Dark mode
+
+### Quirks
+- Page is very long; use `fullPage: true` for screenshots
+- `networkidle2` wait works well for initial load
+- Theme toggle button in header (not sidebar "Theme Toggle" component doc link)
+
+## Test Run — TC02 Navigate to theme.md (2026-06-24)
+
+### TC02 — Visit page + full screenshot — PASSED
+- URL: http://192.168.20.15:11111/
+- Steps: navigate → wait network_idle → full-page screenshot
+- Verified: "Knitto Design System" text present; Design System link visible
+- Screenshot: TC02-navigate-theme-fullpage.png
+- Note: TC file content is visit+screenshot only (no theme navigation steps despite filename)
+
+## Test Run — TC02 Navigate to theme toggle (2026-06-24)
+
+### TC02 — Navigate to Theme Toggle component page — PASSED
+- URL: http://192.168.20.15:11111/
+- Steps: navigate → wait network_idle → click sidebar Components (expandable, ref e10 / role=button name=Components) → click Theme Toggle (ref e20 / role=link name=Theme Toggle) → full-page screenshot
+- Result URL: http://192.168.20.15:11111/components/theme-toggle
+- Page title: Theme Toggle | Knitto Design System
+- Verified: "Theme Toggle" text present; Theme Toggle sidebar link visible and active
+- Screenshot: TC02-theme-toggle-fullpage.png
+
+### Sidebar Navigation Pattern (Design System docs)
+- Components is expandable: click `role=button, name=Components` to reveal submenu items
+- Theme Toggle submenu: `role=link, name=Theme Toggle` (indented under Components)
+- No hamburger menu on desktop; left sidebar always visible
+- First click on Components expands; second click would navigate — use single click to expand only
+
+## Test Run — TC01–TC04 batch (2026-06-24)
+
+### TC01 Login.md — PASSED
+- URL: http://192.168.20.15:5588/login
+- Credentials: init / test
+- Locators: placeholder Username, placeholder Password, role=button name=LOGIN
+- Verified: Log out + User buttons on dashboard (/)
+- Screenshot: TC01-login-success-dashboard.png
+
+### TC02 Navigate to theme toggle — PASSED
+- URL: http://192.168.20.15:11111/
+- Steps: Components (role=button) → Theme Toggle sidebar link (ref e20)
+- Result URL: /components/theme-toggle
+- Screenshot: TC02-theme-toggle-fullpage.png
+
+### TC03 Navigate to toast — PASSED (with workaround)
+- Start URL: http://192.168.20.15:11111/ss renders header-only (no sidebar)
+- Workaround: clicked Dokumentasi to load docs layout, then Components → Toast
+- Result URL: /components/toast
+- Screenshot: TC03-toast-fullpage.png
+
+### TC04 Navigate to table — PASSED
+- URL: http://192.168.20.15:11111/
+- Steps: Components → Table sidebar link (ref e19)
+- Result URL: /components/table
+- Screenshot: TC04-table-fullpage.png
+
+### Quirk: /ss route
+- http://192.168.20.15:11111/ss shows blank content (header only); use Dokumentasi link or navigate to / for sidebar nav
+
+## Test Run — TC04 Navigate to table.md (2026-06-24, re-run)
+
+### TC04 — Navigate to Table component page — PASSED
+- URL start: http://192.168.20.15:11111/
+- Steps: wait network_idle → click sidebar Components (ref e10 / role=button name=Components) → click Table (ref e19 / role=link name=Table) → full-page screenshot
+- Result URL: http://192.168.20.15:11111/components/table
+- Verified: "Table" text present on page
+- Screenshot: TC04-table-fullpage.png
+- Note: Components expand reveals submenu (Big Calendar, Button, Dropdown, Input Date & Time, Modal, Pagination, Radio, Select, Table, Theme Toggle, Toast)
+
+## Test Run — TC02 Navigate to theme toggle.md (2026-06-24, re-run)
+
+### TC02 — Navigate to Theme Toggle component page — PASSED
+- URL start: http://192.168.20.15:11111/
+- Steps: navigate → wait network_idle → click sidebar Components (ref e10 / role=button name=Components) → click Theme Toggle (ref e20 / role=link name=Theme Toggle) → full-page screenshot
+- Result URL: http://192.168.20.15:11111/components/theme-toggle
+- Page title: Theme Toggle | Knitto Design System
+- Verified: automation_assert_text "Theme Toggle" present; automation_assert_visible link Theme Toggle in sidebar
+- Screenshot: TC02-theme-toggle-fullpage.png
+- Navigation succeeded on first click attempt (no retry needed)

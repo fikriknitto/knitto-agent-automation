@@ -15,6 +15,7 @@ import {
 } from "../../shared/persist-attachments.js";
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-screenshot.js";
 import { jobScreenshotPayload } from "../../shared/job-screenshot-payload.js";
+import { agentMessages } from "../../shared/agent-messages.js";
 import { closeAutomationBrowser } from "../../shared/mcp-browser.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
@@ -62,7 +63,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       id: job.id,
       channel: job.channel,
       status: "cancelled",
-      message: "Cancelled",
+      message: agentMessages.cancelled,
     });
   };
 
@@ -92,7 +93,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       id: job.id,
       channel: job.channel,
       status: "running",
-      message: "Starting Gemini agent…",
+      message: agentMessages.startingGemini,
       progress: 5,
     });
 
@@ -111,7 +112,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
           id: job.id,
           channel: job.channel,
           status: "running",
-          message: `Using ${toolName}…`,
+          message: agentMessages.usingTool(toolName),
           progress: 10,
           toolName,
         });
@@ -126,7 +127,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
             id: job.id,
             channel: job.channel,
             status: "running",
-            message: "Screenshot captured",
+            message: agentMessages.screenshotCaptured,
             progress: 50,
             toolName,
             ...jobScreenshotPayload(job.id),
@@ -170,7 +171,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
         return;
       }
 
-      const summary = response.text?.trim() || "Done";
+      const summary = response.text?.trim() || agentMessages.doneFallback;
       lastScreenshot = await ensureJobScreenshot(mcpClient, lastScreenshot);
 
       emit({
@@ -178,7 +179,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
         id: job.id,
         channel: job.channel,
         status: "completed",
-        message: "Completed",
+        message: agentMessages.completed,
         progress: 100,
         result: summary,
         ...jobScreenshotPayload(job.id),

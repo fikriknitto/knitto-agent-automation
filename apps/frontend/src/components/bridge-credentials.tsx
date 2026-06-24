@@ -1,4 +1,6 @@
 import type { BridgeSummary } from "../lib/types";
+import { hint, statusMessage as statusMessageClass } from "../lib/ui";
+import { Button, Card, CardTitle, Input, Label, Select } from "./ui";
 
 type BridgeCredentialsProps = {
   bridges: BridgeSummary[];
@@ -48,32 +50,50 @@ export function BridgeCredentials({
   const nineRouterBridge = bridges.find((b) => b.bridgeKind === "ninerouter");
 
   return (
-    <section className="panel">
-      <h2>Bridge credentials</h2>
-      <p className="hint">
+    <Card>
+      <CardTitle>Bridge credentials</CardTitle>
+      <p className={hint}>
         Simpan credential per bridge, atau set env saat menjalankan bridge (
-        <code>GEMINI_API_KEY</code>, <code>CURSOR_API_KEY</code>, <code>OPENROUTER_API_KEY</code>,{" "}
-        <code>NINEROUTER_BASE_URL</code> / <code>NINEROUTER_API_KEY</code>).
+        <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+          GEMINI_API_KEY
+        </code>
+        ,{" "}
+        <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+          CURSOR_API_KEY
+        </code>
+        ,{" "}
+        <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+          OPENROUTER_API_KEY
+        </code>
+        ,{" "}
+        <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+          NINEROUTER_BASE_URL
+        </code>{" "}
+        /{" "}
+        <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+          NINEROUTER_API_KEY
+        </code>
+        ).
       </p>
 
       {bridges.length > 1 && (
-        <label>
+        <Label>
           Active bridge (for chat)
-          <select value={selectedBridgeId} onChange={(e) => onSelectBridge(e.target.value)}>
+          <Select value={selectedBridgeId} onChange={(e) => onSelectBridge(e.target.value)}>
             <option value="">— select —</option>
             {bridges.map((b) => (
               <option key={b.bridgeId} value={b.bridgeId}>
                 {b.bridgeLabel}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Label>
       )}
 
-      <div className="cred-grid">
-        <label>
+      <div className="mt-4 grid gap-4">
+        <Label>
           Gemini API key
-          <input
+          <Input
             type="password"
             value={geminiKey}
             onChange={(e) => onGeminiKeyChange(e.target.value)}
@@ -81,19 +101,17 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!geminiBridge}
           />
-          <button
-            type="button"
-            onClick={onSaveGemini}
-            disabled={!geminiBridge || !geminiKey.trim()}
-          >
+          <Button onClick={onSaveGemini} disabled={!geminiBridge || !geminiKey.trim()}>
             Save to Gemini bridge
-          </button>
-          {!geminiBridge && <span className="hint">Gemini bridge offline — jalankan pnpm run start:bridge</span>}
-        </label>
+          </Button>
+          {!geminiBridge && (
+            <span className={hint}>Gemini bridge offline — jalankan pnpm run start:bridge</span>
+          )}
+        </Label>
 
-        <label>
+        <Label>
           Cursor API key
-          <input
+          <Input
             type="password"
             value={cursorKey}
             onChange={(e) => onCursorKeyChange(e.target.value)}
@@ -101,19 +119,15 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!cursorBridge}
           />
-          <button
-            type="button"
-            onClick={onSaveCursor}
-            disabled={!cursorBridge || !cursorKey.trim()}
-          >
+          <Button onClick={onSaveCursor} disabled={!cursorBridge || !cursorKey.trim()}>
             Save to Cursor bridge
-          </button>
-          {!cursorBridge && <span className="hint">Cursor bridge offline</span>}
-        </label>
+          </Button>
+          {!cursorBridge && <span className={hint}>Cursor bridge offline</span>}
+        </Label>
 
-        <label>
+        <Label>
           OpenRouter API key
-          <input
+          <Input
             type="password"
             value={openRouterKey}
             onChange={(e) => onOpenRouterKeyChange(e.target.value)}
@@ -121,19 +135,15 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!openRouterBridge}
           />
-          <button
-            type="button"
-            onClick={onSaveOpenRouter}
-            disabled={!openRouterBridge || !openRouterKey.trim()}
-          >
+          <Button onClick={onSaveOpenRouter} disabled={!openRouterBridge || !openRouterKey.trim()}>
             Save to OpenRouter bridge
-          </button>
-          {!openRouterBridge && <span className="hint">OpenRouter bridge offline</span>}
-        </label>
+          </Button>
+          {!openRouterBridge && <span className={hint}>OpenRouter bridge offline</span>}
+        </Label>
 
-        <label>
+        <Label>
           9Router base URL
-          <input
+          <Input
             type="url"
             value={nineRouterBaseUrl}
             onChange={(e) => onNineRouterBaseUrlChange(e.target.value)}
@@ -142,7 +152,7 @@ export function BridgeCredentials({
             disabled={!nineRouterBridge}
           />
           9Router API key
-          <input
+          <Input
             type="password"
             value={nineRouterKey}
             onChange={(e) => onNineRouterKeyChange(e.target.value)}
@@ -150,25 +160,26 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!nineRouterBridge}
           />
-          <button
-            type="button"
+          <Button
             onClick={onSaveNineRouter}
             disabled={!nineRouterBridge || !nineRouterBaseUrl.trim()}
           >
             Save to 9Router bridge
-          </button>
+          </Button>
           {!nineRouterBridge && (
-            <span className="hint">9Router bridge offline — jalankan pnpm run start:bridge:ninerouter + app 9Router</span>
+            <span className={hint}>
+              9Router bridge offline — jalankan pnpm run start:bridge:ninerouter + app 9Router
+            </span>
           )}
-        </label>
+        </Label>
       </div>
 
       {selected && (
-        <p className="hint">
+        <p className={`${hint} mt-4`}>
           Chat bridge: {selected.bridgeLabel} — default model {selected.defaultModel ?? "—"}
         </p>
       )}
-      {statusMessage && <p className="status-message">{statusMessage}</p>}
-    </section>
+      {statusMessage && <p className={`${statusMessageClass} mt-2`}>{statusMessage}</p>}
+    </Card>
   );
 }

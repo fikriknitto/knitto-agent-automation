@@ -1,5 +1,7 @@
 import type { ConnectionState } from "../lib/types";
 import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "../lib/protocol";
+import { hint, btnRow, fieldRow, statusLine } from "../lib/ui";
+import { Badge, Button, Card, CardTitle, Input, Label } from "./ui";
 
 type ConnectionPanelProps = {
   host: string;
@@ -33,70 +35,67 @@ export function ConnectionPanel({
   const connected = connectionState === "connected";
 
   return (
-    <section className="panel">
-      <h2>Connection</h2>
-      <div className="field-row">
-        <label>
+    <Card>
+      <CardTitle>Connection</CardTitle>
+      <div className={fieldRow}>
+        <Label>
           Host
-          <input
+          <Input
             value={host}
             onChange={(e) => onHostChange(e.target.value)}
             placeholder={DEFAULT_WS_HOST}
             disabled={connected}
           />
-        </label>
-        <label>
+        </Label>
+        <Label>
           Port
-          <input
+          <Input
             value={port}
             onChange={(e) => onPortChange(e.target.value)}
             placeholder={DEFAULT_WS_PORT}
             disabled={connected}
           />
-        </label>
-        <label>
+        </Label>
+        <Label>
           Channel
-          <input
+          <Input
             value={channel}
             onChange={(e) => onChannelChange(e.target.value)}
             placeholder={DEFAULT_CHANNEL}
             disabled={connected}
           />
-        </label>
+        </Label>
       </div>
-      <div className="button-row">
+      <div className={btnRow}>
         {!connected ? (
-          <button type="button" onClick={onConnect} disabled={connectionState === "connecting"}>
+          <Button onClick={onConnect} disabled={connectionState === "connecting"}>
             {connectionState === "connecting" ? "Connecting…" : "Connect"}
-          </button>
+          </Button>
         ) : (
           <>
-            <button type="button" onClick={onDisconnect}>
-              Disconnect
-            </button>
-            <button type="button" onClick={onRefresh}>
-              Refresh bridges
-            </button>
+            <Button onClick={onDisconnect}>Disconnect</Button>
+            <Button onClick={onRefresh}>Refresh bridges</Button>
           </>
         )}
       </div>
-      <p className="status-line">
-        Socket: <span className={`pill ${connected ? "online" : ""}`}>{connectionState}</span>
+      <p className={statusLine}>
+        Socket:{" "}
+        <Badge variant={connected ? "success" : "default"}>{connectionState}</Badge>
         Bridge:{" "}
-        <span className={`pill ${bridgeAvailable ? "online" : ""}`}>
+        <Badge variant={bridgeAvailable ? "success" : "default"}>
           {bridgeAvailable ? "Online" : "Offline"}
-        </span>
+        </Badge>
       </p>
       {bridgeAvailable && typeof browserHeaded === "boolean" && (
-        <p className="status-line">
+        <p className={statusLine}>
           Browser:{" "}
-          <span className={`pill ${browserHeaded ? "online" : ""}`}>
+          <Badge variant={browserHeaded ? "success" : "default"}>
             {browserHeaded ? "Headed (visible)" : "Headless"}
-          </span>
-          <br/>
-          <span className="hint">Set AUTOMATION_HEADLESS=false on bridge for headed mode.</span>
+          </Badge>
+          <br />
+          <span className={hint}>Set AUTOMATION_HEADLESS=false on bridge for headed mode.</span>
         </p>
       )}
-    </section>
+    </Card>
   );
 }

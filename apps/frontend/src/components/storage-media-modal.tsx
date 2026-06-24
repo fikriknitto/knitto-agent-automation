@@ -1,9 +1,18 @@
+import type { StorageEntry } from "@knitto/shared";
+import { XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import type { StorageEntry } from "@knitto/shared";
+import { isAcceptedStorageEntry } from "../lib/prompt-attachment";
+import {
+  modalBackdrop,
+  modalHeader,
+  modalRoot,
+  modalShell,
+  modalTitle,
+} from "../lib/ui";
 import type { FileSelectModifiers } from "./file-manager/file-card";
 import { FileManagerPanel } from "./file-manager/file-manager-panel";
-import { isAcceptedStorageEntry } from "../lib/prompt-attachment";
+import { Button, ButtonIcon } from "./ui";
 
 type StorageMediaModalProps = {
   open: boolean;
@@ -155,30 +164,27 @@ export function StorageMediaModal({
   const selectedPaths = selected.map((entry) => entry.path);
 
   return createPortal(
-    <div className="storage-media-modal-root" role="presentation">
+    <div className={modalRoot} role="presentation">
+      <div className={modalBackdrop} aria-label="Tutup" onClick={onClose} />
       <div
-        className="storage-media-modal-backdrop"
-        aria-label="Tutup"
-        onClick={onClose}
-      />
-      <div
-        className="storage-media-modal"
+        className={`${modalShell} h-[90vh]`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="storage-media-modal-title"
       >
-        <header className="storage-media-modal-header">
-          <h2 id="storage-media-modal-title">My Files</h2>
-          <button
-            type="button"
-            className="storage-media-modal-close"
+        <header className={modalHeader}>
+          <h2 id="storage-media-modal-title" className={modalTitle}>
+            Storage
+          </h2>
+          <ButtonIcon
+            className="h-8 w-8 min-w-0 border-0 bg-transparent! text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
             aria-label="Tutup"
             onClick={onClose}
           >
-            ×
-          </button>
+            <XIcon size={16} />
+          </ButtonIcon>
         </header>
-        <div className="storage-media-modal-body">
+        <div className="flex min-h-0 flex-1 flex-col">
           <FileManagerPanel
             enabled={open}
             slotsLeft={slotsLeft}
@@ -188,29 +194,24 @@ export function StorageMediaModal({
             onSelectEntry={handleSelectEntry}
           />
         </div>
-        <footer className="storage-media-modal-footer">
-          <span className="storage-media-modal-footer-count">
+        <footer className="flex items-center justify-between gap-4 border-t border-white/8 bg-[rgba(9,12,20,0.65)] px-5 py-3.5">
+          <span className="text-[0.82rem] text-slate-400">
             {selected.length > 0
               ? `${selected.length} file dipilih`
               : "Belum ada file dipilih"}
           </span>
-          <div className="storage-media-modal-footer-actions">
-            <button
-              type="button"
-              className="file-manager-btn"
-              disabled={applying}
-              onClick={onClose}
-            >
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" disabled={applying} onClick={onClose}>
               Batal
-            </button>
-            <button
-              type="button"
-              className="file-manager-btn file-manager-btn-primary"
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
               disabled={!selected.length || applying}
               onClick={() => void handleApply()}
             >
               {applying ? "Menerapkan…" : "Terapkan"}
-            </button>
+            </Button>
           </div>
         </footer>
       </div>

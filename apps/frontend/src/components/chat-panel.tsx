@@ -1,8 +1,10 @@
 import type { PromptAttachment } from "../lib/prompt-attachment";
 import { STRATEGIES } from "../lib/protocol";
 import type { BridgeSummary, ChatLine, ConnectionState } from "../lib/types";
+import { fieldRow } from "../lib/ui";
 import { ChatHistory } from "./job-progress";
 import { PromptEditor } from "./prompt-editor";
+import { Card, CardTitle, Label, Select } from "./ui";
 
 type ChatPanelProps = {
   bridges: BridgeSummary[];
@@ -60,23 +62,23 @@ export function ChatPanel({
   const models = bridge?.models ?? [];
 
   return (
-    <section className="panel chat-panel">
-      <h2>Automation chat</h2>
-      <div className="field-row">
-        <label>
+    <Card className="flex min-h-[75vh] flex-col">
+      <CardTitle>Automation chat</CardTitle>
+      <div className={fieldRow}>
+        <Label>
           Bridge
-          <select value={selectedBridgeId} onChange={(e) => onSelectBridge(e.target.value)}>
+          <Select value={selectedBridgeId} onChange={(e) => onSelectBridge(e.target.value)}>
             <option value="">— select —</option>
             {bridges.map((b) => (
               <option key={b.bridgeId} value={b.bridgeId}>
                 {b.bridgeLabel}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
+          </Select>
+        </Label>
+        <Label>
           Model
-          <select
+          <Select
             value={model}
             onChange={(e) => onSelectModel(e.target.value)}
             disabled={!models.length}
@@ -86,24 +88,24 @@ export function ChatPanel({
                 {m.label}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
+          </Select>
+        </Label>
+        <Label>
           Strategy
-          <select value={strategy} onChange={(e) => onStrategyChange(e.target.value)}>
+          <Select value={strategy} onChange={(e) => onStrategyChange(e.target.value)}>
             {STRATEGIES.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Label>
       </div>
 
       <ChatHistory lines={chatLines} />
 
-      <div className="prompt-label">
-        <span className="prompt-label-text">Prompt</span>
+      <div className="mt-3 flex flex-col gap-1.5">
+        <Label className="gap-1">Prompt</Label>
         <PromptEditor
           value={prompt}
           attachments={promptAttachments}
@@ -116,6 +118,6 @@ export function ChatPanel({
           onCancel={onCancel}
         />
       </div>
-    </section>
+    </Card>
   );
 }

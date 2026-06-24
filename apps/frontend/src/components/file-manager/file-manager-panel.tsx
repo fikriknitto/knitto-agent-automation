@@ -1,10 +1,10 @@
-import { useCallback, useState, type DragEvent } from "react";
 import type { StorageEntry } from "@knitto/shared";
+import { useCallback, useState, type DragEvent } from "react";
 import { useFileManager } from "../../hooks/use-file-manager";
 import { formatBytes, formatItemCount } from "../../lib/file-utils";
 import { BreadcrumbNav } from "./breadcrumb-nav";
-import { FileGrid } from "./file-grid";
 import type { FileSelectModifiers } from "./file-card";
+import { FileGrid } from "./file-grid";
 import { FileToolbar } from "./file-toolbar";
 
 type FileManagerPanelProps = {
@@ -65,16 +65,12 @@ export function FileManagerPanel({
   const displayError = selectError ?? fm.error;
 
   return (
-    <div className="file-manager-panel">
-      <div className="file-manager-stats">
+    <div className="flex min-h-0 flex-1 flex-col gap-3.5 px-5 pb-5 pt-1">
+      <div className="flex flex-wrap items-center gap-3 pt-0.5 text-xs text-slate-400">
         <span>
           {formatItemCount(fm.summary.itemCount)} · {formatBytes(fm.summary.totalBytes)} Total
         </span>
-        {slotsLeft > 0 && (
-          <span className="file-manager-stats-hint">
-            Klik pilih · Ctrl+klik toggle · Shift+klik rentang · lalu Terapkan ({slotsLeft} slot)
-          </span>
-        )}
+
       </div>
 
       <BreadcrumbNav path={fm.currentPath} onNavigate={fm.navigate} />
@@ -96,7 +92,7 @@ export function FileManagerPanel({
       />
 
       {displayError && (
-        <p className="file-manager-error" role="alert">
+        <p className="m-0 text-[0.82rem] text-red-400" role="alert">
           {displayError}
         </p>
       )}
@@ -105,7 +101,6 @@ export function FileManagerPanel({
         entries={fm.entries}
         viewMode={fm.viewMode}
         loading={fm.loading}
-        uploading={fm.uploading}
         selectedPaths={selectedPaths}
         attachedPaths={attachedPaths}
         dragOver={dragOver}

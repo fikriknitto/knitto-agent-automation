@@ -3,14 +3,10 @@ import { BridgeCredentials } from "./components/bridge-credentials";
 import { ChatPanel } from "./components/chat-panel";
 import { ConnectionPanel } from "./components/connection-panel";
 import { PromptShortcutsPanel } from "./components/prompt-shortcuts-panel";
-import {
-  formatAttachmentSummary,
-  type PromptAttachment,
-} from "./lib/prompt-attachment";
+import { type PromptAttachment } from "./lib/prompt-attachment";
 import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
-import "./styles.css";
 
 const STORAGE_KEY = "knitto-automation-web";
 
@@ -177,9 +173,11 @@ export function App() {
     const id = jobId();
     activeJobId.current = id;
 
-    const userLine =
-      text || (promptAttachments.length ? formatAttachmentSummary(promptAttachments) : "");
-    setChatLines((prev) => [...prev, { id: `u-${id}`, role: "user", text: userLine }]);
+    const attachments = promptAttachments.length ? [...promptAttachments] : undefined;
+    setChatLines((prev) => [
+      ...prev,
+      { id: `u-${id}`, role: "user", text: text.trim(), attachments },
+    ]);
     setWorkerState("busy");
     setPrompt("");
     setPromptAttachments([]);
@@ -229,19 +227,11 @@ export function App() {
   };
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="header-title-row">
-          <h1>Knitto Browser Agent</h1>
-          <span className="desktop-badge">Web UI</span>
-        </div>
-        <p>
-          Browser automation via Gemini + Puppeteer MCP server relay.
-        </p>
-      </header>
+    <div className="flex min-h-screen flex-col">
 
-      <main className="layout">
-        <aside className="sidebar">
+
+      <main className="grid flex-1 grid-cols-1 items-start gap-6 p-6 lg:grid-cols-[minmax(300px,380px)_1fr]">
+        <aside className="min-w-0">
           <ConnectionPanel
             host={host}
             port={port}
@@ -278,7 +268,7 @@ export function App() {
           />
         </aside>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div className="flex min-w-0 flex-col gap-4">
           <ChatPanel
             bridges={bridges}
             selectedBridgeId={selectedBridgeId}

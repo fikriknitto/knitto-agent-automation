@@ -1,5 +1,7 @@
+import { UploadIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import type { SortDirection, SortField, ViewMode } from "../../hooks/use-file-manager";
+import { Button, ButtonIcon, Input, Label, Select } from "../ui";
 
 type FileToolbarProps = {
   searchQuery: string;
@@ -48,19 +50,20 @@ export function FileToolbar({
   };
 
   return (
-    <div className="file-manager-toolbar">
-      <div className="file-manager-toolbar-row">
-        <label className="file-manager-search">
-          <span className="sr-only">Cari file</span>
-          <input
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <Label className="flex-1">
+          <Input
             type="search"
+            className="w-[150px]!"
             placeholder="Cari di folder ini…"
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
           />
-        </label>
+          
+        </Label>
 
-        <div className="file-manager-toolbar-actions">
+        <div className="flex flex-wrap gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -73,33 +76,30 @@ export function FileToolbar({
               }
             }}
           />
-          <button
-            type="button"
-            className="file-manager-btn file-manager-btn-primary"
+          <Button
+            variant="primary"
+            size="sm"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
-            {uploading ? "Mengunggah…" : "Upload"}
-          </button>
-          <button
-            type="button"
-            className="file-manager-btn"
-            onClick={() => setFolderOpen((open) => !open)}
-          >
+            {uploading ? "Mengunggah…" : <><UploadIcon size={16} className="mr-1" /> Upload</>}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setFolderOpen((open) => !open)}>
             Folder baru
-          </button>
+          </Button>
         </div>
       </div>
 
       {folderOpen && (
         <form
-          className="file-manager-create-folder"
+          className="flex flex-wrap items-center gap-2"
           onSubmit={(event) => {
             event.preventDefault();
             void handleCreateFolder();
           }}
         >
-          <input
+          <Input
+            className="min-w-[160px] flex-1"
             type="text"
             placeholder="Nama folder"
             value={folderName}
@@ -107,12 +107,13 @@ export function FileToolbar({
             disabled={folderBusy}
             onChange={(event) => setFolderName(event.target.value)}
           />
-          <button type="submit" className="file-manager-btn file-manager-btn-primary" disabled={folderBusy}>
+          <Button type="submit" variant="primary" size="sm" disabled={folderBusy}>
             Buat
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="file-manager-btn"
+            size="sm"
+            variant="ghost"
             disabled={folderBusy}
             onClick={() => {
               setFolderOpen(false);
@@ -120,50 +121,47 @@ export function FileToolbar({
             }}
           >
             Batal
-          </button>
+          </Button>
         </form>
       )}
 
-      <div className="file-manager-toolbar-row file-manager-toolbar-meta">
-        <div className="file-manager-sort">
-          <label>
+      <div className="flex flex-wrap items-center justify-end gap-2.5">
+        <div className="flex items-center gap-1.5">
+          <Label>
             <span className="sr-only">Urutkan</span>
-            <select
+            <Select
+              className="px-2.5 py-1.5 text-[0.82rem]"
               value={sortField}
               onChange={(event) => onSortFieldChange(event.target.value as SortField)}
             >
               <option value="name">Nama</option>
               <option value="date">Tanggal</option>
               <option value="size">Ukuran</option>
-            </select>
-          </label>
-          <button
-            type="button"
-            className="file-manager-btn file-manager-btn-icon"
+            </Select>
+          </Label>
+          <ButtonIcon
             aria-label={sortDirection === "asc" ? "Urutan naik" : "Urutan turun"}
             onClick={onSortDirectionToggle}
           >
             {sortDirection === "asc" ? "↑" : "↓"}
-          </button>
+          </ButtonIcon>
         </div>
 
-        <div className="file-manager-view-toggle" role="group" aria-label="Tampilan">
-          <button
-            type="button"
-            className={`file-manager-btn file-manager-btn-icon${viewMode === "grid" ? " is-active" : ""}`}
+        <div className="flex gap-1.5" role="group" aria-label="Tampilan">
+          <ButtonIcon
+            active={viewMode === "grid"}
             aria-pressed={viewMode === "grid"}
             onClick={() => onViewModeChange("grid")}
           >
             ⊞
-          </button>
-          <button
-            type="button"
-            className={`file-manager-btn file-manager-btn-icon${viewMode === "list" ? " is-active" : ""}`}
+          </ButtonIcon>
+          <ButtonIcon
+            active={viewMode === "list"}
             aria-pressed={viewMode === "list"}
             onClick={() => onViewModeChange("list")}
           >
             ☰
-          </button>
+          </ButtonIcon>
         </div>
       </div>
     </div>

@@ -3,20 +3,21 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { SendIcon, StopCircleIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { cn } from "../lib/cn";
 import {
   ACCEPTED_FILE_INPUT,
-  attachmentExtension,
   filesToPromptAttachments,
   isAcceptedAttachment,
   isPasteableImage,
-  promptAttachmentImageSrc,
-  promptAttachmentTitle,
   storageEntryToPromptAttachment,
   type PromptAttachment,
 } from "../lib/prompt-attachment";
 import type { ConnectionState } from "../lib/types";
+import { PromptAttachments } from "./prompt-attachment-chip";
 import { StorageMediaModal } from "./storage-media-modal";
+import { Button, ButtonIcon } from "./ui";
 
 const MIN_HEIGHT_PX = 96;
 const MAX_HEIGHT_PX = 256;
@@ -63,6 +64,25 @@ function autosizeEditor(editorElement: HTMLElement): void {
   const next = Math.min(Math.max(editorElement.scrollHeight, MIN_HEIGHT_PX), MAX_HEIGHT_PX);
   editorElement.style.height = `${next}px`;
   editorElement.style.overflowY = editorElement.scrollHeight > MAX_HEIGHT_PX ? "auto" : "hidden";
+}
+
+function isEmptyMarkdown(markdown: string): boolean {
+  return !markdown.trim();
+}
+
+/** TipTap empty doc may serialize differently than parent `""` — treat both as empty. */
+function markdownMatches(a: string, b: string): boolean {
+  if (isEmptyMarkdown(a) && isEmptyMarkdown(b)) return true;
+  return a === b;
+}
+
+function applyEditorMarkdown(editor: NonNullable<ReturnType<typeof useEditor>>, markdown: string): void {
+  if (isEmptyMarkdown(markdown)) {
+    editor.commands.clearContent(false);
+  } else {
+    editor.commands.setContent(markdown, { contentType: "markdown", emitUpdate: false });
+  }
+  autosizeEditor(editor.view.dom as HTMLElement);
 }
 
 export function PromptEditor({
@@ -230,71 +250,37 @@ export function PromptEditor({
   useEffect(() => {
     if (!editor) return;
     const current = editor.getMarkdown();
-    if (value === current) return;
+    if (markdownMatches(value, current)) return;
 
     skipEmit.current = true;
-    editor.commands.setContent(value, { contentType: "markdown", emitUpdate: false });
-    skipEmit.current = false;
-    autosizeEditor(editor.view.dom as HTMLElement);
+    applyEditorMarkdown(editor, value);
+    queueMicrotask(() => {
+      skipEmit.current = false;
+    });
   }, [editor, value]);
 
   const isBusy = workerState === "busy";
   const actionTitle = isBusy ? "Stop job" : validationMessage ?? "Send prompt";
   const canAttach = !isBusy && attachments.length < MAX_ATTACHMENTS;
 
+  
+
   return (
-    <div className="prompt-editor-wrap">
-      {attachments.length > 0 && (
-        <div className="prompt-attachments" aria-label="Lampiran">
-          {attachments.map((attachment, index) => (
-            <figure
-              key={`${attachment.storagePath}-${index}`}
-              className={[
-                "prompt-attachment",
-                attachment.kind === "file" ? "prompt-attachment-file" : "",
-                "prompt-attachment-from-storage",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              title={promptAttachmentTitle(attachment)}
-            >
-              <span className="prompt-attachment-index" aria-hidden="true">
-                {index + 1}
-              </span>
-              <span className="prompt-attachment-source" aria-hidden="true">
-                ☁
-              </span>
-              {attachment.kind === "image" ? (
-                <img
-                  src={promptAttachmentImageSrc(attachment)}
-                  alt={attachment.name}
-                />
-              ) : (
-                <div className="prompt-attachment-file-body">
-                  <span className="prompt-attachment-ext">{attachmentExtension(attachment.name)}</span>
-                  <span className="prompt-attachment-name">
-                    {attachment.name}
-                  </span>
-                  <span className="prompt-attachment-path">{attachment.storagePath}</span>
-                </div>
-              )}
-              <button
-                type="button"
-                className="prompt-attachment-remove"
-                aria-label="Hapus lampiran"
-                title="Hapus lampiran"
-                disabled={isBusy}
-                onClick={() => removeAttachment(index)}
-              >
-                ×
-              </button>
-            </figure>
-          ))}
-        </div>
-      )}
+    <div className="w-full">
+      <PromptAttachments
+        attachments={attachments}
+        disabled={isBusy}
+        onRemove={removeAttachment}
+      />
 
       <div
-        className={`prompt-editor-shell${validationMessage ? " is-blocked" : ""}${dragOver ? " is-drag-over" : ""}`}
+        className={cn(
+          "relative rounded-xl border border-white/8 bg-[rgba(15,17,26,0.88)] transition-colors",
+          "focus-within:border-white/8 focus-within:outline-none focus-within:ring-0",
+          dragOver && "border-blue-500/40 bg-blue-500/5",
+          validationMessage && !isBusy && "border-amber-500/20",
+          isBusy && "opacity-90"
+        )}
         onDragEnter={(event) => {
           event.preventDefault();
           if (!isBusy) setDragOver(true);
@@ -315,7 +301,7 @@ export function PromptEditor({
           type="file"
           accept={ACCEPTED_FILE_INPUT}
           multiple
-          className="prompt-file-input"
+          className="hidden"
           onChange={async (event) => {
             const files = event.target.files;
             if (files?.length) await appendAttachments(files);
@@ -323,57 +309,30 @@ export function PromptEditor({
           }}
         />
 
-        <button
-          type="button"
-          className="prompt-attach-btn"
-          aria-label="Lampirkan media"
-          title="Lampirkan media"
-          disabled={!canAttach}
-          onClick={() => setStorageModalOpen(true)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect
-              x="3"
-              y="3"
-              width="18"
-              height="18"
-              rx="2"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-            <path
-              d="M21 15l-5-5L5 21"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        <div className="prompt-editor-body">
-          <EditorContent editor={editor} />
-        </div>
-
-        <button
-          type="button"
-          className={`prompt-editor-action ${isBusy ? "stop" : "send"}`}
-          aria-label={actionTitle}
-          title={actionTitle}
-          onClick={isBusy ? onCancel : onSend}
-          disabled={!isBusy && !canSend}
-        >
-          {isBusy ? (
+        <div className="flex items-end gap-2 p-2.5 pl-2">
+          <ButtonIcon
+            type="button"
+            variant="ghost"
+            className="mb-0.5 h-9 w-9 min-w-0 shrink-0 rounded-full! border-white/10 bg-slate-800/80 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 [&_svg]:h-4 [&_svg]:w-4"
+            aria-label="Lampirkan media"
+            title="Lampirkan media"
+            disabled={!canAttach}
+            onClick={() => setStorageModalOpen(true)}
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect
+                x="3"
+                y="3"
+                width="18"
+                height="18"
+                rx="2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
               <path
-                d="M12 19V5M12 5l-5 5M12 5l5 5"
+                d="M21 15l-5-5L5 21"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -381,21 +340,42 @@ export function PromptEditor({
                 strokeLinejoin="round"
               />
             </svg>
-          )}
-        </button>
+          </ButtonIcon>
+
+          <div className="min-w-0 flex-1 py-1 pr-1">
+            <EditorContent editor={editor} />
+          </div>
+
+          <Button
+            variant={isBusy ? "danger" : "primary"}
+            className="size-10 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] p-0! outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+            aria-label={actionTitle}
+            title={actionTitle}
+            onClick={isBusy ? onCancel : onSend}
+            disabled={!isBusy && !canSend}
+          >
+            {isBusy ? (
+              <StopCircleIcon size={16} />
+            ) : (
+              <SendIcon size={16} />
+            )}
+          </Button>
+        </div>
 
         {dragOver && !isBusy && (
-          <div className="prompt-drop-overlay">Lepaskan file di sini</div>
+          <div className="pointer-events-none absolute inset-0 z-[3] flex items-center justify-center rounded-xl border border-dashed border-blue-400/50 bg-blue-500/10 text-sm font-medium text-blue-300">
+            Lepaskan file di sini
+          </div>
         )}
       </div>
 
       {attachError && (
-        <p className="prompt-editor-attach-error" role="alert">
+        <p className="mt-2 text-xs leading-snug text-red-400" role="alert">
           {attachError}
         </p>
       )}
       {validationMessage && (
-        <p className="prompt-editor-validation" role="status">
+        <p className="mt-2 text-xs leading-snug text-amber-400/90" role="status">
           {validationMessage}
         </p>
       )}

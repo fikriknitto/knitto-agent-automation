@@ -121,9 +121,11 @@ Workflow:
 7. automation_take_screenshot — capture evidence (vision models receive PNG in tool result)
 8. automation_update_app_memory — persist menu trigger refs and navigation patterns
 
-Summarize results in plain language when done.`;
+Ringkasan akhir:
+- Tulis seluruh ringkasan hasil dalam Bahasa Indonesia (formal, jelas, dan ringkas).
+- Jelaskan langkah yang dilakukan, hasil verifikasi, dan kesimpulan untuk user.
+- Nama tool teknis (automation_*) boleh tetap seperti aslinya jika perlu dirujuk.`;
 
-console.log("TTETETETCT : ",text)
   return {
     text,
     visionAttachments: args.visionAttachments?.length ? args.visionAttachments : undefined,

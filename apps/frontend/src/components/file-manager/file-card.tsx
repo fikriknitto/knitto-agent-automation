@@ -6,6 +6,7 @@ import {
   resolveEntryIcon,
 } from "../../lib/file-utils";
 import { isAcceptedStorageEntry } from "../../lib/prompt-attachment";
+import { cn } from "../../lib/cn";
 
 export type FileSelectModifiers = {
   ctrlKey: boolean;
@@ -35,6 +36,9 @@ function formatDate(iso: string): string {
 function emptyModifiers(): FileSelectModifiers {
   return { ctrlKey: false, shiftKey: false, metaKey: false };
 }
+
+const selectedMark =
+  "absolute right-1.5 top-1.5 h-[1.2rem] w-[1.2rem] rounded-full bg-emerald-400/95 text-center text-[0.72rem] font-bold leading-[1.2rem] text-emerald-950";
 
 export function FileCard({
   entry,
@@ -78,17 +82,6 @@ export function FileCard({
     if (attachable && !alreadyAttached) onSelect(entry, emptyModifiers());
   };
 
-  const className = [
-    viewMode === "list" ? "file-manager-row" : "file-manager-card",
-    isFolder ? "is-folder" : "",
-    !isFolder && attachable && !alreadyAttached ? "is-selectable" : "",
-    !isFolder && (!attachable || alreadyAttached) ? "is-disabled" : "",
-    selected ? "is-selected" : "",
-    alreadyAttached ? "is-attached" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   const title = isFolder
     ? `Buka folder ${entry.name}`
     : alreadyAttached
@@ -97,10 +90,26 @@ export function FileCard({
         ? `${entry.name} — klik pilih, Ctrl+klik toggle, Shift+klik rentang`
         : `${entry.name} — tipe tidak didukung (executable / tanpa ekstensi)`;
 
+  const listClass = cn(
+    "relative grid select-none grid-cols-[2rem_1fr_5.5rem_6.5rem] items-center gap-3 border-b border-white/4 px-4 py-2 text-[0.82rem] outline-none transition",
+    isFolder && "cursor-pointer hover:bg-slate-800/55 focus-visible:bg-slate-800/55",
+    !isFolder && attachable && !alreadyAttached && "cursor-pointer hover:bg-emerald-900/20 focus-visible:bg-emerald-900/20",
+    selected && "bg-emerald-900/35",
+    (alreadyAttached || (!attachable && !isFolder)) && "cursor-not-allowed opacity-50"
+  );
+
+  const gridClass = cn(
+    "relative flex select-none flex-col items-center gap-2 rounded-[10px] border border-transparent bg-[rgba(20,24,36,0.45)] p-3.5 text-center outline-none transition",
+    isFolder && "cursor-pointer hover:border-blue-500/35 hover:bg-slate-800/65 focus-visible:border-blue-500/35 focus-visible:bg-slate-800/65",
+    !isFolder && attachable && !alreadyAttached && "cursor-pointer hover:border-emerald-500/40 hover:bg-emerald-900/20 focus-visible:border-emerald-500/40 focus-visible:bg-emerald-900/20",
+    selected && "border-emerald-500/65 bg-emerald-900/35 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.25)]",
+    (alreadyAttached || (!attachable && !isFolder)) && "cursor-not-allowed opacity-50"
+  );
+
   if (viewMode === "list") {
     return (
       <div
-        className={className}
+        className={listClass}
         role="button"
         tabIndex={0}
         title={title}
@@ -109,22 +118,26 @@ export function FileCard({
         onMouseDown={handleMouseDown}
         onKeyDown={handleKeyDown}
       >
-        <span className="file-manager-row-icon" aria-hidden="true">
+        <span className="text-center text-[1.15rem]" aria-hidden="true">
           {icon}
         </span>
-        <span className="file-manager-row-name">{entry.name}</span>
-        <span className="file-manager-row-meta">
+        <span className="truncate text-slate-100">{entry.name}</span>
+        <span className="text-[0.78rem] text-slate-500">
           {isFolder ? "Folder" : formatBytes(entry.size ?? 0)}
         </span>
-        <span className="file-manager-row-date">{formatDate(entry.updatedAt)}</span>
-        {selected && <span className="file-manager-selected-mark" aria-hidden="true">✓</span>}
+        <span className="text-[0.78rem] text-slate-500">{formatDate(entry.updatedAt)}</span>
+        {selected && (
+          <span className={selectedMark} aria-hidden="true">
+            ✓
+          </span>
+        )}
       </div>
     );
   }
 
   return (
     <div
-      className={className}
+      className={gridClass}
       role="button"
       tabIndex={0}
       title={title}
@@ -133,12 +146,16 @@ export function FileCard({
       onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
     >
-      {selected && <span className="file-manager-selected-mark" aria-hidden="true">✓</span>}
-      <div className="file-manager-card-icon" aria-hidden="true">
+      {selected && (
+        <span className={selectedMark} aria-hidden="true">
+          ✓
+        </span>
+      )}
+      <div className="text-[2rem] leading-none" aria-hidden="true">
         {icon}
       </div>
-      <p className="file-manager-card-name">{entry.name}</p>
-      <p className="file-manager-card-meta">
+      <p className="m-0 w-full truncate text-[0.82rem] font-medium text-slate-100">{entry.name}</p>
+      <p className="m-0 text-[0.72rem] text-slate-500">
         {isFolder
           ? "Folder"
           : `${formatBytes(entry.size ?? 0)} · ${formatDate(entry.updatedAt)}`}
