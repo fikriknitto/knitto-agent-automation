@@ -5,9 +5,9 @@ export function resolveAutomationMcpPath(): string {
   return resolveMcpStdioEntry();
 }
 
-export function automationMcpEnv(): Record<string, string> {
+export function automationMcpEnv(jobId?: string): Record<string, string> {
   const root = resolveMonorepoRoot();
-  return {
+  const env: Record<string, string> = {
     AUTOMATION_HEADLESS: process.env.AUTOMATION_HEADLESS ?? "false",
     AUTOMATION_SLOW_MO_MS: process.env.AUTOMATION_SLOW_MO_MS ?? "",
     AUTOMATION_MEMORY_DIR: resolveMemoryDir(root),
@@ -21,6 +21,10 @@ export function automationMcpEnv(): Record<string, string> {
     AUTOMATION_UPLOAD_MAX_BYTES: process.env.AUTOMATION_UPLOAD_MAX_BYTES ?? "",
     AUTOMATION_UPLOAD_CLEANUP: process.env.AUTOMATION_UPLOAD_CLEANUP ?? "",
   };
+  if (jobId?.trim()) {
+    env.AUTOMATION_JOB_ID = jobId.trim();
+  }
+  return env;
 }
 
 export function automationMcpSpawnArgs(opts: {

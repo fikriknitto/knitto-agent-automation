@@ -1,28 +1,11 @@
-export type PromptAttachment = {
-  data: string;
-  mimeType: string;
-  name: string;
-  kind: "image" | "file";
-  /** Relative path inside storage/ when picked from file manager */
-  storagePath?: string;
-};
+import type { PromptAttachment } from "@knitto/shared";
+export type { PromptAttachment } from "@knitto/shared";
+import { uploadStorageFiles } from "./file-manager-api";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
-const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
-
-const FILE_TYPES = new Set([
-  "application/pdf",
-  "text/csv",
-  "text/plain",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/zip",
-  "application/x-zip-compressed",
-]);
+const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"]);
 
 const BLOCKED_EXTENSIONS = new Set([
   "exe",
@@ -34,6 +17,14 @@ const BLOCKED_EXTENSIONS = new Set([
   "ps1",
   "com",
   "scr",
+  "vbs",
+  "js",
+  "mjs",
+  "cjs",
+  "jar",
+  "app",
+  "deb",
+  "rpm",
 ]);
 
 const EXT_TO_MIME: Record<string, string> = {
@@ -42,9 +33,18 @@ const EXT_TO_MIME: Record<string, string> = {
   jpeg: "image/jpeg",
   webp: "image/webp",
   gif: "image/gif",
+  svg: "image/svg+xml",
   pdf: "application/pdf",
   csv: "text/csv",
   txt: "text/plain",
+  md: "text/markdown",
+  markdown: "text/markdown",
+  json: "application/json",
+  yaml: "text/yaml",
+  yml: "text/yaml",
+  xml: "application/xml",
+  html: "text/html",
+  htm: "text/html",
   doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   xls: "application/vnd.ms-excel",
@@ -53,11 +53,14 @@ const EXT_TO_MIME: Record<string, string> = {
 };
 
 export const ACCEPTED_FILE_INPUT =
-  "image/png,image/jpeg,image/webp,image/gif," +
-  "application/pdf,text/csv,text/plain," +
+  "image/png,image/jpeg,image/webp,image/gif,image/svg+xml," +
+  "application/pdf,text/csv,text/plain,text/markdown,application/json," +
+  "text/yaml,application/xml,text/html," +
   "application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document," +
   "application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet," +
-  "application/zip,.pdf,.csv,.txt,.doc,.docx,.xls,.xlsx,.zip";
+  "application/zip," +
+  ".pdf,.csv,.txt,.md,.markdown,.json,.yaml,.yml,.xml,.html,.htm," +
+  ".doc,.docx,.xls,.xlsx,.zip";
 
 function fileExtension(name: string): string {
   const dot = name.lastIndexOf(".");
@@ -73,13 +76,13 @@ function resolveKindFromMeta(name: string, mimeType?: string): "image" | "file" 
   if (isBlockedExtension(name)) return null;
 
   if (mimeType && IMAGE_TYPES.has(mimeType)) return "image";
-  if (mimeType && FILE_TYPES.has(mimeType)) return "file";
+  if (mimeType?.startsWith("image/")) return "image";
 
   const ext = fileExtension(name);
-  if (!ext) return null;
-  if (BLOCKED_EXTENSIONS.has(ext)) return null;
-  if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) return "image";
-  if (["pdf", "csv", "txt", "doc", "docx", "xls", "xlsx", "zip"].includes(ext)) return "file";
+  if (["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"].includes(ext)) return "image";
+  if (ext) return "file";
+
+  if (mimeType && mimeType !== "application/octet-stream") return "file";
 
   return null;
 }
@@ -87,8 +90,26 @@ function resolveKindFromMeta(name: string, mimeType?: string): "image" | "file" 
 function resolveKind(file: File): "image" | "file" | null {
   if (isBlockedExtension(file.name)) return null;
   if (file.type && IMAGE_TYPES.has(file.type)) return "image";
-  if (file.type && FILE_TYPES.has(file.type)) return "file";
+  if (file.type?.startsWith("image/")) return "image";
   return resolveKindFromMeta(file.name, file.type);
+}
+
+function resolveMimeType(file: File, kind: "image" | "file"): string {
+  const ext = fileExtension(file.name);
+  return (
+    file.type ||
+    (ext ? EXT_TO_MIME[ext] : undefined) ||
+    (kind === "image" ? "image/png" : "application/octet-stream")
+  );
+}
+
+function uploadFolderForKind(kind: "image" | "file", name: string): string {
+  if (kind === "image") return "images";
+  const ext = fileExtension(name);
+  if (["pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "md", "markdown", "json", "yaml", "yml", "xml", "html", "htm"].includes(ext)) {
+    return "documents";
+  }
+  return "others";
 }
 
 export function isAcceptedStorageEntry(name: string, mimeType?: string): boolean {
@@ -103,29 +124,41 @@ export function isPasteableImage(file: File): boolean {
   return resolveKind(file) === "image";
 }
 
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== "string") {
-        reject(new Error("Gagal membaca file"));
-        return;
-      }
-      const comma = result.indexOf(",");
-      resolve(comma >= 0 ? result.slice(comma + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("Gagal membaca file"));
-    reader.readAsDataURL(file);
-  });
+export function storageEntryToPromptAttachment(entry: {
+  path: string;
+  name: string;
+  mimeType?: string;
+  size?: number;
+}): PromptAttachment {
+  const kind = resolveKindFromMeta(entry.name, entry.mimeType);
+  if (!kind) {
+    throw new Error("Tipe file tidak didukung. File executable atau tanpa ekstensi tidak diizinkan.");
+  }
+
+  const maxBytes = kind === "image" ? MAX_IMAGE_BYTES : MAX_FILE_BYTES;
+  if (entry.size != null && entry.size > maxBytes) {
+    const limitMb = maxBytes / (1024 * 1024);
+    throw new Error(`Ukuran file maksimal ${limitMb} MB (${kind === "image" ? "gambar" : "dokumen"}).`);
+  }
+
+  const ext = fileExtension(entry.name);
+  const mimeType =
+    entry.mimeType ||
+    (ext ? EXT_TO_MIME[ext] : undefined) ||
+    (kind === "image" ? "image/png" : "application/octet-stream");
+
+  return {
+    storagePath: entry.path,
+    mimeType,
+    name: entry.name,
+    kind,
+  };
 }
 
 export async function fileToPromptAttachment(file: File): Promise<PromptAttachment> {
   const kind = resolveKind(file);
   if (!kind) {
-    throw new Error(
-      "Tipe file tidak didukung. Gunakan gambar (PNG/JPEG/WebP/GIF), PDF, CSV, TXT, DOC/XLS, atau ZIP."
-    );
+    throw new Error("Tipe file tidak didukung. File executable atau tanpa ekstensi tidak diizinkan.");
   }
 
   const maxBytes = kind === "image" ? MAX_IMAGE_BYTES : MAX_FILE_BYTES;
@@ -134,19 +167,17 @@ export async function fileToPromptAttachment(file: File): Promise<PromptAttachme
     throw new Error(`Ukuran file maksimal ${limitMb} MB (${kind === "image" ? "gambar" : "dokumen"}).`);
   }
 
-  const data = await readFileAsBase64(file);
-  const ext = fileExtension(file.name);
-  const mimeType =
-    file.type ||
-    (ext ? EXT_TO_MIME[ext] : undefined) ||
-    (kind === "image" ? "image/png" : "application/octet-stream");
+  const folder = uploadFolderForKind(kind, file.name);
+  const entries = await uploadStorageFiles(folder, [file]);
+  const entry = entries[0];
+  if (!entry) throw new Error("Gagal mengunggah file ke storage");
 
-  return {
-    data,
-    mimeType,
-    name: file.name || (kind === "image" ? "image.png" : "file.bin"),
-    kind,
-  };
+  return storageEntryToPromptAttachment({
+    path: entry.path,
+    name: entry.name,
+    mimeType: resolveMimeType(file, kind),
+    size: file.size,
+  });
 }
 
 export async function filesToPromptAttachments(
@@ -157,44 +188,13 @@ export async function filesToPromptAttachments(
 }
 
 export function promptAttachmentImageSrc(attachment: PromptAttachment): string {
-  return `data:${attachment.mimeType};base64,${attachment.data}`;
+  if (attachment.kind !== "image") return "";
+  const params = new URLSearchParams({ path: attachment.storagePath });
+  return `/api/file-manager/files/serve?${params}`;
 }
 
 export function promptAttachmentTitle(attachment: PromptAttachment): string {
-  if (attachment.storagePath) {
-    return `${attachment.name} (storage/${attachment.storagePath})`;
-  }
-  return attachment.name;
-}
-
-export function fileContentToPromptAttachment(content: {
-  path: string;
-  name: string;
-  mimeType: string;
-  size: number;
-  data: string;
-  kind: "image" | "file";
-}): PromptAttachment {
-  const kind = resolveKindFromMeta(content.name, content.mimeType);
-  if (!kind) {
-    throw new Error(
-      "Tipe file tidak didukung. Gunakan gambar (PNG/JPEG/WebP/GIF), PDF, CSV, TXT, DOC/XLS, atau ZIP."
-    );
-  }
-
-  const maxBytes = kind === "image" ? MAX_IMAGE_BYTES : MAX_FILE_BYTES;
-  if (content.size > maxBytes) {
-    const limitMb = maxBytes / (1024 * 1024);
-    throw new Error(`Ukuran file maksimal ${limitMb} MB (${kind === "image" ? "gambar" : "dokumen"}).`);
-  }
-
-  return {
-    data: content.data,
-    mimeType: content.mimeType,
-    name: content.name,
-    kind: content.kind,
-    storagePath: content.path,
-  };
+  return `${attachment.name} (storage/${attachment.storagePath})`;
 }
 
 export function attachmentExtension(name: string): string {

@@ -13,6 +13,6 @@ export type ChatLine = {
   status?: AgentJobMessage["status"];
   progress?: number;
   result?: string;
-  screenshotBase64?: string;
+  screenshots?: string[];
   toolName?: string;
 };

@@ -1,10 +1,10 @@
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
-import { AgentScreenshot } from "./agent-screenshot";
+import { AgentScreenshots } from "./agent-screenshot";
 
 type MarkdownPreviewProps = {
   text: string;
-  screenshotBase64?: string;
+  screenshots?: string[];
 };
 
 const markdownComponents: Components = {
@@ -15,16 +15,16 @@ const markdownComponents: Components = {
   ),
 };
 
-export function MarkdownPreview({ text, screenshotBase64 }: MarkdownPreviewProps) {
+export function MarkdownPreview({ text, screenshots = [] }: MarkdownPreviewProps) {
   const hasText = Boolean(text.trim());
-  const hasScreenshot = Boolean(screenshotBase64);
+  const hasScreenshots = screenshots.length > 0;
 
-  if (!hasText && !hasScreenshot) return null;
+  if (!hasText && !hasScreenshots) return null;
 
   return (
     <div className="chat-markdown">
       {hasText && <ReactMarkdown components={markdownComponents}>{text}</ReactMarkdown>}
-      {hasScreenshot && <AgentScreenshot base64={screenshotBase64!} />}
+      {hasScreenshots && <AgentScreenshots urls={screenshots} />}
     </div>
   );
 }

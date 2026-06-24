@@ -34,7 +34,6 @@ function isAgentResult(status: string | undefined): boolean {
 }
 
 export function ChatHistory({ lines }: { lines: ChatLine[] }) {
-  console.log({ lines})
   return (
     <div className="chat-history">
       {lines.length === 0 && <p className="hint">No messages yet. Send a prompt to start.</p>}
@@ -43,7 +42,7 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
           <span className="chat-role">{line.role}</span>
           <div className="chat-content">
             {line.role === "agent" && isAgentResult(line.status) ? (
-              <MarkdownPreview text={line.text} screenshotBase64={line.screenshotBase64} />
+              <MarkdownPreview text={line.text} screenshots={line.screenshots} />
             ) : (
               <span className="chat-text">{line.text}</span>
             )}

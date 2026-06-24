@@ -25,6 +25,10 @@ export class FileManagerService {
   readFileContent(path: string): Promise<FileContentResult> {
     return this.adapter.readFileContent(path);
   }
+
+  serveFile(path: string) {
+    return this.adapter.serveFile(path);
+  }
 }
 
 export function isStoragePathError(error: unknown): error is StoragePathError {

@@ -1,4 +1,5 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { saveAgentScreenshotBuffer } from "../../automation/libs/browser/screenshot.js";
 import { createLogger } from "../../automation/core/index.js";
 import { captureScreenshotFromStateFile } from "../../automation/libs/browser/session.js";
 
@@ -35,10 +36,17 @@ export async function ensureJobScreenshot(
   }
 
   const fromBrowser = await captureScreenshotFromStateFile();
-  if (!fromBrowser) {
-    logger.warn("No screenshot captured — browser state unavailable or page closed");
+  if (fromBrowser) {
+    try {
+      saveAgentScreenshotBuffer(Buffer.from(fromBrowser, "base64"), "fallback.png");
+    } catch {
+      // still return base64 for UI even if disk write fails
+    }
+    return fromBrowser;
   }
-  return fromBrowser;
+
+  logger.warn("No screenshot captured — browser state unavailable or page closed");
+  return undefined;
 }
 
 function readBase64Field(value: unknown): string | undefined {

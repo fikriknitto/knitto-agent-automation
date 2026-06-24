@@ -19,7 +19,7 @@ export const bridgeModelOptionSchema = z.object({
 });
 
 export const promptAttachmentSchema = z.object({
-  data: z.string(),
+  storagePath: z.string().min(1),
   mimeType: z.string(),
   name: z.string(),
   kind: z.enum(["image", "file"]),
@@ -55,6 +55,7 @@ export const agentJobMessageSchema = z.object({
   progress: z.number().optional(),
   result: z.string().optional(),
   screenshotBase64: z.string().optional(),
+  screenshots: z.array(z.string()).optional(),
   toolName: z.string().optional(),
 });
 

@@ -47,9 +47,6 @@ export function BridgeCredentials({
   const openRouterBridge = bridges.find((b) => b.bridgeKind === "openrouter");
   const nineRouterBridge = bridges.find((b) => b.bridgeKind === "ninerouter");
 
-  console.log({
-    bridges 
-  })
   return (
     <section className="panel">
       <h2>Bridge credentials</h2>

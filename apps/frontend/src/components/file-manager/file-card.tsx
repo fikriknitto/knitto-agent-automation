@@ -95,7 +95,7 @@ export function FileCard({
       ? `${entry.name} — sudah dilampirkan`
       : attachable
         ? `${entry.name} — klik pilih, Ctrl+klik toggle, Shift+klik rentang`
-        : `${entry.name} — tipe tidak didukung untuk lampiran`;
+        : `${entry.name} — tipe tidak didukung (executable / tanpa ekstensi)`;
 
   if (viewMode === "list") {
     return (

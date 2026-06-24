@@ -1,13 +1,13 @@
+import type { PromptAttachment } from "@knitto/shared";
 import {
   AUTOMATION_PROMPT_STRATEGIES,
   type AutomationStrategyKey,
 } from "../../automation/libs/prompts/texts.js";
-import type { SavedAttachment } from "./persist-attachments.js";
-import type { PromptAttachment } from "@knitto/shared";
+import type { SavedAttachment, VisionAttachment } from "./persist-attachments.js";
 
 export interface AgentPromptInput {
   text: string;
-  visionAttachments?: PromptAttachment[];
+  visionAttachments?: VisionAttachment[];
 }
 
 export type AgentRunInput =
@@ -38,7 +38,7 @@ function buildAttachedFilesBlock(saved: SavedAttachment[]): string {
   if (!saved.length) return "";
   const lines = saved.map(
     (file) =>
-      `${file.index}. [${file.kind}] ${file.name} → ${file.absolutePath}`
+      `${file.index}. [${file.kind}] ${file.name} (storage/${file.storagePath}) → ${file.absolutePath}`
   );
   return `
 Attached files (absolute paths for automation_upload_file):
@@ -53,11 +53,13 @@ export function buildAgentPrompt(args: {
   text: string;
   strategy?: string;
   attachments?: PromptAttachment[];
+  visionAttachments?: VisionAttachment[];
   savedAttachments?: SavedAttachment[];
 }): AgentPromptInput {
   const strategyKey = args.strategy as AutomationStrategyKey | undefined;
-  const visionAttachments = visionAttachmentsFrom(args.attachments);
-  const hasVision = visionAttachments.length > 0;
+  const visionCount =
+    args.visionAttachments?.length ?? visionAttachmentsFrom(args.attachments).length;
+  const hasVision = visionCount > 0;
   const hasSavedFiles = Boolean(args.savedAttachments?.length);
 
   const strategyBody =
@@ -73,10 +75,10 @@ Channel (for logging): ${args.channel}
 
 Strategy:
 ${strategyBody}
-${hasVision ? buildVisionBlock(visionAttachments.length) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}
+${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}
 Behave like a human tester:
 - Observe the page (automation_get_page_snapshot; elements include bbox, inViewport, disabled, inputType for inputs; div>svg menu icons appear as role=button; div cursor-pointer menu rows appear as role=menuitem)
-- Call automation_take_screenshot when the snapshot is ambiguous or you need visual confirmation (optional path = filename only; files are saved under screenshoot/)
+- Call automation_take_screenshot when the snapshot is ambiguous or you need visual confirmation (optional path = filename only; files are saved under screenshoot/agents/{jobId}/)
 - Scroll to reveal off-screen content (automation_scroll)
 - Wait for dynamic loads (automation_wait_for with network_idle or locator)
 - Use automation_hover before dropdowns/menus; automation_press_key (Enter/Tab/Escape) for forms and closing overlays
@@ -121,7 +123,11 @@ Workflow:
 
 Summarize results in plain language when done.`;
 
-  return { text, visionAttachments: hasVision ? visionAttachments : undefined };
+console.log("TTETETETCT : ",text)
+  return {
+    text,
+    visionAttachments: args.visionAttachments?.length ? args.visionAttachments : undefined,
+  };
 }
 
 type UserContentPart =

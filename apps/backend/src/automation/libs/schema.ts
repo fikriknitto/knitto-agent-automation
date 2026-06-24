@@ -144,7 +144,7 @@ export const takeScreenshotInputSchema = {
     .string()
     .optional()
     .describe(
-      "Optional PNG filename only (e.g. menu-open.png). Always saved under the screenshot directory (screenshoot/), not the project root."
+      "Optional PNG filename only (e.g. menu-open.png). Saved under screenshoot/agents/{jobId}/."
     ),
 } as const;
 

@@ -1,22 +1,21 @@
-import { EditorContent, useEditor } from "@tiptap/react";
+import type { StorageEntry } from "@knitto/shared";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
+import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ConnectionState } from "../lib/types";
 import {
   ACCEPTED_FILE_INPUT,
   attachmentExtension,
-  fileContentToPromptAttachment,
   filesToPromptAttachments,
   isAcceptedAttachment,
   isPasteableImage,
   promptAttachmentImageSrc,
   promptAttachmentTitle,
+  storageEntryToPromptAttachment,
   type PromptAttachment,
 } from "../lib/prompt-attachment";
-import { fetchStorageFileContent } from "../lib/file-manager-api";
-import type { StorageEntry } from "@knitto/shared";
+import type { ConnectionState } from "../lib/types";
 import { StorageMediaModal } from "./storage-media-modal";
 
 const MIN_HEIGHT_PX = 96;
@@ -111,7 +110,7 @@ export function PromptEditor({
         const accepted = incoming.filter(isAcceptedAttachment).slice(0, slotsLeft);
         if (!accepted.length) {
           setAttachError(
-            "Tipe file tidak didukung. Gunakan gambar, PDF, CSV, TXT, DOC/XLS, atau ZIP."
+            "Tipe file tidak didukung. File executable atau tanpa ekstensi tidak diizinkan."
           );
           return;
         }
@@ -126,7 +125,7 @@ export function PromptEditor({
   );
 
   const attachedStoragePaths = useMemo(
-    () => attachments.map((a) => a.storagePath).filter((p): p is string => Boolean(p)),
+    () => attachments.map((a) => a.storagePath),
     [attachments]
   );
 
@@ -152,12 +151,7 @@ export function PromptEditor({
         throw new Error("Sudah dilampirkan");
       }
 
-      const newAttachments = await Promise.all(
-        toAdd.map(async (entry) => {
-          const content = await fetchStorageFileContent(entry.path);
-          return fileContentToPromptAttachment(content);
-        })
-      );
+      const newAttachments = toAdd.map((entry) => storageEntryToPromptAttachment(entry));
 
       onAttachmentsChange([...attachments, ...newAttachments]);
       setAttachError(null);
@@ -254,11 +248,11 @@ export function PromptEditor({
         <div className="prompt-attachments" aria-label="Lampiran">
           {attachments.map((attachment, index) => (
             <figure
-              key={`${attachment.storagePath ?? attachment.name}-${index}`}
+              key={`${attachment.storagePath}-${index}`}
               className={[
                 "prompt-attachment",
                 attachment.kind === "file" ? "prompt-attachment-file" : "",
-                attachment.storagePath ? "prompt-attachment-from-storage" : "",
+                "prompt-attachment-from-storage",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -267,11 +261,9 @@ export function PromptEditor({
               <span className="prompt-attachment-index" aria-hidden="true">
                 {index + 1}
               </span>
-              {attachment.storagePath && (
-                <span className="prompt-attachment-source" aria-hidden="true">
-                  ☁
-                </span>
-              )}
+              <span className="prompt-attachment-source" aria-hidden="true">
+                ☁
+              </span>
               {attachment.kind === "image" ? (
                 <img
                   src={promptAttachmentImageSrc(attachment)}
@@ -283,9 +275,7 @@ export function PromptEditor({
                   <span className="prompt-attachment-name">
                     {attachment.name}
                   </span>
-                  {attachment.storagePath && (
-                    <span className="prompt-attachment-path">{attachment.storagePath}</span>
-                  )}
+                  <span className="prompt-attachment-path">{attachment.storagePath}</span>
                 </div>
               )}
               <button

@@ -1,7 +1,14 @@
+import type { StorageEntry } from "@knitto/shared";
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { StorageEntry } from "@knitto/shared";
 import { resolveStorageRoot } from "../../config/paths.js";
+import { loadStorageEnv } from "../../config/storage-env.js";
+import {
+  assertAttachmentEligible,
+  assertStorageFileReadable,
+  isBlockedExtension,
+  resolveMimeType,
+} from "./attachment-eligibility.js";
 import {
   getExtension,
   guessMimeType,
@@ -10,11 +17,7 @@ import {
   resolveSafePath,
   sanitizeEntryName,
 } from "./path-utils.js";
-import type { ListEntriesResult, StorageAdapter, UploadFileInput, FileContentResult } from "./storage-adapter.interface.js";
-import {
-  assertAttachmentEligible,
-  resolveMimeType,
-} from "./attachment-eligibility.js";
+import type { FileContentResult, FileServeResult, ListEntriesResult, StorageAdapter, UploadFileInput } from "./storage-adapter.interface.js";
 
 function toEntry(relativePath: string, type: "file" | "folder", stats: {
   size: number;
@@ -80,6 +83,9 @@ export class LocalStorageAdapter implements StorageAdapter {
 
     for (const file of files) {
       const safeName = sanitizeEntryName(file.originalName);
+      if (isBlockedExtension(safeName)) {
+        throw new Error(`Tipe file tidak diizinkan: ${safeName}`);
+      }
       const entryPath = joinRelativePath(normalized, safeName);
       const absoluteFile = resolveSafePath(this.root, entryPath);
       await writeFile(absoluteFile, file.buffer);
@@ -124,6 +130,28 @@ export class LocalStorageAdapter implements StorageAdapter {
       data: buffer.toString("base64"),
       kind,
     };
+  }
+
+  async serveFile(relativePath: string): Promise<FileServeResult> {
+    const normalized = normalizeRelativePath(relativePath);
+    if (!normalized) {
+      throw new Error("File path is required");
+    }
+
+    const absolute = resolveSafePath(this.root, normalized);
+    const stats = await stat(absolute);
+    if (!stats.isFile()) {
+      throw new Error("Path is not a file");
+    }
+
+    const name = normalized.split("/").pop() ?? normalized;
+    const env = loadStorageEnv();
+    assertStorageFileReadable(name, stats.size, env.STORAGE_MAX_UPLOAD_BYTES);
+
+    const mimeType = resolveMimeType(name, guessMimeType(getExtension(name)));
+    const buffer = await readFile(absolute);
+
+    return { buffer, mimeType, name, size: stats.size };
   }
 }
 

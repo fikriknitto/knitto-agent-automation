@@ -77,7 +77,7 @@ export class AutomationWsClient {
     strategy: string;
     model: string;
     attachments?: Array<{
-      data: string;
+      storagePath: string;
       mimeType: string;
       name: string;
       kind: "image" | "file";

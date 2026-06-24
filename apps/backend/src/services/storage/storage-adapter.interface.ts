@@ -21,9 +21,17 @@ export type FileContentResult = {
   kind: "image" | "file";
 };
 
+export type FileServeResult = {
+  buffer: Buffer;
+  mimeType: string;
+  name: string;
+  size: number;
+};
+
 export interface StorageAdapter {
   list(relativePath: string): Promise<ListEntriesResult>;
   upload(relativePath: string, files: UploadFileInput[]): Promise<StorageEntry[]>;
   createFolder(relativePath: string, name: string): Promise<StorageEntry>;
   readFileContent(relativePath: string): Promise<FileContentResult>;
+  serveFile(relativePath: string): Promise<FileServeResult>;
 }

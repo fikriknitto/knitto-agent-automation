@@ -16,21 +16,6 @@
 - No hamburger menu on login page
 - Channel: automation-default
 
-## Navigasi Menu (flow ke halaman target)
-1. **Snapshot** — cek apakah ada **icon menu hamburger** di **pojok kanan atas** (role=button, div+svg, name "Menu" / "Icon button").
-2. **Klik icon hamburger** — `automation_click` dengan `clickCenter:true` jika icon kecil; `automation_wait_for` sampai daftar menu muncul.
-3. **Snapshot ulang** — baca menuitem/link yang terbuka.
-4. **Cari menu target** — pilih item yang **namanya sama** atau **mendekati** permintaan user (partial match, kata kunci).
-5. **Klik menu tersebut** — `automation_click` pada menuitem/link (locator `ref` dari snapshot, atau `role`+`name` / `text`).
-6. **Tunggu & cek navigasi** — `automation_wait_for` type=network_idle; snapshot/cek URL atau konten halaman baru sudah muncul.
-7. **Retry jika belum navigate** (ulangi sampai **3 kali** per menu):
-   - Attempt 1: `automation_click` menu item
-   - Jika halaman belum berubah → Attempt 2: `automation_click` **parent** menu item (wrapper/li/div pembungkus dari snapshot atau elemen induk terdekat)
-   - Jika masih belum navigate → Attempt 3: `automation_click_at` pada pusat bbox menu (x,y dari snapshot)
-   - Setelah setiap attempt: `automation_wait_for` + snapshot untuk verifikasi navigasi; stop jika sudah berhasil
-8. **Snapshot lagi** sebelum interaksi berikutnya.
-
-Contoh: user minta "Content Manager" → klik item yang text/name mengandung "Content Manager".
 
 ## Sidebar menu items (div Tailwind)
 - Item menu CMS sering berupa `div` dengan `cursor-pointer` + teks (mis. "Rekomendasi Kain & Hasil 1Kg"), tanpa `role`/`tabindex`.

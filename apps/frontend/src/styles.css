@@ -1260,6 +1260,13 @@ button:disabled {
   color: #e2e8f0;
 }
 
+.chat-markdown .agent-screenshots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
 .chat-markdown .agent-screenshot {
   display: block;
   width: 100%;

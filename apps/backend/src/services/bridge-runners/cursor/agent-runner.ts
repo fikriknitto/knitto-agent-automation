@@ -5,9 +5,11 @@ import { automationMcpEnv, automationMcpSpawnArgs } from "../../shared/automatio
 import { buildAgentPrompt, buildCursorSdkMessage } from "../../shared/prompt-builder.js";
 import {
   cleanupJobAttachments,
-  persistJobAttachments,
+  loadVisionAttachments,
+  resolveJobAttachments,
 } from "../../shared/persist-attachments.js";
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-screenshot.js";
+import { jobScreenshotPayload } from "../../shared/job-screenshot-payload.js";
 import { closeAutomationBrowser } from "../../shared/mcp-browser.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
@@ -21,8 +23,8 @@ export interface BridgeJobHandle {
   cancel: () => Promise<void>;
 }
 
-function mcpServerConfig() {
-  const env = automationMcpEnv();
+function mcpServerConfig(jobId: string) {
+  const env = automationMcpEnv(jobId);
   const filtered = Object.fromEntries(Object.entries(env).filter(([, v]) => v));
   const spawn = automationMcpSpawnArgs({
     command: config.automationMcpCommand,
@@ -64,12 +66,14 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       );
     }
 
-    const savedAttachments = await persistJobAttachments(job.id, job.attachments);
+    const savedAttachments = await resolveJobAttachments(job.attachments);
+    const visionAttachments = await loadVisionAttachments(job.attachments);
     const promptInput = buildAgentPrompt({
       channel: job.channel,
       text: job.text,
       strategy: job.strategy,
       attachments: job.attachments,
+      visionAttachments,
       savedAttachments,
     });
 
@@ -92,7 +96,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
         cwd: config.bridgeCwd,
         settingSources: [],
       },
-      mcpServers: mcpServerConfig(),
+      mcpServers: mcpServerConfig(job.id),
     });
 
     if (cancelled) {
@@ -106,7 +110,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
 
     const run = await agent.send(sendMessage, {
       model: { id: modelId },
-      mcpServers: mcpServerConfig(),
+      mcpServers: mcpServerConfig(job.id),
       onDelta: ({ update }) => {
         if (update.type === "tool-call-started" && !cancelled) {
           const tc = update.toolCall;
@@ -140,8 +144,8 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
                 status: "running",
                 message: "Screenshot captured",
                 progress: 50,
-                screenshotBase64: screenshot,
                 toolName,
+                ...jobScreenshotPayload(job.id),
               });
             }
           }
@@ -217,7 +221,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
         message: "Completed",
         progress: 100,
         result: summary,
-        ...(lastScreenshot ? { screenshotBase64: lastScreenshot } : {}),
+        ...jobScreenshotPayload(job.id),
       });
     } catch (error) {
       if (cancelled) {

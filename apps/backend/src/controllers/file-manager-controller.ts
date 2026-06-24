@@ -1,12 +1,12 @@
-import type { Request, Response } from "express";
 import { createFolderBodySchema } from "@knitto/shared";
+import type { Request, Response } from "express";
 import { z } from "zod";
+import { loadStorageEnv } from "../config/storage-env.js";
 import {
   FileManagerService,
   isStoragePathError,
 } from "../services/storage/file-manager-service.js";
-import { listEntriesQuerySchema, fileContentQuerySchema } from "../validators/file-manager-schemas.js";
-import { loadStorageEnv } from "../config/storage-env.js";
+import { fileContentQuerySchema, listEntriesQuerySchema } from "../validators/file-manager-schemas.js";
 
 export class FileManagerController {
   private readonly service = new FileManagerService();
@@ -72,6 +72,24 @@ export class FileManagerController {
         return;
       }
       this.handleError(res, error, "Failed to read file content");
+    }
+  }
+
+  async serveFile(req: Request, res: Response): Promise<void> {
+    try {
+      const query = fileContentQuerySchema.parse(req.query);
+      const result = await this.service.serveFile(query.path);
+      res.setHeader("Content-Type", result.mimeType);
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      res.send(result.buffer);
+    } catch (error) {
+      if (isStoragePathError(error) || error instanceof Error) {
+        res.status(400).json({
+          error: error instanceof Error ? error.message : "Failed to serve file",
+        });
+        return;
+      }
+      this.handleError(res, error, "Failed to serve file");
     }
   }
 

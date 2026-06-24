@@ -133,7 +133,7 @@ export function App() {
             role: "agent",
             text: msg.result ?? msg.message,
             status: msg.status,
-            screenshotBase64: msg.screenshotBase64 ?? prevLine?.screenshotBase64,
+            screenshots: msg.screenshots ?? prevLine?.screenshots,
             toolName: msg.toolName ?? prevLine?.toolName,
           };
           if (idx >= 0) {
@@ -173,11 +173,6 @@ export function App() {
     if ((!text && !promptAttachments.length) || !selectedBridgeId) return;
 
     const bridge = bridges.find((b) => b.bridgeId === selectedBridgeId);
-    const model =
-      selectedModel ||
-      bridge?.defaultModel ||
-      bridge?.models?.[0]?.id ||
-      "";
 
     const id = jobId();
     activeJobId.current = id;
@@ -194,7 +189,11 @@ export function App() {
       bridgeId: selectedBridgeId,
       text: text || "Gunakan lampiran sesuai instruksi di prompt user.",
       strategy,
-      model,
+      model:
+        selectedModel ||
+        bridge?.defaultModel ||
+        bridge?.models?.[0]?.id ||
+        "",
       attachments: promptAttachments.length ? promptAttachments : undefined,
     });
   };

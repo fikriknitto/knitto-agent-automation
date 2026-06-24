@@ -71,8 +71,19 @@ export function guessMimeType(extension: string): string {
     xls: "application/vnd.ms-excel",
     xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     zip: "application/zip",
+    md: "text/markdown",
+    markdown: "text/markdown",
+    json: "application/json",
+    yaml: "text/yaml",
+    yml: "text/yaml",
+    xml: "application/xml",
+    html: "text/html",
+    htm: "text/html",
     mp3: "audio/mpeg",
+    wav: "audio/wav",
     mp4: "video/mp4",
+    webm: "video/webm",
+    mov: "video/quicktime",
   };
   return map[extension] ?? "application/octet-stream";
 }

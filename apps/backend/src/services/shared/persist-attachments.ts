@@ -1,7 +1,11 @@
 import type { PromptAttachment } from "@knitto/shared";
-import { mkdir, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { resolveMonorepoRoot, resolveScreenshotDir } from "../../config/paths.js";
+import { readFile, stat } from "node:fs/promises";
+import { resolveStorageRoot } from "../../config/paths.js";
+import {
+  assertAttachmentEligible,
+  resolveMimeType,
+} from "../storage/attachment-eligibility.js";
+import { resolveSafePath, StoragePathError } from "../storage/path-utils.js";
 
 export type SavedAttachment = {
   index: number;
@@ -9,58 +13,93 @@ export type SavedAttachment = {
   mimeType: string;
   kind: "image" | "file";
   absolutePath: string;
+  storagePath: string;
 };
 
-function resolveUploadDir(): string {
-  const fromEnv = process.env.AUTOMATION_UPLOAD_DIR?.trim();
-  if (fromEnv) return resolve(resolveMonorepoRoot(), fromEnv);
+export type VisionAttachment = {
+  data: string;
+  mimeType: string;
+  name: string;
+};
 
-  return join(resolveScreenshotDir(), "uploads");
-}
-
-function sanitizeFileName(name: string): string {
-  const base = name.replace(/[/\\:\0]/g, "_").replace(/\.\./g, "_").trim();
-  return base || "attachment.bin";
-}
-
-function envBool(key: string, fallback: boolean): boolean {
-  const raw = process.env[key]?.trim().toLowerCase();
-  if (!raw) return fallback;
-  return raw === "1" || raw === "true" || raw === "yes";
-}
-
-export async function persistJobAttachments(
-  jobId: string,
+export async function resolveJobAttachments(
   attachments?: PromptAttachment[]
 ): Promise<SavedAttachment[]> {
   if (!attachments?.length) return [];
 
-  const jobDir = join(resolveUploadDir(), jobId);
-  await mkdir(jobDir, { recursive: true });
-
+  const root = resolveStorageRoot();
   const saved: SavedAttachment[] = [];
 
   for (let i = 0; i < attachments.length; i++) {
     const attachment = attachments[i]!;
-    const fileName = sanitizeFileName(attachment.name || `attachment-${i + 1}`);
-    const absolutePath = resolve(jobDir, fileName);
-    const buffer = Buffer.from(attachment.data, "base64");
-    await writeFile(absolutePath, buffer);
+    const storagePath = attachment.storagePath.trim();
+    if (!storagePath) {
+      throw new Error(`Attachment ${i + 1} is missing storagePath`);
+    }
+
+    const absolutePath = resolveSafePath(root, storagePath);
+    const stats = await stat(absolutePath);
+    if (!stats.isFile()) {
+      throw new Error(`Storage path is not a file: ${storagePath}`);
+    }
+
+    const mimeType = resolveMimeType(attachment.name, attachment.mimeType);
+    assertAttachmentEligible(attachment.name, mimeType, stats.size);
 
     saved.push({
       index: i + 1,
-      name: fileName,
-      mimeType: attachment.mimeType,
+      name: attachment.name,
+      mimeType,
       kind: attachment.kind,
       absolutePath,
+      storagePath,
     });
   }
 
   return saved;
 }
 
-export async function cleanupJobAttachments(jobId: string): Promise<void> {
-  if (!envBool("AUTOMATION_UPLOAD_CLEANUP", false)) return;
-  const jobDir = join(resolveUploadDir(), jobId);
-  await rm(jobDir, { recursive: true, force: true });
+export async function loadVisionAttachments(
+  attachments?: PromptAttachment[]
+): Promise<VisionAttachment[]> {
+  if (!attachments?.length) return [];
+
+  const root = resolveStorageRoot();
+  const vision: VisionAttachment[] = [];
+
+  for (const attachment of attachments) {
+    if (attachment.kind !== "image") continue;
+
+    const absolutePath = resolveSafePath(root, attachment.storagePath);
+    const stats = await stat(absolutePath);
+    if (!stats.isFile()) continue;
+
+    const mimeType = resolveMimeType(attachment.name, attachment.mimeType);
+    assertAttachmentEligible(attachment.name, mimeType, stats.size);
+    const buffer = await readFile(absolutePath);
+    vision.push({
+      data: buffer.toString("base64"),
+      mimeType,
+      name: attachment.name,
+    });
+  }
+
+  return vision;
+}
+
+export function isStoragePathError(error: unknown): error is StoragePathError {
+  return error instanceof StoragePathError;
+}
+
+/** @deprecated Storage attachments are not copied per job; kept for API compatibility */
+export async function persistJobAttachments(
+  _jobId: string,
+  attachments?: PromptAttachment[]
+): Promise<SavedAttachment[]> {
+  return resolveJobAttachments(attachments);
+}
+
+/** @deprecated Files live in storage/; no per-job cleanup */
+export async function cleanupJobAttachments(_jobId: string): Promise<void> {
+  // no-op
 }

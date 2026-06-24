@@ -6,12 +6,15 @@ import {
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { createLogger } from "../../../automation/core/index.js";
 import { connectAutomationMcp } from "../../shared/automation-mcp-client.js";
+import { setAutomationJobId } from "../../../automation/libs/job-context.js";
 import { buildAgentPrompt, buildGeminiContents } from "../../shared/prompt-builder.js";
 import {
   cleanupJobAttachments,
-  persistJobAttachments,
+  loadVisionAttachments,
+  resolveJobAttachments,
 } from "../../shared/persist-attachments.js";
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-screenshot.js";
+import { jobScreenshotPayload } from "../../shared/job-screenshot-payload.js";
 import { closeAutomationBrowser } from "../../shared/mcp-browser.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
@@ -70,12 +73,14 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       );
     }
 
-    const savedAttachments = await persistJobAttachments(job.id, job.attachments);
+    const savedAttachments = await resolveJobAttachments(job.attachments);
+    const visionAttachments = await loadVisionAttachments(job.attachments);
     const promptInput = buildAgentPrompt({
       channel: job.channel,
       text: job.text,
       strategy: job.strategy,
       attachments: job.attachments,
+      visionAttachments,
       savedAttachments,
     });
 
@@ -91,7 +96,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       progress: 5,
     });
 
-    const mcpClient = await connectAutomationMcp();
+    const mcpClient = await connectAutomationMcp(job.id);
 
     let lastTool = "";
     let lastScreenshot: string | undefined;
@@ -123,8 +128,8 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
             status: "running",
             message: "Screenshot captured",
             progress: 50,
-            screenshotBase64: screenshot,
             toolName,
+            ...jobScreenshotPayload(job.id),
           });
         }
       }
@@ -176,7 +181,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
         message: "Completed",
         progress: 100,
         result: summary,
-        ...(lastScreenshot ? { screenshotBase64: lastScreenshot } : {}),
+        ...jobScreenshotPayload(job.id),
       });
     } catch (error) {
       if (cancelled || abortController.signal.aborted) {
@@ -193,6 +198,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       }
     } finally {
       clearTimeout(timeout);
+      setAutomationJobId(null);
       await closeAutomationBrowser(mcpClient);
       await mcpClient.close().catch(() => undefined);
       await cleanupJobAttachments(job.id);

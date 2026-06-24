@@ -18,6 +18,7 @@ export function createFileManagerRoutes(): Router {
 
   router.get("/file-manager/entries", (req, res) => void controller.listEntries(req, res));
   router.get("/file-manager/files/content", (req, res) => void controller.getFileContent(req, res));
+  router.get("/file-manager/files/serve", (req, res) => void controller.serveFile(req, res));
   router.post(
     "/file-manager/upload",
     upload.array("files"),

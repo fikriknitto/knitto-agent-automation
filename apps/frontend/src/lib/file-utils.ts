@@ -29,7 +29,7 @@ export function resolveEntryIcon(type: "file" | "folder", extension?: string): E
   if (["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"].includes(ext)) return "image";
   if (["mp4", "webm", "mov", "avi", "mkv"].includes(ext)) return "video";
   if (["mp3", "wav", "ogg", "flac", "aac"].includes(ext)) return "audio";
-  if (["pdf", "doc", "docx", "txt", "csv", "xls", "xlsx", "md"].includes(ext)) return "document";
+  if (["pdf", "doc", "docx", "txt", "csv", "xls", "xlsx", "md", "markdown", "json", "yaml", "yml", "xml", "html", "htm"].includes(ext)) return "document";
   if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "archive";
   return "file";
 }
