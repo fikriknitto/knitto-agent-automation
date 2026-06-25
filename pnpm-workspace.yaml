@@ -4,6 +4,7 @@ packages:
 
 allowBuilds:
   '@google/genai': true
+  '@ffmpeg-installer/linux-x64': true
   esbuild: true
   protobufjs: true
   puppeteer: true

@@ -25,6 +25,8 @@ export function createFileManagerRoutes(): Router {
     (req, res) => void controller.upload(req, res)
   );
   router.post("/file-manager/folders", (req, res) => void controller.createFolder(req, res));
+  router.patch("/file-manager/entries", (req, res) => void controller.renameEntry(req, res));
+  router.delete("/file-manager/entries", (req, res) => void controller.deleteEntry(req, res));
 
   return router;
 }

@@ -56,6 +56,7 @@ export const agentJobMessageSchema = z.object({
   result: z.string().optional(),
   screenshotBase64: z.string().optional(),
   screenshots: z.array(z.string()).optional(),
+  videoUrl: z.string().optional(),
   toolName: z.string().optional(),
 });
 

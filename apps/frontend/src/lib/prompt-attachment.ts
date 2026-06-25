@@ -215,3 +215,53 @@ export function formatAttachmentSummary(attachments: PromptAttachment[]): string
   if (files) parts.push(`${files} file`);
   return `[${attachments.length} lampiran: ${parts.join(", ")}]`;
 }
+
+function pathPrefix(path: string): string {
+  return path.endsWith("/") ? path : `${path}/`;
+}
+
+export function storagePathAffectsAttachments(
+  storagePath: string,
+  attachments: PromptAttachment[]
+): boolean {
+  const prefix = pathPrefix(storagePath);
+  return attachments.some(
+    (item) => item.storagePath === storagePath || item.storagePath.startsWith(prefix)
+  );
+}
+
+export function storagePathAffectsPaths(storagePath: string, paths: string[]): boolean {
+  const prefix = pathPrefix(storagePath);
+  return paths.some((item) => item === storagePath || item.startsWith(prefix));
+}
+
+export function syncAttachmentsAfterDelete(
+  attachments: PromptAttachment[],
+  deletedPath: string
+): PromptAttachment[] {
+  const prefix = pathPrefix(deletedPath);
+  return attachments.filter(
+    (item) => item.storagePath !== deletedPath && !item.storagePath.startsWith(prefix)
+  );
+}
+
+export function syncAttachmentsAfterRename(
+  attachments: PromptAttachment[],
+  oldPath: string,
+  newPath: string
+): PromptAttachment[] {
+  const oldPrefix = pathPrefix(oldPath);
+  return attachments.map((item) => {
+    if (item.storagePath === oldPath) {
+      const name = newPath.split("/").pop() ?? item.name;
+      return { ...item, storagePath: newPath, name };
+    }
+    if (item.storagePath.startsWith(oldPrefix)) {
+      const suffix = item.storagePath.slice(oldPath.length);
+      const updatedPath = `${newPath}${suffix}`;
+      const name = updatedPath.split("/").pop() ?? item.name;
+      return { ...item, storagePath: updatedPath, name };
+    }
+    return item;
+  });
+}

@@ -130,6 +130,7 @@ export function App() {
             text: msg.result ?? msg.message,
             status: msg.status,
             screenshots: msg.screenshots ?? prevLine?.screenshots,
+            videoUrl: msg.videoUrl ?? prevLine?.videoUrl,
             toolName: msg.toolName ?? prevLine?.toolName,
           };
           if (idx >= 0) {

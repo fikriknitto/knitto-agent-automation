@@ -2,6 +2,7 @@ import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AgentScreenshots } from "./agent-screenshot";
+import { AgentVideos } from "./agent-videos";
 
 function tableCellAlignClass(align?: "left" | "center" | "right" | "justify" | "char" | null) {
   if (align === "center") return "text-center";
@@ -12,6 +13,7 @@ function tableCellAlignClass(align?: "left" | "center" | "right" | "justify" | "
 type MarkdownPreviewProps = {
   text: string;
   screenshots?: string[];
+  videoUrl?: string;
 };
 
 const markdownComponents: Components = {
@@ -71,11 +73,12 @@ const markdownComponents: Components = {
   ),
 };
 
-export function MarkdownPreview({ text, screenshots = [] }: MarkdownPreviewProps) {
+export function MarkdownPreview({ text, screenshots = [], videoUrl }: MarkdownPreviewProps) {
   const hasText = Boolean(text.trim());
   const hasScreenshots = screenshots.length > 0;
+  const hasVideo = Boolean(videoUrl);
 
-  if (!hasText && !hasScreenshots) return null;
+  if (!hasText && !hasScreenshots && !hasVideo) return null;
 
   return (
     <div className="wrap-break-word text-[0.95rem] leading-relaxed text-slate-200 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-slate-300">
@@ -85,6 +88,7 @@ export function MarkdownPreview({ text, screenshots = [] }: MarkdownPreviewProps
         </ReactMarkdown>
       )}
       {hasScreenshots && <AgentScreenshots urls={screenshots} />}
+      {hasVideo && videoUrl && <AgentVideos url={videoUrl} />}
     </div>
   );
 }

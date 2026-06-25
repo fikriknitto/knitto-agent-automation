@@ -9,7 +9,7 @@ export function BreadcrumbNav({ path, onNavigate }: BreadcrumbNavProps) {
   const segments = splitPath(path);
 
   return (
-    <nav className="flex flex-wrap items-center gap-0.5 text-sm text-slate-300" aria-label="Lokasi folder">
+    <nav className="flex flex-wrap items-center gap-0.5 text-sm text-slate-300 mt-3" aria-label="Lokasi folder">
       {segments.length > 0 &&
         <button
           type="button"

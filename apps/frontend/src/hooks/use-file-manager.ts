@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ListEntriesResponse, StorageEntry, StorageSummary } from "@knitto/shared";
 import {
   createStorageFolder,
+  deleteStorageEntry,
   listStorageEntries,
+  renameStorageEntry,
   uploadStorageFiles,
 } from "../lib/file-manager-api";
 
@@ -89,6 +91,37 @@ export function useFileManager({ enabled }: UseFileManagerOptions) {
     [currentPath, refresh]
   );
 
+  const renameEntry = useCallback(
+    async (path: string, name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return null;
+      setError(null);
+      try {
+        const entry = await renameStorageEntry(path, trimmed);
+        await refresh();
+        return entry;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Gagal mengubah nama");
+        throw err;
+      }
+    },
+    [refresh]
+  );
+
+  const deleteEntry = useCallback(
+    async (path: string) => {
+      setError(null);
+      try {
+        await deleteStorageEntry(path);
+        await refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Gagal menghapus");
+        throw err;
+      }
+    },
+    [refresh]
+  );
+
   const visibleEntries = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     let list = query
@@ -131,6 +164,8 @@ export function useFileManager({ enabled }: UseFileManagerOptions) {
     openFolder,
     uploadFiles,
     createFolder,
+    renameEntry,
+    deleteEntry,
     refresh,
     setError,
   };

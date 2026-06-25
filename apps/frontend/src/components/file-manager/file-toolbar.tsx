@@ -1,6 +1,7 @@
-import { PlusIcon, UploadIcon, XIcon } from "lucide-react";
+import { PlusIcon, PencilIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type { StorageEntry } from "@knitto/shared";
 import type { SortDirection, SortField, ViewMode } from "../../hooks/use-file-manager";
 import { modalBackdrop, modalHeader, modalTitle } from "../../lib/ui";
 import { Button, ButtonIcon, Input, Label, Select } from "../ui";
@@ -17,6 +18,9 @@ type FileToolbarProps = {
   onViewModeChange: (value: ViewMode) => void;
   onUpload: (files: FileList | File[]) => void;
   onCreateFolder: (name: string) => Promise<void>;
+  manageEntry?: StorageEntry | null;
+  onRenameEntry?: () => void;
+  onDeleteEntry?: () => void;
 };
 
 function NewFolderModal({
@@ -137,6 +141,9 @@ export function FileToolbar({
   onViewModeChange,
   onUpload,
   onCreateFolder,
+  manageEntry,
+  onRenameEntry,
+  onDeleteEntry,
 }: FileToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [folderOpen, setFolderOpen] = useState(false);
@@ -205,6 +212,27 @@ export function FileToolbar({
             <Button size="sm" variant="ghost" onClick={() => setFolderOpen(true)}>
               <PlusIcon size={16} className="mr-1" />
               New Folder
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!manageEntry}
+              title={manageEntry ? `Ubah nama ${manageEntry.name}` : "Klik kanan item untuk mengelola"}
+              onClick={onRenameEntry}
+            >
+              <PencilIcon size={16} className="mr-1" />
+              Ubah nama
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!manageEntry}
+              className="text-red-300 hover:text-red-200"
+              title={manageEntry ? `Hapus ${manageEntry.name}` : "Klik kanan item untuk mengelola"}
+              onClick={onDeleteEntry}
+            >
+              <Trash2Icon size={16} className="mr-1" />
+              Hapus
             </Button>
           </div>
         </div>

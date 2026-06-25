@@ -20,6 +20,8 @@ type StorageMediaModalProps = {
   attachedPaths: string[];
   onClose: () => void;
   onApply: (entries: StorageEntry[]) => Promise<void>;
+  onEntryDeleted?: (path: string) => void;
+  onEntryRenamed?: (oldPath: string, newPath: string) => void;
 };
 
 function isMultiSelectModifier(modifiers: FileSelectModifiers): boolean {
@@ -45,6 +47,8 @@ export function StorageMediaModal({
   attachedPaths,
   onClose,
   onApply,
+  onEntryDeleted,
+  onEntryRenamed,
 }: StorageMediaModalProps) {
   const [selected, setSelected] = useState<StorageEntry[]>([]);
   const [anchorPath, setAnchorPath] = useState<string | null>(null);
@@ -192,6 +196,32 @@ export function StorageMediaModal({
             selectedPaths={selectedPaths}
             selectError={selectError}
             onSelectEntry={handleSelectEntry}
+            onEntryDeleted={(path) => {
+              const prefix = `${path}/`;
+              setSelected((prev) =>
+                prev.filter((item) => item.path !== path && !item.path.startsWith(prefix))
+              );
+              setAnchorPath((prev) =>
+                prev && (prev === path || prev.startsWith(prefix)) ? null : prev
+              );
+              onEntryDeleted?.(path);
+            }}
+            onEntryRenamed={(oldPath, newPath) => {
+              setSelected((prev) =>
+                prev.map((item) =>
+                  item.path === oldPath
+                    ? {
+                        ...item,
+                        path: newPath,
+                        id: newPath,
+                        name: newPath.split("/").pop() ?? item.name,
+                      }
+                    : item
+                )
+              );
+              setAnchorPath((prev) => (prev === oldPath ? newPath : prev));
+              onEntryRenamed?.(oldPath, newPath);
+            }}
           />
         </div>
         <footer className="flex items-center justify-between gap-4 border-t border-white/8 bg-[rgba(9,12,20,0.65)] px-5 py-3.5">

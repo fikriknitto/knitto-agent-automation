@@ -59,3 +59,23 @@ export async function createStorageFolder(path: string, name: string): Promise<S
   const data = (await response.json()) as { entry: StorageEntry };
   return data.entry;
 }
+
+export async function renameStorageEntry(path: string, name: string): Promise<StorageEntry> {
+  const response = await fetch("/api/file-manager/entries", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path, name }),
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  const data = (await response.json()) as { entry: StorageEntry };
+  return data.entry;
+}
+
+export async function deleteStorageEntry(path: string): Promise<void> {
+  const response = await fetch("/api/file-manager/entries", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+}

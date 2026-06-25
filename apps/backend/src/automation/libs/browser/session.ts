@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import { ToolError } from "../../core/index.js";
+import { getAutomationJobId } from "../job-context.js";
 import config from "../config.js";
+import { startJobRecording, stopJobRecording } from "./recording.js";
 
 let browser: Browser | null = null;
 let page: Page | null = null;
@@ -45,7 +47,12 @@ async function launchBrowser(): Promise<Browser> {
 }
 
 export async function getPage(): Promise<Page> {
-  if (page && !page.isClosed()) return page;
+  if (page && !page.isClosed()) {
+    if (getAutomationJobId()) {
+      await startJobRecording(page);
+    }
+    return page;
+  }
   const b = await launchBrowser();
   const pages = await b.pages();
   page = pages[0] ?? (await b.newPage());
@@ -54,6 +61,9 @@ export async function getPage(): Promise<Page> {
     height: config.viewportHeight,
   });
   page.setDefaultTimeout(config.browserTimeoutMs);
+  if (getAutomationJobId()) {
+    await startJobRecording(page);
+  }
   return page;
 }
 
@@ -84,6 +94,7 @@ export async function goForward(): Promise<{ url: string; title: string }> {
 }
 
 export async function closeBrowser(): Promise<void> {
+  await stopJobRecording();
   if (page && !page.isClosed()) {
     await page.close().catch(() => undefined);
   }

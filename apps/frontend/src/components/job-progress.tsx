@@ -69,7 +69,11 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
           </span>
           <div className="flex min-w-0 flex-col gap-2">
             {line.role === "agent" && isAgentResult(line.status) ? (
-              <MarkdownPreview text={line.text} screenshots={line.screenshots} />
+              <MarkdownPreview
+                text={line.text}
+                screenshots={line.screenshots}
+                videoUrl={line.videoUrl}
+              />
             ) : (
               <>
                 {line.text.trim() && (

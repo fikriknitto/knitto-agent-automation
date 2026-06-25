@@ -10,12 +10,16 @@ type FileGridProps = {
   loading: boolean;
   selectedPaths: string[];
   attachedPaths: string[];
+  managePath?: string | null;
   dragOver: boolean;
   onOpen: (entry: StorageEntry) => void;
   onSelect: (entry: StorageEntry, modifiers: FileSelectModifiers) => void;
   onDragOver: (event: DragEvent) => void;
   onDragLeave: (event: DragEvent) => void;
   onDrop: (event: DragEvent) => void;
+  onRename?: (entry: StorageEntry) => void;
+  onDelete?: (entry: StorageEntry) => void;
+  onManage?: (entry: StorageEntry) => void;
 };
 
 export function FileGrid({
@@ -24,12 +28,16 @@ export function FileGrid({
   loading,
   selectedPaths,
   attachedPaths,
+  managePath,
   dragOver,
   onOpen,
   onSelect,
   onDragOver,
   onDragLeave,
   onDrop,
+  onRename,
+  onDelete,
+  onManage,
 }: FileGridProps) {
   const empty = !loading && entries.length === 0;
   const selectedSet = new Set(selectedPaths);
@@ -85,9 +93,13 @@ export function FileGrid({
               entry={entry}
               viewMode={viewMode}
               selected={selectedSet.has(entry.path)}
+              managed={managePath === entry.path}
               alreadyAttached={attachedSet.has(entry.path)}
               onOpen={onOpen}
               onSelect={onSelect}
+              onRename={onRename}
+              onDelete={onDelete}
+              onManage={onManage}
             />
           ))}
         </div>

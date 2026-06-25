@@ -34,4 +34,6 @@ export interface StorageAdapter {
   createFolder(relativePath: string, name: string): Promise<StorageEntry>;
   readFileContent(relativePath: string): Promise<FileContentResult>;
   serveFile(relativePath: string): Promise<FileServeResult>;
+  rename(relativePath: string, newName: string): Promise<StorageEntry>;
+  delete(relativePath: string): Promise<void>;
 }

@@ -29,6 +29,14 @@ export class FileManagerService {
   serveFile(path: string) {
     return this.adapter.serveFile(path);
   }
+
+  renameEntry(path: string, name: string): Promise<StorageEntry> {
+    return this.adapter.rename(path, name);
+  }
+
+  deleteEntry(path: string): Promise<void> {
+    return this.adapter.delete(path);
+  }
 }
 
 export function isStoragePathError(error: unknown): error is StoragePathError {

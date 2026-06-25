@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: knitto-backend
+    restart: unless-stopped
+    env_file:
+      - docker.env
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CURSOR_API_KEY: ${CURSOR_API_KEY:-}
+      NINEROUTER_API_KEY: ${NINEROUTER_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-3080}:3080"
+    volumes:
+      - knitto-storage:/app/storage
+      - knitto-screenshoot:/app/screenshoot
+      - knitto-memory:/app/memory
+    shm_size: "1gb"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    container_name: knitto-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  knitto-storage:
+  knitto-screenshoot:
+  knitto-memory:

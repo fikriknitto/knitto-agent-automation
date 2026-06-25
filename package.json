@@ -5,18 +5,29 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
   "scripts": {
-    "dev": "concurrently -n frontend,backend -c cyan,green \"pnpm --filter @knitto/frontend dev\" \"pnpm --filter @knitto/backend dev\"",
+    "dev": "concurrently -n frontend,backend -c cyan,green \"pnpm dev:frontend\" \"pnpm dev:backend\"",
     "dev:frontend": "pnpm --filter @knitto/frontend dev",
     "dev:backend": "pnpm --filter @knitto/backend dev",
-    "build": "pnpm --filter @knitto/shared --filter @knitto/backend --filter @knitto/frontend build",
-    "start": "pnpm --filter @knitto/backend start"
+    "build": "pnpm build:shared && pnpm build:backend && pnpm build:frontend",
+    "build:shared": "pnpm --filter @knitto/shared build",
+    "build:backend": "pnpm --filter @knitto/backend build",
+    "build:frontend": "pnpm --filter @knitto/frontend build",
+    "typecheck": "pnpm -r typecheck",
+    "start": "pnpm --filter @knitto/backend start",
+    "preview": "pnpm --filter @knitto/frontend preview",
+    "clean": "pnpm -r exec node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\""
   },
   "keywords": [
     "knitto",
     "browser",
     "agent",
-    "puppeteer"
+    "puppeteer",
+    "monorepo"
   ],
   "author": "knittotextile",
   "license": "ISC",

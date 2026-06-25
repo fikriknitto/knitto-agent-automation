@@ -10,17 +10,6 @@ function resolveBridgeCwd(): string {
   return dir;
 }
 
-function resolveWsUrl(): string {
-  const host = process.env.AUTOMATION_WS_SERVER ?? "localhost";
-  const port = process.env.AUTOMATION_WS_PORT ?? "3077";
-  const useTls =
-    process.env.AUTOMATION_WS_TLS === "1" ||
-    process.env.AUTOMATION_WS_TLS === "true" ||
-    process.env.AUTOMATION_WS_USE_TLS === "1";
-  const scheme = useTls ? "wss" : "ws";
-  return `${scheme}://${host}:${port}`;
-}
-
 let geminiApiKey = process.env.GEMINI_API_KEY ?? "";
 
 export function setGeminiApiKey(key: string): void {
@@ -32,10 +21,9 @@ export default {
     return geminiApiKey;
   },
   automationMcpPath: resolveAutomationMcpPath(),
-  automationMcpCommand: "pnpm",
-  wsHost: process.env.AUTOMATION_WS_SERVER ?? "localhost",
-  wsPort: Number(process.env.AUTOMATION_WS_PORT ?? "3077"),
-  wsUrl: resolveWsUrl(),
+  get automationMcpCommand() {
+    return process.env.AUTOMATION_MCP_COMMAND?.trim() || "pnpm";
+  },
   bridgeCwd: resolveBridgeCwd(),
   maxConcurrentPerChannel: Number(process.env.KNITTO_BRIDGE_MAX_CONCURRENT ?? "1"),
   jobTimeoutMs: Number(process.env.KNITTO_BRIDGE_JOB_TIMEOUT_MS ?? "600000"),

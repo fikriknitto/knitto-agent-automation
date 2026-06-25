@@ -1,4 +1,4 @@
-import { createFolderBodySchema } from "@knitto/shared";
+import { createFolderBodySchema, deleteEntryBodySchema, renameEntryBodySchema } from "@knitto/shared";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { loadStorageEnv } from "../config/storage-env.js";
@@ -56,6 +56,26 @@ export class FileManagerController {
       res.status(201).json({ entry });
     } catch (error) {
       this.handleError(res, error, "Failed to create folder");
+    }
+  }
+
+  async renameEntry(req: Request, res: Response): Promise<void> {
+    try {
+      const body = renameEntryBodySchema.parse(req.body);
+      const entry = await this.service.renameEntry(body.path, body.name);
+      res.json({ entry });
+    } catch (error) {
+      this.handleError(res, error, "Failed to rename entry");
+    }
+  }
+
+  async deleteEntry(req: Request, res: Response): Promise<void> {
+    try {
+      const body = deleteEntryBodySchema.parse(req.body);
+      await this.service.deleteEntry(body.path);
+      res.status(204).send();
+    } catch (error) {
+      this.handleError(res, error, "Failed to delete entry");
     }
   }
 

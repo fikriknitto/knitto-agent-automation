@@ -1,5 +1,5 @@
 import type { StorageEntry } from "@knitto/shared";
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveStorageRoot } from "../../config/paths.js";
 import { loadStorageEnv } from "../../config/storage-env.js";
@@ -152,6 +152,49 @@ export class LocalStorageAdapter implements StorageAdapter {
     const buffer = await readFile(absolute);
 
     return { buffer, mimeType, name, size: stats.size };
+  }
+
+  async rename(relativePath: string, newName: string): Promise<StorageEntry> {
+    const normalized = normalizeRelativePath(relativePath);
+    if (!normalized) {
+      throw new Error("Path is required");
+    }
+
+    const safeName = sanitizeEntryName(newName);
+    const parent = normalized.includes("/")
+      ? normalized.slice(0, normalized.lastIndexOf("/"))
+      : "";
+    const newPath = joinRelativePath(parent, safeName);
+
+    if (newPath === normalized) {
+      const absolute = resolveSafePath(this.root, normalized);
+      const stats = await stat(absolute);
+      const type = stats.isDirectory() ? "folder" : "file";
+      return toEntry(normalized, type, stats);
+    }
+
+    const absoluteOld = resolveSafePath(this.root, normalized);
+    const absoluteNew = resolveSafePath(this.root, newPath);
+    const stats = await stat(absoluteOld);
+    const type = stats.isDirectory() ? "folder" : "file";
+
+    if (type === "file" && isBlockedExtension(safeName)) {
+      throw new Error(`Tipe file tidak diizinkan: ${safeName}`);
+    }
+
+    await rename(absoluteOld, absoluteNew);
+    const newStats = await stat(absoluteNew);
+    return toEntry(newPath, type, newStats);
+  }
+
+  async delete(relativePath: string): Promise<void> {
+    const normalized = normalizeRelativePath(relativePath);
+    if (!normalized) {
+      throw new Error("Path is required");
+    }
+
+    const absolute = resolveSafePath(this.root, normalized);
+    await rm(absolute, { recursive: true, force: true });
   }
 }
 

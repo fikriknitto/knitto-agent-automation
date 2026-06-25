@@ -12,6 +12,8 @@ import {
   isAcceptedAttachment,
   isPasteableImage,
   storageEntryToPromptAttachment,
+  syncAttachmentsAfterDelete,
+  syncAttachmentsAfterRename,
   type PromptAttachment,
 } from "../lib/prompt-attachment";
 import type { ConnectionState } from "../lib/types";
@@ -386,6 +388,12 @@ export function PromptEditor({
         attachedPaths={attachedStoragePaths}
         onClose={() => setStorageModalOpen(false)}
         onApply={handleStorageApply}
+        onEntryDeleted={(path) => {
+          onAttachmentsChange(syncAttachmentsAfterDelete(attachments, path));
+        }}
+        onEntryRenamed={(oldPath, newPath) => {
+          onAttachmentsChange(syncAttachmentsAfterRename(attachments, oldPath, newPath));
+        }}
       />
     </div>
   );

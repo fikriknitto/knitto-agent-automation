@@ -9,7 +9,7 @@ import {
   resolveJobAttachments,
 } from "../../shared/persist-attachments.js";
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-screenshot.js";
-import { jobScreenshotPayload } from "../../shared/job-screenshot-payload.js";
+import { jobMediaPayload, jobMediaPayloadAsync } from "../../shared/job-media-payload.js";
 import { agentMessages } from "../../shared/agent-messages.js";
 import { closeAutomationBrowser } from "../../shared/mcp-browser.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
@@ -23,6 +23,11 @@ export interface BridgeJobHandle {
   promise: Promise<void>;
   cancel: () => Promise<void>;
 }
+
+type TerminalOutcome =
+  | { kind: "completed"; result: string }
+  | { kind: "cancelled" }
+  | { kind: "error"; message: string };
 
 function mcpServerConfig(jobId: string) {
   const env = automationMcpEnv(jobId);
@@ -50,17 +55,9 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
     if (runCancel) await runCancel();
   };
 
-  const emitCancelled = (): void => {
-    emit({
-      type: "agent_job",
-      id: job.id,
-      channel: job.channel,
-      status: "cancelled",
-      message: agentMessages.cancelled,
-    });
-  };
-
   const promise = (async () => {
+    let terminal: TerminalOutcome | null = null;
+
     if (!config.cursorApiKey) {
       throw new Error(
         "Cursor API key belum tersedia — simpan di panel Bridge credentials web app"
@@ -101,119 +98,132 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
     });
 
     if (cancelled) {
-      emitCancelled();
-      return;
-    }
+      terminal = { kind: "cancelled" };
+    } else {
+      let runningEmitted = false;
+      let lastTool = "";
+      let lastScreenshot: string | undefined;
 
-    let runningEmitted = false;
-    let lastTool = "";
-    let lastScreenshot: string | undefined;
-
-    const run = await agent.send(sendMessage, {
-      model: { id: modelId },
-      mcpServers: mcpServerConfig(job.id),
-      onDelta: ({ update }) => {
-        if (update.type === "tool-call-started" && !cancelled) {
-          const tc = update.toolCall;
-          const toolName = tc.type === "mcp" ? (tc.args.toolName ?? undefined) : undefined;
-          if (toolName && toolName !== lastTool) {
-            lastTool = toolName;
-            runningEmitted = true;
-            emit({
-              type: "agent_job",
-              id: job.id,
-              channel: job.channel,
-              status: "running",
-              message: agentMessages.usingTool(toolName),
-              progress: 10,
-              toolName,
-            });
-          }
-        }
-        if (update.type === "tool-call-completed" && !cancelled) {
-          const tc = update.toolCall;
-          if (tc.type === "mcp") {
-            const toolName = tc.args.toolName ?? undefined;
-            const output = "result" in tc ? (tc as { result?: unknown }).result : undefined;
-            const screenshot = toolName ? extractScreenshotBase64(toolName, output) : undefined;
-            if (screenshot) {
-              lastScreenshot = screenshot;
+      const run = await agent.send(sendMessage, {
+        model: { id: modelId },
+        mcpServers: mcpServerConfig(job.id),
+        onDelta: ({ update }) => {
+          if (update.type === "tool-call-started" && !cancelled) {
+            const tc = update.toolCall;
+            const toolName = tc.type === "mcp" ? (tc.args.toolName ?? undefined) : undefined;
+            if (toolName && toolName !== lastTool) {
+              lastTool = toolName;
+              runningEmitted = true;
               emit({
                 type: "agent_job",
                 id: job.id,
                 channel: job.channel,
                 status: "running",
-                message: agentMessages.screenshotCaptured,
-                progress: 50,
+                message: agentMessages.usingTool(toolName),
+                progress: 10,
                 toolName,
-                ...jobScreenshotPayload(job.id),
               });
             }
           }
-        }
-      },
-    });
+          if (update.type === "tool-call-completed" && !cancelled) {
+            const tc = update.toolCall;
+            if (tc.type === "mcp") {
+              const toolName = tc.args.toolName ?? undefined;
+              const output = "result" in tc ? (tc as { result?: unknown }).result : undefined;
+              const screenshot = toolName ? extractScreenshotBase64(toolName, output) : undefined;
+              if (screenshot) {
+                lastScreenshot = screenshot;
+                emit({
+                  type: "agent_job",
+                  id: job.id,
+                  channel: job.channel,
+                  status: "running",
+                  message: agentMessages.screenshotCaptured,
+                  progress: 50,
+                  toolName,
+                  ...jobMediaPayload(job.id),
+                });
+              }
+            }
+          }
+        },
+      });
 
-    runCancel = async () => {
-      await run.cancel();
-    };
-
-    if (cancelled) {
-      await run.cancel().catch(() => undefined);
-      emitCancelled();
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      if (!cancelled) {
-        void run.cancel().catch(() => undefined);
-      }
-    }, config.jobTimeoutMs);
-
-    try {
-      logger.info(`Run started: ${run.id}`);
-
-      for await (const _event of run.stream()) {
-        if (cancelled) break;
-
-        if (!runningEmitted) {
-          runningEmitted = true;
-          emit({
-            type: "agent_job",
-            id: job.id,
-            channel: job.channel,
-            status: "running",
-            message: agentMessages.running,
-            progress: 10,
-          });
-        }
-      }
+      runCancel = async () => {
+        await run.cancel();
+      };
 
       if (cancelled) {
-        emitCancelled();
-        return;
+        await run.cancel().catch(() => undefined);
+        terminal = { kind: "cancelled" };
+      } else {
+        const timeout = setTimeout(() => {
+          if (!cancelled) {
+            void run.cancel().catch(() => undefined);
+          }
+        }, config.jobTimeoutMs);
+
+        try {
+          logger.info(`Run started: ${run.id}`);
+
+          for await (const _event of run.stream()) {
+            if (cancelled) break;
+
+            if (!runningEmitted) {
+              runningEmitted = true;
+              emit({
+                type: "agent_job",
+                id: job.id,
+                channel: job.channel,
+                status: "running",
+                message: agentMessages.running,
+                progress: 10,
+              });
+            }
+          }
+
+          if (cancelled) {
+            terminal = { kind: "cancelled" };
+          } else {
+            const result = await run.wait();
+            if (result.status === "error") {
+              terminal = {
+                kind: "error",
+                message: agentMessages.agentRunFailed(result.id),
+              };
+            } else {
+              const summary =
+                typeof result.result === "string"
+                  ? result.result
+                  : JSON.stringify(result.result ?? agentMessages.doneFallback);
+
+              lastScreenshot = await ensureJobScreenshot(null, lastScreenshot);
+              terminal = { kind: "completed", result: summary };
+            }
+          }
+        } catch (error) {
+          if (cancelled) {
+            terminal = { kind: "cancelled" };
+          } else if (error instanceof CursorAgentError) {
+            terminal = { kind: "error", message: error.message };
+          } else {
+            terminal = {
+              kind: "error",
+              message: error instanceof Error ? error.message : String(error),
+            };
+          }
+        } finally {
+          clearTimeout(timeout);
+        }
       }
+    }
 
-      const result = await run.wait();
-      if (result.status === "error") {
-        emit({
-          type: "agent_job",
-          id: job.id,
-          channel: job.channel,
-          status: "error",
-          message: agentMessages.agentRunFailed(result.id),
-          progress: 100,
-        });
-        return;
-      }
+    const dispose = agent[Symbol.asyncDispose];
+    if (typeof dispose === "function") await dispose.call(agent);
+    await closeAutomationBrowser();
+    const media = await jobMediaPayloadAsync(job.id);
 
-      const summary =
-        typeof result.result === "string"
-          ? result.result
-          : JSON.stringify(result.result ?? agentMessages.doneFallback);
-
-      lastScreenshot = await ensureJobScreenshot(null, lastScreenshot);
-
+    if (terminal?.kind === "completed") {
       emit({
         type: "agent_job",
         id: job.id,
@@ -221,38 +231,31 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
         status: "completed",
         message: agentMessages.completed,
         progress: 100,
-        result: summary,
-        ...jobScreenshotPayload(job.id),
+        result: terminal.result,
+        ...media,
       });
-    } catch (error) {
-      if (cancelled) {
-        emitCancelled();
-      } else if (error instanceof CursorAgentError) {
-        emit({
-          type: "agent_job",
-          id: job.id,
-          channel: job.channel,
-          status: "error",
-          message: error.message,
-          progress: 100,
-        });
-      } else {
-        emit({
-          type: "agent_job",
-          id: job.id,
-          channel: job.channel,
-          status: "error",
-          message: error instanceof Error ? error.message : String(error),
-          progress: 100,
-        });
-      }
-    } finally {
-      clearTimeout(timeout);
-      const dispose = agent[Symbol.asyncDispose];
-      if (typeof dispose === "function") await dispose.call(agent);
-      await closeAutomationBrowser();
-      await cleanupJobAttachments(job.id);
+    } else if (terminal?.kind === "cancelled") {
+      emit({
+        type: "agent_job",
+        id: job.id,
+        channel: job.channel,
+        status: "cancelled",
+        message: agentMessages.cancelled,
+        ...media,
+      });
+    } else if (terminal?.kind === "error") {
+      emit({
+        type: "agent_job",
+        id: job.id,
+        channel: job.channel,
+        status: "error",
+        message: terminal.message,
+        progress: 100,
+        ...media,
+      });
     }
+
+    await cleanupJobAttachments(job.id);
   })();
 
   return { promise, cancel };

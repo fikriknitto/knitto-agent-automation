@@ -45,4 +45,17 @@ export default {
   get viewportHeight() {
     return envInt("AUTOMATION_VIEWPORT_HEIGHT", 720);
   },
+  get recordVideo() {
+    return envBool("AUTOMATION_RECORD_VIDEO", true);
+  },
+  get recordFps() {
+    return envInt("AUTOMATION_RECORD_FPS", 20);
+  },
+  get ffmpegPath() {
+    return process.env.AUTOMATION_FFMPEG_PATH?.trim() || undefined;
+  },
+  get videoFilename() {
+    const name = process.env.AUTOMATION_VIDEO_FILENAME?.trim();
+    return name || "recording.mp4";
+  },
 };

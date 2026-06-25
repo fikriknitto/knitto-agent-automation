@@ -186,3 +186,117 @@
 - Verified: automation_assert_text "Theme Toggle" present; automation_assert_visible link Theme Toggle in sidebar
 - Screenshot: TC02-theme-toggle-fullpage.png
 - Navigation succeeded on first click attempt (no retry needed)
+
+
+## CMS Knitto (port 5420) — http://192.168.20.27:5420/
+
+### Login Page
+- **URL:** http://192.168.20.27:5420/
+- **Title:** CMS Knitto
+
+### Login Form Elements (stable locators)
+| Element | Locator Strategy | Notes |
+|---------|-----------------|-------|
+| Username | `placeholder: "Username"` | inputType=text |
+| Password | `placeholder: "Password"` | inputType=password |
+| Login button | `role: button, name: "LOGIN"` | Full-width blue button |
+| Password visibility toggle | `role: button, name: "Icon button"` near password field | bbox ~804,414 |
+
+### Login Flow
+1. Fill username and password via placeholder locators
+2. Click LOGIN button
+3. Auto-redirect to `/content-manager` on success
+4. Post-login header shows username button (`name: "fikri"` or logged-in username) + `Log out` button
+
+### Post-Login Indicators
+- URL: `http://192.168.20.27:5420/content-manager`
+- `role: button, name: "Log out"` visible in top-right header
+- `role: button, name: "<username>"` visible in header (e.g. fikri)
+- Content Manager page with banner list and "+ Tambah Banner Baru" button
+- Hamburger menu: `role: button, name: "Icon button"` top-left (bbox ~14,14)
+- Sidebar search: `placeholder: "Cari menu"`
+
+### Valid Credentials (TC01)
+- Username: `fikri`
+- Password: `11221122`
+
+### Quirks
+- Unlike port 5588 app, login auto-redirects to `/content-manager` (no manual navigation needed)
+- No toast notification observed on this instance; verify via URL change + header buttons
+
+## Test Run — TC01 Login.md (2026-06-25)
+
+### TC01 — Login with valid credentials — PASSED
+- URL: http://192.168.20.27:5420/
+- Credentials: fikri / 11221122
+- Locators: placeholder Username, placeholder Password, role=button name=LOGIN
+- Post-login: redirected to /content-manager; Log out + fikri buttons visible
+- Screenshots: TC01-login-form-empty.png, TC01-login-form-filled.png, TC01-login-success-dashboard.png
+- Note: No inputType=file on login page; "file 1" interpreted as executing TC01 - Login.md test scenario
+
+### Positive Test Cases (documented)
+| ID | Scenario | Steps | Expected |
+|----|----------|-------|----------|
+| POS-01 | Valid login | fikri / 11221122 → LOGIN | Redirect to /content-manager; Log out + username visible |
+| POS-02 | Password visibility toggle | Click Icon button near password field | Password text toggles visible/hidden |
+| POS-03 | Enter key submit | Fill fields, press Enter in Password | Same as POS-01 |
+
+### Negative Test Cases (documented, not executed per rules)
+| ID | Scenario | Steps | Expected |
+|----|----------|-------|----------|
+| NEG-01 | Empty username | Leave Username blank, fill Password, click LOGIN | Error message; remain on login |
+| NEG-02 | Empty password | Fill Username, leave Password blank, click LOGIN | Error message; remain on login |
+| NEG-03 | Both fields empty | Click LOGIN without filling | Error message; remain on login |
+| NEG-04 | Wrong username | Invalid username + valid password | Login fails; error message |
+| NEG-05 | Wrong password | Valid username + invalid password | Login fails; error message |
+| NEG-06 | Wrong credentials | Both fields invalid | Login fails; error message |
+
+### Assumptions
+- Password visibility toggle (Icon button at bbox ~804,414) assumed to show/hide password; not verified this run
+- Error messages likely appear as toast notifications (pattern from similar Knitto apps)
+- No explicit form labels; placeholder text is the stable locator
+- Username button in header displays logged-in user's name dynamically
+
+
+## Test Run — TC03 Navigate to toast.md (2026-06-25)
+
+### TC03 — Navigate to Toast component page — PASSED
+- URL start: http://192.168.20.15:11111/
+- Steps: navigate → wait network_idle → click sidebar Components (ref e10 / role=button name=Components) → click Toast (ref e21 / role=link name=Toast) → full-page screenshot
+- Result URL: http://192.168.20.15:11111/components/toast
+- Verified: automation_assert_text "Toast" present; automation_assert_visible link Toast in sidebar
+- Screenshot: TC03-toast-fullpage.png
+- Navigation succeeded on first click attempt (no retry needed)
+
+## Test Run — TC01 Login.md CMS Knitto (2026-06-25, re-run)
+
+### TC01 — Login with valid credentials — PASSED
+- URL: http://192.168.20.27:5420/ (typo hhttp corrected)
+- Credentials: fikri / 11221122
+- Locators: placeholder Username, placeholder Password, role=button name=LOGIN
+- Post-login: auto-redirect to /content-manager; Log out + fikri + Tambah Banner Baru buttons visible
+- Screenshots: TC01-login-form-empty.png, TC01-login-form-filled.png, TC01-login-success-dashboard.png
+- Note: No inputType=file on login page; file interpreted as executing TC01 - Login.md test scenario
+
+
+## Test Run — TC02 Navigate to theme toggle.md (2026-06-25)
+
+### TC02 — Navigate to Theme Toggle component page — PASSED
+- URL start: http://192.168.20.15:11111/
+- Steps: navigate → wait network_idle → click sidebar Components (ref e10 / role=button name=Components) → click Theme Toggle (ref e20 / role=link name=Theme Toggle) → full-page screenshot
+- Result URL: http://192.168.20.15:11111/components/theme-toggle
+- Page title: Theme Toggle | Knitto Design System
+- Verified: automation_assert_text "Theme Toggle" present; automation_assert_visible link Theme Toggle in sidebar
+- Screenshot: TC02-theme-toggle-fullpage.png
+- Navigation succeeded on first click attempt (no retry needed)
+
+## Test Run — TC03 Navigate to toast.md (2026-06-25, re-run)
+
+### TC03 — Navigate to Toast component page — PASSED
+- URL start: http://192.168.20.15:11111/
+- Steps: navigate → wait network_idle → click sidebar Components (ref e10 / role=button name=Components) → click Toast (ref e21 / role=link name=Toast) → full-page screenshot
+- Result URL: http://192.168.20.15:11111/components/toast
+- Page title: Toast | Knitto Design System
+- Verified: automation_assert_text "Toast" present; automation_assert_visible link Toast in sidebar
+- Screenshot: TC03-toast-fullpage.png
+- Navigation succeeded on first click attempt (no retry needed)

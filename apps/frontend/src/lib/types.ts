@@ -16,5 +16,6 @@ export type ChatLine = {
   progress?: number;
   result?: string;
   screenshots?: string[];
+  videoUrl?: string;
   toolName?: string;
 };

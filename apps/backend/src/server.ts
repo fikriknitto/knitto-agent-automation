@@ -41,12 +41,39 @@ async function main(): Promise<void> {
 
   wsHub = new WsHub(httpServer, bridgeRegistry);
 
-  await bridgeRegistry.startAll();
-  wsHub.broadcastBridgeUpdates();
+  await new Promise<void>((resolve, reject) => {
+    const onError = (error: NodeJS.ErrnoException) => {
+      httpServer.off("listening", onListening);
+      if (error.code === "EADDRINUSE") {
+        reject(
+          new Error(
+            `Port ${port} sudah dipakai — ubah BACKEND_PORT di apps/backend/.env atau hentikan proses yang memakai port tersebut`
+          )
+        );
+        return;
+      }
+      reject(error);
+    };
 
-  httpServer.listen(port, host, () => {
-    logger.info(`Backend listening on http://${host}:${port} (WS: /ws)`);
+    const onListening = () => {
+      httpServer.off("error", onError);
+      logger.info(`Backend listening on http://${host}:${port} (WS: /ws)`);
+      resolve();
+    };
+
+    httpServer.once("error", onError);
+    httpServer.once("listening", onListening);
+    httpServer.listen(port, host);
   });
+
+  try {
+    await bridgeRegistry.startAll();
+    wsHub.broadcastBridgeUpdates();
+  } catch (error) {
+    logger.error(
+      `Bridge startup failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 }
 
 main().catch((error) => {

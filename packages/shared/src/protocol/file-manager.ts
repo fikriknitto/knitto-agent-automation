@@ -29,6 +29,15 @@ export const createFolderBodySchema = z.object({
   name: z.string().min(1),
 });
 
+export const renameEntryBodySchema = z.object({
+  path: z.string().min(1),
+  name: z.string().min(1),
+});
+
+export const deleteEntryBodySchema = z.object({
+  path: z.string().min(1),
+});
+
 export const uploadResponseSchema = z.object({
   path: z.string(),
   entries: z.array(storageEntrySchema),
@@ -48,5 +57,7 @@ export type StorageEntry = z.infer<typeof storageEntrySchema>;
 export type StorageSummary = z.infer<typeof storageSummarySchema>;
 export type ListEntriesResponse = z.infer<typeof listEntriesResponseSchema>;
 export type CreateFolderBody = z.infer<typeof createFolderBodySchema>;
+export type RenameEntryBody = z.infer<typeof renameEntryBodySchema>;
+export type DeleteEntryBody = z.infer<typeof deleteEntryBodySchema>;
 export type UploadResponse = z.infer<typeof uploadResponseSchema>;
 export type FileContentResponse = z.infer<typeof fileContentResponseSchema>;

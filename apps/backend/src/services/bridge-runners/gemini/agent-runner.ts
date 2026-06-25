@@ -14,7 +14,7 @@ import {
   resolveJobAttachments,
 } from "../../shared/persist-attachments.js";
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-screenshot.js";
-import { jobScreenshotPayload } from "../../shared/job-screenshot-payload.js";
+import { jobMediaPayload, jobMediaPayloadAsync } from "../../shared/job-media-payload.js";
 import { agentMessages } from "../../shared/agent-messages.js";
 import { closeAutomationBrowser } from "../../shared/mcp-browser.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
@@ -28,6 +28,11 @@ export interface BridgeJobHandle {
   promise: Promise<void>;
   cancel: () => Promise<void>;
 }
+
+type TerminalOutcome =
+  | { kind: "completed"; result: string }
+  | { kind: "cancelled" }
+  | { kind: "error"; message: string };
 
 function observeMcpClient(
   client: Client,
@@ -55,16 +60,6 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
   const cancel = async (): Promise<void> => {
     cancelled = true;
     abortController.abort();
-  };
-
-  const emitCancelled = (): void => {
-    emit({
-      type: "agent_job",
-      id: job.id,
-      channel: job.channel,
-      status: "cancelled",
-      message: agentMessages.cancelled,
-    });
   };
 
   const promise = (async () => {
@@ -101,6 +96,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
 
     let lastTool = "";
     let lastScreenshot: string | undefined;
+    let terminal: TerminalOutcome | null = null;
 
     const observedClient = observeMcpClient(mcpClient, (phase, toolName, result) => {
       if (cancelled) return;
@@ -130,7 +126,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
             message: agentMessages.screenshotCaptured,
             progress: 50,
             toolName,
-            ...jobScreenshotPayload(job.id),
+            ...jobMediaPayload(job.id),
           });
         }
       }
@@ -142,7 +138,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
 
     try {
       if (cancelled) {
-        emitCancelled();
+        terminal = { kind: "cancelled" };
         return;
       }
 
@@ -167,40 +163,60 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       });
 
       if (cancelled) {
-        emitCancelled();
+        terminal = { kind: "cancelled" };
         return;
       }
 
       const summary = response.text?.trim() || agentMessages.doneFallback;
       lastScreenshot = await ensureJobScreenshot(mcpClient, lastScreenshot);
-
-      emit({
-        type: "agent_job",
-        id: job.id,
-        channel: job.channel,
-        status: "completed",
-        message: agentMessages.completed,
-        progress: 100,
-        result: summary,
-        ...jobScreenshotPayload(job.id),
-      });
+      terminal = { kind: "completed", result: summary };
     } catch (error) {
       if (cancelled || abortController.signal.aborted) {
-        emitCancelled();
+        terminal = { kind: "cancelled" };
       } else {
-        emit({
-          type: "agent_job",
-          id: job.id,
-          channel: job.channel,
-          status: "error",
+        terminal = {
+          kind: "error",
           message: error instanceof Error ? error.message : String(error),
-          progress: 100,
-        });
+        };
       }
     } finally {
       clearTimeout(timeout);
       setAutomationJobId(null);
       await closeAutomationBrowser(mcpClient);
+      const media = await jobMediaPayloadAsync(job.id);
+
+      if (terminal?.kind === "completed") {
+        emit({
+          type: "agent_job",
+          id: job.id,
+          channel: job.channel,
+          status: "completed",
+          message: agentMessages.completed,
+          progress: 100,
+          result: terminal.result,
+          ...media,
+        });
+      } else if (terminal?.kind === "cancelled") {
+        emit({
+          type: "agent_job",
+          id: job.id,
+          channel: job.channel,
+          status: "cancelled",
+          message: agentMessages.cancelled,
+          ...media,
+        });
+      } else if (terminal?.kind === "error") {
+        emit({
+          type: "agent_job",
+          id: job.id,
+          channel: job.channel,
+          status: "error",
+          message: terminal.message,
+          progress: 100,
+          ...media,
+        });
+      }
+
       await mcpClient.close().catch(() => undefined);
       await cleanupJobAttachments(job.id);
     }

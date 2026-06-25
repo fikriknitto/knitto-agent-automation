@@ -15,11 +15,14 @@ export function automationMcpEnv(jobId?: string): Record<string, string> {
     AUTOMATION_BROWSER_TIMEOUT_MS: process.env.AUTOMATION_BROWSER_TIMEOUT_MS ?? "",
     AUTOMATION_VIEWPORT_WIDTH: process.env.AUTOMATION_VIEWPORT_WIDTH ?? "",
     AUTOMATION_VIEWPORT_HEIGHT: process.env.AUTOMATION_VIEWPORT_HEIGHT ?? "",
+    AUTOMATION_RECORD_VIDEO: process.env.AUTOMATION_RECORD_VIDEO ?? "",
+    AUTOMATION_RECORD_FPS: process.env.AUTOMATION_RECORD_FPS ?? "",
+    AUTOMATION_FFMPEG_PATH: process.env.AUTOMATION_FFMPEG_PATH ?? "",
+    AUTOMATION_VIDEO_FILENAME: process.env.AUTOMATION_VIDEO_FILENAME ?? "",
     AUTOMATION_UPLOAD_DIR: process.env.AUTOMATION_UPLOAD_DIR?.trim()
       ? resolve(root, process.env.AUTOMATION_UPLOAD_DIR.trim())
       : "",
     AUTOMATION_UPLOAD_MAX_BYTES: process.env.AUTOMATION_UPLOAD_MAX_BYTES ?? "",
-    AUTOMATION_UPLOAD_CLEANUP: process.env.AUTOMATION_UPLOAD_CLEANUP ?? "",
   };
   if (jobId?.trim()) {
     env.AUTOMATION_JOB_ID = jobId.trim();
