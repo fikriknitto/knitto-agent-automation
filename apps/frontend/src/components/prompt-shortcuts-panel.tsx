@@ -1,40 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  deletePromptShortcut,
   fetchPromptShortcuts,
   type PromptShortcut,
 } from "../lib/prompt-shortcuts";
-import type { ConnectionState } from "../lib/types";
-import {
-  DeletePromptShortcutModal,
-  PromptShortcutFormModal,
-} from "./prompt-shortcut-form-modal";
+import { PromptShortcutApplyModal } from "./prompt-shortcut-apply-modal";
 import { PromptShortcutItem } from "./prompt-shortcut-item";
-import { Button } from "./ui";
 
 type PromptShortcutsPanelProps = {
   disabled?: boolean;
-  selectedBridgeId: string;
-  selectedModel: string;
-  connectionState: ConnectionState;
-  onApply: (text: string) => void;
+  onAddPromptBase: (shortcut: PromptShortcut, filledText: string) => void;
+  onApplyMainPrompt: (filledText: string) => void;
 };
 
 export function PromptShortcutsPanel({
   disabled,
-  selectedBridgeId,
-  selectedModel,
-  connectionState,
-  onApply,
+  onAddPromptBase,
+  onApplyMainPrompt,
 }: PromptShortcutsPanelProps) {
   const [shortcuts, setShortcuts] = useState<PromptShortcut[]>([]);
-  const [manageMode, setManageMode] = useState(false);
-  const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
-  const [editingShortcut, setEditingShortcut] = useState<PromptShortcut | null>(null);
-  const [deletingShortcut, setDeletingShortcut] = useState<PromptShortcut | null>(null);
-  const [formBusy, setFormBusy] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [pendingShortcut, setPendingShortcut] = useState<PromptShortcut | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -51,52 +36,26 @@ export function PromptShortcutsPanel({
     void reload();
   }, [reload]);
 
-  const canGenerate =
-    connectionState === "connected" && Boolean(selectedBridgeId) && Boolean(selectedModel);
-
-  const openCreate = () => {
-    setEditingShortcut(null);
-    setFormMode("create");
+  const handleSelect = (shortcut: PromptShortcut) => {
+    if (disabled) return;
+    setPendingShortcut(shortcut);
   };
 
-  const openEdit = (shortcut: PromptShortcut) => {
-    setEditingShortcut(shortcut);
-    setFormMode("edit");
-  };
-
-  const handleDelete = async () => {
-    if (!deletingShortcut) return;
-    setDeleteBusy(true);
-    try {
-      await deletePromptShortcut(deletingShortcut.id);
-      setDeletingShortcut(null);
-      await reload();
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Gagal menghapus prompt shortcut");
-    } finally {
-      setDeleteBusy(false);
+  const handleChoose = (type: "base" | "main", filledText: string) => {
+    if (!pendingShortcut) return;
+    if (type === "base") {
+      onAddPromptBase(pendingShortcut, filledText);
+    } else {
+      onApplyMainPrompt(filledText);
     }
+    setPendingShortcut(null);
   };
 
   return (
     <>
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-slate-500">Prompt shortcuts</span>
-          <div className="flex shrink-0 gap-1">
-            <Button type="button" size="sm" variant="ghost" disabled={disabled} onClick={openCreate}>
-              + Buat
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={manageMode ? "primary" : "ghost"}
-              disabled={disabled}
-              onClick={() => setManageMode((v) => !v)}
-            >
-              {manageMode ? "Selesai" : "Kelola"}
-            </Button>
-          </div>
+          <span className="text-xs text-slate-500">Template</span>
         </div>
 
         {loadError && <p className="m-0 text-xs text-red-400">{loadError}</p>}
@@ -109,35 +68,22 @@ export function PromptShortcutsPanel({
               <PromptShortcutItem
                 key={shortcut.id}
                 shortcut={shortcut}
-                manageMode={manageMode}
+                manageMode={false}
                 disabled={disabled}
-                onApply={onApply}
-                onEdit={openEdit}
-                onDelete={setDeletingShortcut}
+                onSelect={handleSelect}
+                onEdit={() => {}}
+                onDelete={() => {}}
               />
             ))}
           </div>
         )}
       </div>
 
-      <PromptShortcutFormModal
-        mode={formMode === "edit" ? "edit" : "create"}
-        shortcut={editingShortcut}
-        open={formMode !== null}
-        busy={formBusy}
-        selectedBridgeId={selectedBridgeId}
-        selectedModel={selectedModel}
-        canGenerate={canGenerate}
-        onClose={() => setFormMode(null)}
-        onSaved={() => void reload()}
-        onBusyChange={setFormBusy}
-      />
-
-      <DeletePromptShortcutModal
-        shortcut={deletingShortcut}
-        busy={deleteBusy}
-        onClose={() => setDeletingShortcut(null)}
-        onConfirm={() => void handleDelete()}
+      <PromptShortcutApplyModal
+        shortcut={pendingShortcut}
+        open={pendingShortcut !== null}
+        onClose={() => setPendingShortcut(null)}
+        onChoose={handleChoose}
       />
     </>
   );

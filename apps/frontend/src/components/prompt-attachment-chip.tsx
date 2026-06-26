@@ -1,3 +1,4 @@
+import { PaperclipIcon } from "lucide-react";
 import {
   attachmentExtension,
   promptAttachmentImageSrc,
@@ -108,16 +109,22 @@ export function PromptAttachments({ attachments, disabled, onRemove }: PromptAtt
   if (!attachments.length) return null;
 
   return (
-    <div className="mb-2.5 flex flex-wrap gap-2" aria-label="Lampiran">
-      {attachments.map((attachment, index) => (
-        <PromptAttachmentChip
-          key={`${attachment.storagePath}-${index}`}
-          attachment={attachment}
-          index={index}
-          disabled={disabled}
-          onRemove={() => onRemove(index)}
-        />
-      ))}
+    <div className="w-full">
+      <div className="mb-2.5 flex flex-col flex-wrap gap-2 bg-black/50 rounded-xl p-2" aria-label="Lampiran">
+        <div className="flex items-center text-sm font-medium text-gray-500"><PaperclipIcon className="size-4 mr-1" /> Attachments</div>
+        <div className="flex flex-wrap gap-2">
+
+          {attachments.map((attachment, index) => (
+            <PromptAttachmentChip
+              key={`${attachment.storagePath}-${index}`}
+              attachment={attachment}
+              index={index}
+              disabled={disabled}
+              onRemove={() => onRemove(index)}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

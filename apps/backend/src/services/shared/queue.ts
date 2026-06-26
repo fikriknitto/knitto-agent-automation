@@ -1,4 +1,5 @@
 import type { AgentJobMessage, BridgeJob, UserPromptMessage } from "@knitto/shared";
+import { mergePromptParts } from "@knitto/shared";
 import { agentMessages } from "./agent-messages.js";
 
 export type JobEmitter = (msg: AgentJobMessage) => void;
@@ -22,13 +23,16 @@ export class JobQueue {
   ) {}
 
   enqueueFromMessage(msg: UserPromptMessage): void {
+    const text = mergePromptParts(msg.promptBases ?? [], msg.mainPrompt ?? msg.text);
     this.enqueue({
       id: msg.id,
       channel: msg.channel,
-      text: msg.text,
+      text,
       strategy: msg.strategy,
       model: msg.model,
       attachments: msg.attachments,
+      promptBases: msg.promptBases,
+      mainPrompt: msg.mainPrompt,
     });
   }
 

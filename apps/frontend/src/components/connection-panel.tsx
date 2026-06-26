@@ -1,6 +1,7 @@
 import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "../lib/protocol";
 import type { ConnectionState } from "../lib/types";
 import { btnRow, fieldRow, hint, statusLine } from "../lib/ui";
+import { SettingsRow, SettingsSectionTitle } from "./settings-row";
 import { Badge, Button, Card, CardTitle, Input, Label } from "./ui";
 
 type ConnectionPanelProps = {
@@ -40,9 +41,93 @@ export function ConnectionPanel({
 }: ConnectionPanelProps) {
   const connected = connectionState === "connected";
 
-  const content = (
-    <>
-      <CardTitle className={embedded ? "mb-2 text-base" : undefined}>Connection</CardTitle>
+  if (embedded) {
+    return (
+      <section>
+        <SettingsSectionTitle>Connection</SettingsSectionTitle>
+        <SettingsRow label="Host">
+          <Input
+            className="w-56 max-w-xs"
+            value={host}
+            onChange={(e) => onHostChange(e.target.value)}
+            placeholder={DEFAULT_WS_HOST}
+            disabled={connected}
+          />
+        </SettingsRow>
+        <SettingsRow label="Port">
+          <Input
+            className="w-56 max-w-xs"
+            value={port}
+            onChange={(e) => onPortChange(e.target.value)}
+            placeholder={DEFAULT_WS_PORT}
+            disabled={connected}
+          />
+        </SettingsRow>
+        <SettingsRow label="Channel">
+          <Input
+            className="w-56 max-w-xs"
+            value={channel}
+            onChange={(e) => onChannelChange(e.target.value)}
+            placeholder={DEFAULT_CHANNEL}
+            disabled={connected}
+          />
+        </SettingsRow>
+        <SettingsRow label="Gunakan WSS (TLS)" description="Secure WebSocket connection">
+          <input
+            type="checkbox"
+            checked={useWss}
+            onChange={(e) => onUseWssChange(e.target.checked)}
+            disabled={connected}
+            className="size-4 rounded border-slate-600 bg-slate-900 accent-cyan-500"
+          />
+        </SettingsRow>
+        <SettingsRow label="Actions">
+          <div className="flex flex-wrap justify-end gap-2">
+            {!connected ? (
+              <Button
+                variant="outline"
+                onClick={onConnect}
+                disabled={connectionState === "connecting"}
+              >
+                {connectionState === "connecting" ? "Connecting…" : "Connect"}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={onDisconnect}>
+                  Disconnect
+                </Button>
+                <Button variant="outline" onClick={onRefresh}>
+                  Refresh bridges
+                </Button>
+              </>
+            )}
+          </div>
+        </SettingsRow>
+        <SettingsRow label="Status">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Badge variant={connected ? "success" : "default"}>{connectionState}</Badge>
+            <Badge variant={bridgeAvailable ? "success" : "default"}>
+              {bridgeAvailable ? "Bridge online" : "Bridge offline"}
+            </Badge>
+          </div>
+        </SettingsRow>
+        {bridgeAvailable && typeof browserHeaded === "boolean" && (
+          <SettingsRow
+            label="Browser mode"
+            description="Set AUTOMATION_HEADLESS=false on bridge for headed mode."
+          >
+            <Badge variant={browserHeaded ? "success" : "default"}>
+              {browserHeaded ? "Headed (visible)" : "Headless"}
+            </Badge>
+          </SettingsRow>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <Card>
+      <CardTitle>Connection</CardTitle>
       <div className={fieldRow}>
         <Label>
           Host
@@ -84,13 +169,17 @@ export function ConnectionPanel({
       </label>
       <div className={btnRow}>
         {!connected ? (
-          <Button onClick={onConnect} disabled={connectionState === "connecting"}>
+          <Button variant="outline" onClick={onConnect} disabled={connectionState === "connecting"}>
             {connectionState === "connecting" ? "Connecting…" : "Connect"}
           </Button>
         ) : (
           <>
-            <Button onClick={onDisconnect}>Disconnect</Button>
-            <Button onClick={onRefresh}>Refresh bridges</Button>
+            <Button variant="outline" onClick={onDisconnect}>
+              Disconnect
+            </Button>
+            <Button variant="outline" onClick={onRefresh}>
+              Refresh bridges
+            </Button>
           </>
         )}
       </div>
@@ -112,12 +201,6 @@ export function ConnectionPanel({
           <span className={hint}>Set AUTOMATION_HEADLESS=false on bridge for headed mode.</span>
         </p>
       )}
-    </>
+    </Card>
   );
-
-  if (embedded) {
-    return <section className="border-b border-white/8 pb-5">{content}</section>;
-  }
-
-  return <Card>{content}</Card>;
 }

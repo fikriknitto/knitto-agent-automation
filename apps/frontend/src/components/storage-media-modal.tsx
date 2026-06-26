@@ -12,7 +12,7 @@ import {
 } from "../lib/ui";
 import type { FileSelectModifiers } from "./file-manager/file-card";
 import { FileManagerPanel } from "./file-manager/file-manager-panel";
-import { Button, ButtonIcon } from "./ui";
+import { Button } from "./ui";
 
 type StorageMediaModalProps = {
   open: boolean;
@@ -180,13 +180,15 @@ export function StorageMediaModal({
           <h2 id="storage-media-modal-title" className={modalTitle}>
             Storage
           </h2>
-          <ButtonIcon
-            className="h-8 w-8 min-w-0 border-0 bg-transparent! text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="border-0 bg-transparent text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
             aria-label="Tutup"
             onClick={onClose}
           >
             <XIcon size={16} />
-          </ButtonIcon>
+          </Button>
         </header>
         <div className="flex min-h-0 flex-1 flex-col">
           <FileManagerPanel
@@ -236,7 +238,7 @@ export function StorageMediaModal({
             </Button>
             <Button
               size="sm"
-              variant="primary"
+              variant="default"
               disabled={!selected.length || applying}
               onClick={() => void handleApply()}
             >

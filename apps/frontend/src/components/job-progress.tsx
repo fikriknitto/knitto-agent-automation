@@ -54,11 +54,8 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
       ref={scrollRef}
       className="flex flex-col gap-4  py-4"
     >
-      {lines.length === 0 && (
-        <p className="m-auto py-12 text-center text-sm text-slate-500">
-          Kirim prompt untuk memulai automation
-        </p>
-      )}
+
+
       {lines.map((line) =>
         line.role === "user" ? (
           <div key={`${line.role}-${line.id}`} className="flex justify-end">
@@ -98,4 +95,12 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
       )}
     </div>
   );
+}
+
+
+function EmptyState() {
+  return <div className="max-w-[800px] h-full mx-auto  w-full flex flex-col items-center justify-center">
+    <div className="text-2xl font-bold">Apa yang ingin Anda otomatisasi?</div>
+
+  </div>
 }

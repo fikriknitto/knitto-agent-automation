@@ -36,6 +36,8 @@ export const userPromptMessageSchema = z.object({
   strategy: z.string().optional(),
   model: z.string().optional(),
   attachments: z.array(promptAttachmentSchema).optional(),
+  promptBases: z.array(z.string()).optional(),
+  mainPrompt: z.string().optional(),
 });
 
 export const agentJobCancelMessageSchema = z.object({
@@ -72,6 +74,8 @@ export interface BridgeJob {
   strategy?: string;
   model?: string;
   attachments?: PromptAttachment[];
+  promptBases?: string[];
+  mainPrompt?: string;
 }
 
 export interface BridgeInfo {

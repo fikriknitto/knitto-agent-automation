@@ -126,6 +126,7 @@ Ringkasan akhir:
 - Jelaskan langkah yang dilakukan, hasil verifikasi, dan kesimpulan untuk user.
 - Nama tool teknis (automation_*) boleh tetap seperti aslinya jika perlu dirujuk.`;
 
+console.log("Prompt : ", text)
   return {
     text,
     visionAttachments: args.visionAttachments?.length ? args.visionAttachments : undefined,

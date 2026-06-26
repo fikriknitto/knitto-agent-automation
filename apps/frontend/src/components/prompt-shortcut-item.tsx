@@ -1,6 +1,6 @@
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "../lib/cn";
-import { fillPromptTemplate, type PromptShortcut } from "../lib/prompt-shortcuts";
+import type { PromptShortcut } from "../lib/prompt-shortcuts";
 
 const variantClasses: Record<PromptShortcut["variant"], string> = {
   blue: "border-blue-500/30 bg-blue-500/10 text-blue-300",
@@ -13,7 +13,7 @@ type PromptShortcutItemProps = {
   shortcut: PromptShortcut;
   manageMode: boolean;
   disabled?: boolean;
-  onApply: (text: string) => void;
+  onSelect: (shortcut: PromptShortcut) => void;
   onEdit: (shortcut: PromptShortcut) => void;
   onDelete: (shortcut: PromptShortcut) => void;
 };
@@ -22,20 +22,20 @@ export function PromptShortcutItem({
   shortcut,
   manageMode,
   disabled,
-  onApply,
+  onSelect,
   onEdit,
   onDelete,
 }: PromptShortcutItemProps) {
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-1 rounded-md border px-2 py-1 text-sm",
+        "group relative flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-sm",
         variantClasses[shortcut.variant],
         !manageMode && !disabled && "cursor-pointer hover:opacity-60"
       )}
       onClick={() => {
         if (manageMode || disabled) return;
-        onApply(fillPromptTemplate(shortcut.template, shortcut.defaults));
+        onSelect(shortcut);
       }}
     >
       <span>

@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import type { StorageEntry } from "@knitto/shared";
 import type { SortDirection, SortField, ViewMode } from "../../hooks/use-file-manager";
 import { modalBackdrop, modalHeader, modalTitle } from "../../lib/ui";
-import { Button, ButtonIcon, Input, Label, Select } from "../ui";
+import { Button, Input, Label, Select } from "../ui";
 
 type FileToolbarProps = {
   searchQuery: string;
@@ -81,15 +81,17 @@ function NewFolderModal({
           <h2 id="new-folder-modal-title" className={modalTitle}>
             Folder Baru
           </h2>
-          <ButtonIcon
+          <Button
             type="button"
-            className="h-8 w-8 min-w-0 border-0 bg-transparent! text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
+            variant="ghost"
+            size="icon-sm"
+            className="border-0 bg-transparent text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
             aria-label="Tutup"
             disabled={busy}
             onClick={onClose}
           >
             <XIcon size={16} />
-          </ButtonIcon>
+          </Button>
         </header>
         <form
           className="flex flex-col gap-4 px-5 py-4"
@@ -115,7 +117,7 @@ function NewFolderModal({
             </Button>
             <Button
               type="submit"
-              variant="primary"
+              variant="default"
               size="sm"
               disabled={busy || !folderName.trim()}
             >
@@ -202,7 +204,7 @@ export function FileToolbar({
           <div className="flex flex-wrap gap-2">
 
             <Button
-              variant="primary"
+              variant="default"
               size="sm"
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
@@ -262,29 +264,35 @@ export function FileToolbar({
               <option value="size">Ukuran</option>
             </Select>
           </Label>
-          <ButtonIcon
+          <Button
+            variant="ghost"
+            size="icon-sm"
             aria-label={sortDirection === "asc" ? "Urutan naik" : "Urutan turun"}
             onClick={onSortDirectionToggle}
           >
             {sortDirection === "asc" ? "↑" : "↓"}
-          </ButtonIcon>
+          </Button>
         </div>
 
         <div className="flex gap-1.5" role="group" aria-label="Tampilan">
-          <ButtonIcon
-            active={viewMode === "grid"}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={viewMode === "grid" ? "border-blue-400/45 bg-blue-500/22 text-blue-200" : undefined}
             aria-pressed={viewMode === "grid"}
             onClick={() => onViewModeChange("grid")}
           >
             ⊞
-          </ButtonIcon>
-          <ButtonIcon
-            active={viewMode === "list"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={viewMode === "list" ? "border-blue-400/45 bg-blue-500/22 text-blue-200" : undefined}
             aria-pressed={viewMode === "list"}
             onClick={() => onViewModeChange("list")}
           >
             ☰
-          </ButtonIcon>
+          </Button>
         </div>
       </div>
 

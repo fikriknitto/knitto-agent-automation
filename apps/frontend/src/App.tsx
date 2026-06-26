@@ -3,9 +3,12 @@ import { BridgeCredentials } from "./components/bridge-credentials";
 import { ChatHeader } from "./components/chat-header";
 import { ChatMain } from "./components/chat-main";
 import { ConnectionPanel } from "./components/connection-panel";
-import { SettingsDrawer } from "./components/settings-drawer";
+import { PromptShortcutsSettings } from "./components/prompt-shortcuts-settings";
+import { SettingsModal } from "./components/settings-modal";
 import { type PromptAttachment } from "./lib/prompt-attachment";
+import { type AppliedPromptShortcut, mergePromptParts } from "./lib/prompt-compose";
 import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
+import type { PromptShortcut } from "./lib/prompt-shortcuts";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
 
@@ -58,8 +61,9 @@ export function App() {
   const [bridges, setBridges] = useState<BridgeSummary[]>([]);
   const [selectedBridgeId, setSelectedBridgeId] = useState(persisted.selectedBridgeId ?? "");
   const [selectedModel, setSelectedModel] = useState(persisted.selectedModel ?? "");
-  const [strategy, setStrategy] = useState(persisted.strategy ?? "automation_human_strategy");
+  const [strategy] = useState(persisted.strategy ?? "automation_human_strategy");
   const [prompt, setPrompt] = useState("");
+  const [promptBases, setPromptBases] = useState<AppliedPromptShortcut[]>([]);
   const [promptAttachments, setPromptAttachments] = useState<PromptAttachment[]>([]);
   const [chatLines, setChatLines] = useState<ChatLine[]>([]);
   const [workerState, setWorkerState] = useState<"idle" | "busy">("idle");
@@ -172,8 +176,10 @@ export function App() {
   };
 
   const handleSend = () => {
-    const text = prompt.trim();
-    if ((!text && !promptAttachments.length) || !selectedBridgeId) return;
+    const baseTexts = promptBases.map((b) => b.filledText);
+    const main = prompt.trim();
+    const merged = mergePromptParts(baseTexts, main);
+    if ((!merged && !promptAttachments.length) || !selectedBridgeId) return;
 
     const bridge = bridges.find((b) => b.bridgeId === selectedBridgeId);
 
@@ -183,16 +189,24 @@ export function App() {
     const attachments = promptAttachments.length ? [...promptAttachments] : undefined;
     setChatLines((prev) => [
       ...prev,
-      { id: `u-${id}`, role: "user", text: text.trim(), attachments },
+      {
+        id: `u-${id}`,
+        role: "user",
+        text: merged || "Gunakan lampiran sesuai instruksi di prompt user.",
+        attachments,
+      },
     ]);
     setWorkerState("busy");
     setPrompt("");
+    setPromptBases([]);
     setPromptAttachments([]);
 
     wsRef.current?.sendUserPrompt({
       id,
       bridgeId: selectedBridgeId,
-      text: text || "Gunakan lampiran sesuai instruksi di prompt user.",
+      text: merged || "Gunakan lampiran sesuai instruksi di prompt user.",
+      promptBases: baseTexts.length ? baseTexts : undefined,
+      mainPrompt: main || undefined,
       strategy,
       model:
         selectedModel ||
@@ -202,6 +216,29 @@ export function App() {
       attachments: promptAttachments.length ? promptAttachments : undefined,
     });
   };
+
+  const handleAddPromptBase = useCallback((shortcut: PromptShortcut, filledText: string) => {
+    if (!filledText.trim()) return;
+    const entry: AppliedPromptShortcut = {
+      id: shortcut.id,
+      label: shortcut.label,
+      icon: shortcut.icon,
+      variant: shortcut.variant,
+      filledText,
+    };
+    setPromptBases((prev) => {
+      const without = prev.filter((b) => b.id !== shortcut.id);
+      return [...without, entry];
+    });
+  }, []);
+
+  const handleRemovePromptBase = useCallback((id: string) => {
+    setPromptBases((prev) => prev.filter((b) => b.id !== id));
+  }, []);
+
+  const handleApplyMainPrompt = useCallback((filledText: string) => {
+    setPrompt(filledText);
+  }, []);
 
   const handleCancel = () => {
     const id = activeJobId.current;
@@ -238,18 +275,15 @@ export function App() {
       <ChatHeader
         bridges={bridges}
         selectedBridgeId={selectedBridgeId}
-        selectedModel={selectedModel}
-        strategy={strategy}
         connectionState={connectionState}
         bridgeAvailable={bridgeAvailable}
-        onSelectBridge={setSelectedBridgeId}
-        onSelectModel={setSelectedModel}
-        onStrategyChange={setStrategy}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <ChatMain
+        bridges={bridges}
         prompt={prompt}
+        promptBases={promptBases}
         promptAttachments={promptAttachments}
         workerState={workerState}
         connectionState={connectionState}
@@ -257,51 +291,69 @@ export function App() {
         selectedModel={selectedModel}
         chatLines={chatLines}
         onPromptChange={setPrompt}
+        onAddPromptBase={handleAddPromptBase}
+        onRemovePromptBase={handleRemovePromptBase}
+        onApplyMainPrompt={handleApplyMainPrompt}
         onPromptAttachmentsChange={setPromptAttachments}
+        onSelectBridge={setSelectedBridgeId}
+        onSelectModel={setSelectedModel}
         onSend={handleSend}
         onCancel={handleCancel}
       />
 
-      <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-        <ConnectionPanel
-          embedded
-          host={host}
-          port={port}
-          channel={channel}
-          useWss={useWss}
-          connectionState={connectionState}
-          bridgeAvailable={bridgeAvailable}
-          browserHeaded={browserHeaded}
-          onHostChange={setHost}
-          onPortChange={setPort}
-          onChannelChange={setChannel}
-          onUseWssChange={setUseWss}
-          onConnect={handleConnect}
-          onDisconnect={handleDisconnect}
-          onRefresh={handleRefresh}
-        />
-        <BridgeCredentials
-          embedded
-          bridges={bridges}
-          selectedBridgeId={selectedBridgeId}
-          geminiKey={geminiKey}
-          cursorKey={cursorKey}
-          openRouterKey={openRouterKey}
-          nineRouterBaseUrl={nineRouterBaseUrl}
-          nineRouterKey={nineRouterKey}
-          statusMessage={credStatus}
-          onSelectBridge={setSelectedBridgeId}
-          onGeminiKeyChange={setGeminiKey}
-          onCursorKeyChange={setCursorKey}
-          onOpenRouterKeyChange={setOpenRouterKey}
-          onNineRouterBaseUrlChange={setNineRouterBaseUrl}
-          onNineRouterKeyChange={setNineRouterKey}
-          onSaveGemini={() => void sendCred("gemini", geminiKey)}
-          onSaveCursor={() => void sendCred("cursor", cursorKey)}
-          onSaveOpenRouter={() => void sendCred("openrouter", openRouterKey)}
-          onSaveNineRouter={() => void sendNineRouterCred()}
-        />
-      </SettingsDrawer>
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        connection={
+          <>
+            <ConnectionPanel
+              embedded
+              host={host}
+              port={port}
+              channel={channel}
+              useWss={useWss}
+              connectionState={connectionState}
+              bridgeAvailable={bridgeAvailable}
+              browserHeaded={browserHeaded}
+              onHostChange={setHost}
+              onPortChange={setPort}
+              onChannelChange={setChannel}
+              onUseWssChange={setUseWss}
+              onConnect={handleConnect}
+              onDisconnect={handleDisconnect}
+              onRefresh={handleRefresh}
+            />
+            <BridgeCredentials
+              embedded
+              bridges={bridges}
+              selectedBridgeId={selectedBridgeId}
+              geminiKey={geminiKey}
+              cursorKey={cursorKey}
+              openRouterKey={openRouterKey}
+              nineRouterBaseUrl={nineRouterBaseUrl}
+              nineRouterKey={nineRouterKey}
+              statusMessage={credStatus}
+              onSelectBridge={setSelectedBridgeId}
+              onGeminiKeyChange={setGeminiKey}
+              onCursorKeyChange={setCursorKey}
+              onOpenRouterKeyChange={setOpenRouterKey}
+              onNineRouterBaseUrlChange={setNineRouterBaseUrl}
+              onNineRouterKeyChange={setNineRouterKey}
+              onSaveGemini={() => void sendCred("gemini", geminiKey)}
+              onSaveCursor={() => void sendCred("cursor", cursorKey)}
+              onSaveOpenRouter={() => void sendCred("openrouter", openRouterKey)}
+              onSaveNineRouter={() => void sendNineRouterCred()}
+            />
+          </>
+        }
+        templates={
+          <PromptShortcutsSettings
+            selectedBridgeId={selectedBridgeId}
+            selectedModel={selectedModel}
+            connectionState={connectionState}
+          />
+        }
+      />
     </div>
   );
 }

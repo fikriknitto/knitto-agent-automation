@@ -1,5 +1,5 @@
 export { Badge, type BadgeProps, type BadgeVariant } from "./badge";
-export { Button, ButtonIcon, type ButtonIconProps, type ButtonProps, type ButtonSize, type ButtonVariant } from "./button";
+export { Button, buttonVariants, type ButtonProps } from "./button";
 export { Card, CardTitle, type CardProps, type CardTitleProps } from "./card";
 export { Input, type InputProps } from "./input";
 export { Label, type LabelProps } from "./label";

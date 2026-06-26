@@ -1,5 +1,6 @@
 import type { BridgeSummary } from "../lib/types";
 import { hint, statusMessage as statusMessageClass } from "../lib/ui";
+import { SettingsRow, SettingsRowStacked, SettingsSectionTitle } from "./settings-row";
 import { Button, Card, CardTitle, Input, Label, Select } from "./ui";
 
 type BridgeCredentialsProps = {
@@ -23,6 +24,8 @@ type BridgeCredentialsProps = {
   onSaveOpenRouter: () => void;
   onSaveNineRouter: () => void;
 };
+
+const controlWidth = "w-56 max-w-xs";
 
 export function BridgeCredentials({
   embedded = false,
@@ -51,9 +54,167 @@ export function BridgeCredentials({
   const openRouterBridge = bridges.find((b) => b.bridgeKind === "openrouter");
   const nineRouterBridge = bridges.find((b) => b.bridgeKind === "ninerouter");
 
+  if (embedded) {
+    return (
+      <section className="mt-2 border-t border-white/8 pt-2">
+        <SettingsSectionTitle>Bridge credentials</SettingsSectionTitle>
+        <p className={`${hint} mb-2 px-0`}>
+          Simpan credential per bridge, atau set env saat menjalankan bridge (
+          <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+            GEMINI_API_KEY
+          </code>
+          ,{" "}
+          <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+            CURSOR_API_KEY
+          </code>
+          ,{" "}
+          <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+            OPENROUTER_API_KEY
+          </code>
+          ,{" "}
+          <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+            NINEROUTER_BASE_URL
+          </code>{" "}
+          /{" "}
+          <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
+            NINEROUTER_API_KEY
+          </code>
+          ).
+        </p>
+
+        {bridges.length > 1 && (
+          <SettingsRow label="Active bridge" description="Bridge used for chat">
+            <Select
+              className={controlWidth}
+              value={selectedBridgeId}
+              onChange={(e) => onSelectBridge(e.target.value)}
+            >
+              <option value="">— select —</option>
+              {bridges.map((b) => (
+                <option key={b.bridgeId} value={b.bridgeId}>
+                  {b.bridgeLabel}
+                </option>
+              ))}
+            </Select>
+          </SettingsRow>
+        )}
+
+        <SettingsRowStacked
+          label="Gemini API key"
+          description={
+            !geminiBridge ? "Gemini bridge offline — jalankan pnpm run start:bridge" : undefined
+          }
+        >
+          <Input
+            type="password"
+            className={controlWidth}
+            value={geminiKey}
+            onChange={(e) => onGeminiKeyChange(e.target.value)}
+            placeholder="AIza..."
+            autoComplete="off"
+            disabled={!geminiBridge}
+          />
+          <Button
+            variant="default"
+            onClick={onSaveGemini}
+            disabled={!geminiBridge || !geminiKey.trim()}
+          >
+            Save to Gemini bridge
+          </Button>
+        </SettingsRowStacked>
+
+        <SettingsRowStacked
+          label="Cursor API key"
+          description={!cursorBridge ? "Cursor bridge offline" : undefined}
+        >
+          <Input
+            type="password"
+            className={controlWidth}
+            value={cursorKey}
+            onChange={(e) => onCursorKeyChange(e.target.value)}
+            placeholder="key_..."
+            autoComplete="off"
+            disabled={!cursorBridge}
+          />
+          <Button
+            variant="default"
+            onClick={onSaveCursor}
+            disabled={!cursorBridge || !cursorKey.trim()}
+          >
+            Save to Cursor bridge
+          </Button>
+        </SettingsRowStacked>
+
+        <SettingsRowStacked
+          label="OpenRouter API key"
+          description={!openRouterBridge ? "OpenRouter bridge offline" : undefined}
+        >
+          <Input
+            type="password"
+            className={controlWidth}
+            value={openRouterKey}
+            onChange={(e) => onOpenRouterKeyChange(e.target.value)}
+            placeholder="sk-or-..."
+            autoComplete="off"
+            disabled={!openRouterBridge}
+          />
+          <Button
+            variant="default"
+            onClick={onSaveOpenRouter}
+            disabled={!openRouterBridge || !openRouterKey.trim()}
+          >
+            Save to OpenRouter bridge
+          </Button>
+        </SettingsRowStacked>
+
+        <SettingsRowStacked
+          label="9Router"
+          description={
+            !nineRouterBridge
+              ? "9Router bridge offline — jalankan pnpm run start:bridge:ninerouter + app 9Router"
+              : undefined
+          }
+        >
+          <Input
+            type="url"
+            className={controlWidth}
+            value={nineRouterBaseUrl}
+            onChange={(e) => onNineRouterBaseUrlChange(e.target.value)}
+            placeholder="http://localhost:20128"
+            autoComplete="off"
+            disabled={!nineRouterBridge}
+          />
+          <Input
+            type="password"
+            className={controlWidth}
+            value={nineRouterKey}
+            onChange={(e) => onNineRouterKeyChange(e.target.value)}
+            placeholder="from 9Router dashboard"
+            autoComplete="off"
+            disabled={!nineRouterBridge}
+          />
+          <Button
+            variant="default"
+            onClick={onSaveNineRouter}
+            disabled={!nineRouterBridge || !nineRouterBaseUrl.trim()}
+          >
+            Save to 9Router bridge
+          </Button>
+        </SettingsRowStacked>
+
+        {selected && (
+          <p className={`${hint} py-3`}>
+            Chat bridge: {selected.bridgeLabel} — default model {selected.defaultModel ?? "—"}
+          </p>
+        )}
+        {statusMessage && <p className={`${statusMessageClass} pb-2`}>{statusMessage}</p>}
+      </section>
+    );
+  }
+
   const content = (
     <>
-      <CardTitle className={embedded ? "mb-2 text-base" : undefined}>Bridge credentials</CardTitle>
+      <CardTitle>Bridge credentials</CardTitle>
       <p className={hint}>
         Simpan credential per bridge, atau set env saat menjalankan bridge (
         <code className="rounded bg-white/8 px-1 py-0.5 font-mono text-[0.85em] text-rose-400">
@@ -103,7 +264,7 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!geminiBridge}
           />
-          <Button onClick={onSaveGemini} disabled={!geminiBridge || !geminiKey.trim()}>
+          <Button variant="default" onClick={onSaveGemini} disabled={!geminiBridge || !geminiKey.trim()}>
             Save to Gemini bridge
           </Button>
           {!geminiBridge && (
@@ -121,7 +282,7 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!cursorBridge}
           />
-          <Button onClick={onSaveCursor} disabled={!cursorBridge || !cursorKey.trim()}>
+          <Button variant="default" onClick={onSaveCursor} disabled={!cursorBridge || !cursorKey.trim()}>
             Save to Cursor bridge
           </Button>
           {!cursorBridge && <span className={hint}>Cursor bridge offline</span>}
@@ -137,7 +298,7 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!openRouterBridge}
           />
-          <Button onClick={onSaveOpenRouter} disabled={!openRouterBridge || !openRouterKey.trim()}>
+          <Button variant="default" onClick={onSaveOpenRouter} disabled={!openRouterBridge || !openRouterKey.trim()}>
             Save to OpenRouter bridge
           </Button>
           {!openRouterBridge && <span className={hint}>OpenRouter bridge offline</span>}
@@ -163,6 +324,7 @@ export function BridgeCredentials({
             disabled={!nineRouterBridge}
           />
           <Button
+            variant="default"
             onClick={onSaveNineRouter}
             disabled={!nineRouterBridge || !nineRouterBaseUrl.trim()}
           >
@@ -184,10 +346,6 @@ export function BridgeCredentials({
       {statusMessage && <p className={`${statusMessageClass} mt-2`}>{statusMessage}</p>}
     </>
   );
-
-  if (embedded) {
-    return <section className="pt-5">{content}</section>;
-  }
 
   return <Card>{content}</Card>;
 }

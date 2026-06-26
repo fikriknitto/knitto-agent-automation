@@ -10,7 +10,7 @@ import {
   updatePromptShortcut,
 } from "../lib/prompt-shortcuts";
 import { modalBackdrop, modalHeader, modalTitle } from "../lib/ui";
-import { Button, ButtonIcon, Input, Label, Select, Textarea } from "./ui";
+import { Button, Input, Label, Select, Textarea } from "./ui";
 
 type PromptShortcutFormModalProps = {
   mode: "create" | "edit";
@@ -187,15 +187,17 @@ export function PromptShortcutFormModal({
           <h2 id="prompt-shortcut-form-title" className={modalTitle}>
             {mode === "create" ? "Buat prompt shortcut" : "Edit prompt shortcut"}
           </h2>
-          <ButtonIcon
+          <Button
             type="button"
-            className="h-8 w-8 min-w-0 border-0 bg-transparent! text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
+            variant="ghost"
+            size="icon-sm"
+            className="border-0 bg-transparent text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
             aria-label="Tutup"
             disabled={isBusy}
             onClick={onClose}
           >
             <XIcon size={16} />
-          </ButtonIcon>
+          </Button>
         </header>
 
         <form
@@ -313,7 +315,7 @@ export function PromptShortcutFormModal({
             <Button type="button" size="sm" variant="ghost" disabled={isBusy} onClick={onClose}>
               Batal
             </Button>
-            <Button type="submit" size="sm" variant="primary" disabled={isBusy}>
+            <Button type="submit" size="sm" variant="default" disabled={isBusy}>
               {busy ? "Menyimpan…" : "Simpan"}
             </Button>
           </div>
@@ -374,15 +376,17 @@ export function DeletePromptShortcutModal({
           <h2 id="delete-prompt-shortcut-title" className={modalTitle}>
             Hapus prompt shortcut
           </h2>
-          <ButtonIcon
+          <Button
             type="button"
-            className="h-8 w-8 min-w-0 border-0 bg-transparent! text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
+            variant="ghost"
+            size="icon-sm"
+            className="border-0 bg-transparent text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
             aria-label="Tutup"
             disabled={busy}
             onClick={onClose}
           >
             <XIcon size={16} />
-          </ButtonIcon>
+          </Button>
         </header>
         <div className="flex flex-col gap-4 px-5 py-4">
           <p className="m-0 text-sm leading-relaxed text-slate-300">
@@ -396,8 +400,7 @@ export function DeletePromptShortcutModal({
             <Button
               type="button"
               size="sm"
-              variant="primary"
-              className="bg-red-600 hover:bg-red-500"
+              variant="destructive"
               disabled={busy}
               onClick={onConfirm}
             >

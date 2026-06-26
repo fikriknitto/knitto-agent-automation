@@ -16,11 +16,13 @@ import {
   syncAttachmentsAfterRename,
   type PromptAttachment,
 } from "../lib/prompt-attachment";
-import type { ConnectionState } from "../lib/types";
+import type { AppliedPromptShortcut } from "../lib/prompt-compose";
+import type { BridgeSummary, ConnectionState } from "../lib/types";
 import { BridgeAndModel } from "./bridge-and-model";
 import { PromptAttachments } from "./prompt-attachment-chip";
+import { PromptTemplateShortcut } from "./prompt-template-shortcut";
 import { StorageMediaModal } from "./storage-media-modal";
-import { Button, ButtonIcon } from "./ui";
+import { Button } from "./ui";
 
 const MIN_HEIGHT_PX = 96;
 const MAX_HEIGHT_PX = 256;
@@ -32,12 +34,18 @@ type PromptEditorProps = {
   variant?: "default" | "composer";
   value: string;
   attachments: PromptAttachment[];
+  promptBases: AppliedPromptShortcut[];
   placeholder?: string;
   connectionState: ConnectionState;
   selectedBridgeId: string;
+  selectedModel: string;
+  bridges: BridgeSummary[];
   workerState: "idle" | "busy";
   onChange: (value: string) => void;
   onAttachmentsChange: (attachments: PromptAttachment[]) => void;
+  onRemovePromptBase: (id: string) => void;
+  onSelectBridge: (id: string) => void;
+  onSelectModel: (id: string) => void;
   onSend: () => void;
   onCancel: () => void;
 };
@@ -104,12 +112,18 @@ export function PromptEditor({
   variant = "default",
   value,
   attachments,
+  promptBases,
   placeholder = 'e.g. carikan produk "combed 30s" di halaman knitto.co.id',
   connectionState,
   selectedBridgeId,
+  selectedModel,
+  bridges,
   workerState,
   onChange,
   onAttachmentsChange,
+  onRemovePromptBase,
+  onSelectBridge,
+  onSelectModel,
   onSend,
   onCancel,
 }: PromptEditorProps) {
@@ -124,7 +138,7 @@ export function PromptEditor({
   const [storageModalOpen, setStorageModalOpen] = useState(false);
 
   const hasText = Boolean(value.trim());
-  const hasContent = hasText || attachments.length > 0;
+  const hasContent = hasText || attachments.length > 0 || promptBases.length > 0;
   const canSend =
     connectionState === "connected" && Boolean(selectedBridgeId) && hasContent;
   const validationMessage = useMemo(
@@ -283,15 +297,27 @@ export function PromptEditor({
   const actionTitle = isBusy ? "Stop job" : validationMessage ?? "Send prompt";
   const canAttach = !isBusy && attachments.length < MAX_ATTACHMENTS;
 
-  
+
 
   return (
     <div className="w-full">
-      <PromptAttachments
-        attachments={attachments}
-        disabled={isBusy}
-        onRemove={removeAttachment}
-      />
+      <div className="flex w-full flex-col gap-1">
+        {attachments.length > 0 && (
+          <PromptAttachments
+            attachments={attachments}
+            disabled={isBusy}
+            onRemove={removeAttachment}
+          />
+        )}
+
+        {promptBases.length > 0 && (
+          <PromptTemplateShortcut
+            bases={promptBases}
+            disabled={isBusy}
+            onRemove={onRemovePromptBase}
+          />
+        )}
+      </div>
 
       <div
         className={cn(
@@ -332,60 +358,125 @@ export function PromptEditor({
           }}
         />
 
-        <div className="flex items-end gap-2 p-2.5 pl-2">
-          <ButtonIcon
-            type="button"
-            variant="ghost"
-            className="mb-0.5 h-9 w-9 min-w-0 shrink-0 rounded-full! border-white/10 bg-slate-800/80 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 [&_svg]:h-4 [&_svg]:w-4"
-            aria-label="Lampirkan media"
-            title="Lampirkan media"
-            disabled={!canAttach}
-            onClick={() => setStorageModalOpen(true)}
+        <div className={cn("flex flex-col", isComposer ? "gap-1 p-2.5" : "gap-0")}>
+          <div
+            className={cn(
+              "flex gap-2",
+              isComposer ? "px-1 pt-1" : "items-end p-2.5 pl-2"
+            )}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect
-                x="3"
-                y="3"
-                width="18"
-                height="18"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-              <path
-                d="M21 15l-5-5L5 21"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </ButtonIcon>
+            {!isComposer && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="mb-0.5 shrink-0 rounded-full border-white/10 bg-slate-800/80"
+                aria-label="Lampirkan media"
+                title="Lampirkan media"
+                disabled={!canAttach}
+                onClick={() => setStorageModalOpen(true)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="2"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                  <path
+                    d="M21 15l-5-5L5 21"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Button>
+            )}
 
-          <div className="min-w-0 flex-1 py-1 pr-1">
-            <EditorContent editor={editor} />
+            <div className={cn("min-w-0 flex-1", isComposer ? "py-0.5" : "py-1 pr-1")}>
+              <EditorContent editor={editor} />
+            </div>
+
+            {!isComposer && (
+              <Button
+                variant={isBusy ? "destructive" : "default"}
+                size="icon"
+                className="rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)]"
+                aria-label={actionTitle}
+                title={actionTitle}
+                onClick={isBusy ? onCancel : onSend}
+                disabled={!isBusy && !canSend}
+              >
+                {isBusy ? <StopCircleIcon size={16} /> : <SendIcon size={16} />}
+              </Button>
+            )}
           </div>
 
-          <Button
-            variant={isBusy ? "danger" : "primary"}
-            className={cn(
-              "size-10 p-0! shadow-[0_4px_12px_rgba(0,0,0,0.2)] outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
-              isComposer ? "rounded-full" : "rounded-lg"
-            )}
-            aria-label={actionTitle}
-            title={actionTitle}
-            onClick={isBusy ? onCancel : onSend}
-            disabled={!isBusy && !canSend}
-          >
-            {isBusy ? (
-              <StopCircleIcon size={16} />
-            ) : (
-              <SendIcon size={16} />
-            )}
-          </Button>
+          {isComposer && (
+            <div className="flex items-center justify-between gap-2 px-1 pb-0.5">
+              <BridgeAndModel
+                bridges={bridges}
+                selectedBridgeId={selectedBridgeId}
+                selectedModel={selectedModel}
+                disabled={isBusy}
+                onSelectBridge={onSelectBridge}
+                connectionState={connectionState}
+                onSelectModel={onSelectModel}
+              />
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="shrink-0 rounded-full bg-transparent hover:opacity-55"
+                  aria-label="Lampirkan media"
+                  title="Lampirkan media"
+                  disabled={!canAttach}
+                  onClick={() => setStorageModalOpen(true)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                    <path
+                      d="M21 15l-5-5L5 21"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </Button>
+                <Button
+                  variant={isBusy ? "destructive" : "default"}
+                  size="icon-sm"
+                  className="rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.2)]"
+                  aria-label={actionTitle}
+                  title={actionTitle}
+                  onClick={isBusy ? onCancel : onSend}
+                  disabled={!isBusy && !canSend}
+                >
+                  {isBusy ? <StopCircleIcon size={16} /> : <SendIcon size={16} />}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {dragOver && !isBusy && (
@@ -425,7 +516,6 @@ export function PromptEditor({
         }}
       />
 
-      <BridgeAndModel />
     </div>
   );
 }

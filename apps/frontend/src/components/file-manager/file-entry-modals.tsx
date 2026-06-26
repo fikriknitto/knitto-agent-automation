@@ -3,7 +3,7 @@ import { XIcon } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { modalBackdrop, modalHeader, modalTitle } from "../../lib/ui";
-import { Button, ButtonIcon, Input, Label } from "../ui";
+import { Button, Input, Label } from "../ui";
 
 type RenameEntryModalProps = {
   entry: StorageEntry | null;
@@ -61,15 +61,17 @@ export function RenameEntryModal({
           <h2 id="rename-entry-modal-title" className={modalTitle}>
             Ubah nama {label}
           </h2>
-          <ButtonIcon
+          <Button
             type="button"
-            className="h-8 w-8 min-w-0 border-0 bg-transparent! text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
+            variant="ghost"
+            size="icon-sm"
+            className="border-0 bg-transparent text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
             aria-label="Tutup"
             disabled={busy}
             onClick={onClose}
           >
             <XIcon size={16} />
-          </ButtonIcon>
+          </Button>
         </header>
         <form
           className="flex flex-col gap-4 px-5 py-4"
@@ -92,7 +94,7 @@ export function RenameEntryModal({
             <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={onClose}>
               Batal
             </Button>
-            <Button type="submit" variant="primary" size="sm" disabled={busy || !name.trim()}>
+            <Button type="submit" variant="default" size="sm" disabled={busy || !name.trim()}>
               {busy ? "Menyimpan…" : "Simpan"}
             </Button>
           </div>
@@ -157,15 +159,17 @@ export function DeleteEntryModal({
           <h2 id="delete-entry-modal-title" className={modalTitle}>
             Hapus {kind}
           </h2>
-          <ButtonIcon
+          <Button
             type="button"
-            className="h-8 w-8 min-w-0 border-0 bg-transparent! text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
+            variant="ghost"
+            size="icon-sm"
+            className="border-0 bg-transparent text-xl text-slate-300 hover:bg-slate-600/85 hover:text-slate-50"
             aria-label="Tutup"
             disabled={busy}
             onClick={onClose}
           >
             <XIcon size={16} />
-          </ButtonIcon>
+          </Button>
         </header>
         <div className="flex flex-col gap-4 px-5 py-4">
           <p className="m-0 text-sm leading-relaxed text-slate-300">
@@ -185,8 +189,7 @@ export function DeleteEntryModal({
             <Button
               type="button"
               size="sm"
-              variant="primary"
-              className="bg-red-600 hover:bg-red-500"
+              variant="destructive"
               disabled={busy}
               onClick={onConfirm}
             >

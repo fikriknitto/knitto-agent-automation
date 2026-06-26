@@ -9,7 +9,7 @@ import {
   type EntryIconKind,
 } from "../../lib/file-utils";
 import { isAcceptedStorageEntry, storageEntryImageSrc } from "../../lib/prompt-attachment";
-import { ButtonIcon } from "../ui";
+import { Button } from "../ui";
 
 export type FileSelectModifiers = {
   ctrlKey: boolean;
@@ -122,26 +122,30 @@ function EntryActions({
       onMouseDown={stop}
     >
       {onRename && (
-        <ButtonIcon
+        <Button
           type="button"
-          className="h-7 w-7 min-w-0 border border-white/10 bg-slate-900/90 text-slate-200 hover:bg-slate-700"
+          variant="outline"
+          size="icon-xs"
+          className="border-white/10 bg-slate-900/90 text-slate-200 hover:bg-slate-700"
           aria-label={`Ubah nama ${entry.name}`}
           title="Ubah nama"
           onClick={() => onRename(entry)}
         >
           <PencilIcon className="h-3.5 w-3.5" aria-hidden />
-        </ButtonIcon>
+        </Button>
       )}
       {onDelete && (
-        <ButtonIcon
+        <Button
           type="button"
-          className="h-7 w-7 min-w-0 border border-white/10 bg-slate-900/90 text-red-300 hover:bg-red-950/80"
+          variant="outline"
+          size="icon-xs"
+          className="border-white/10 bg-slate-900/90 text-red-300 hover:bg-red-950/80"
           aria-label={`Hapus ${entry.name}`}
           title="Hapus"
           onClick={() => onDelete(entry)}
         >
           <Trash2Icon className="h-3.5 w-3.5" aria-hidden />
-        </ButtonIcon>
+        </Button>
       )}
     </div>
   );

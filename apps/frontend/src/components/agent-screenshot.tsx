@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { modalBackdrop, modalRoot } from "../lib/ui";
-import { ButtonIcon } from "./ui";
+import { Button } from "./ui";
 
 type AgentScreenshotsProps = {
   urls: string[];
@@ -57,43 +57,47 @@ function ScreenshotLightbox({ src, onClose }: ScreenshotLightboxProps) {
                   {filename ? `${filename}` : "Scroll untuk zoom · drag untuk geser · double-click reset"}
                 </p>
                 <div className="flex items-center gap-1.5">
-                  <ButtonIcon
+                  <Button
                     type="button"
                     variant="ghost"
+                    size="icon-sm"
                     aria-label="Zoom in"
                     title="Zoom in"
                     onClick={() => zoomIn()}
                   >
                     <ZoomIn className="h-4 w-4" aria-hidden />
-                  </ButtonIcon>
-                  <ButtonIcon
+                  </Button>
+                  <Button
                     type="button"
                     variant="ghost"
+                    size="icon-sm"
                     aria-label="Zoom out"
                     title="Zoom out"
                     onClick={() => zoomOut()}
                   >
                     <ZoomOut className="h-4 w-4" aria-hidden />
-                  </ButtonIcon>
-                  <ButtonIcon
+                  </Button>
+                  <Button
                     type="button"
                     variant="ghost"
+                    size="icon-sm"
                     aria-label="Reset zoom"
                     title="Reset zoom"
                     onClick={() => resetTransform()}
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden />
-                  </ButtonIcon>
-                  <ButtonIcon
+                  </Button>
+                  <Button
                     type="button"
                     variant="ghost"
+                    size="icon-sm"
                     className="h-8 w-8 min-w-0"
                     aria-label="Tutup preview"
                     title="Tutup"
                     onClick={onClose}
                   >
                     <X className="h-4 w-4" aria-hidden />
-                  </ButtonIcon>
+                  </Button>
                 </div>
               </header>
 
