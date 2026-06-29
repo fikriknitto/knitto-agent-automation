@@ -2,7 +2,7 @@
 
 Aplikasi otomatisasi browser untuk menjelajahi dan menguji sistem internal Knitto (`knitto.co.id`, CMS lokal, dll.) menggunakan AI agent + Puppeteer.
 
-Arsitektur **monorepo** (pnpm): React frontend dan Express backend terpisah, berkomunikasi lewat REST + WebSocket. Protokol & tipe dibagi lewat package `@knitto/shared`.
+Arsitektur **monorepo** (pnpm 11.5.2): React frontend dan Express backend terpisah, berkomunikasi lewat REST + WebSocket. Protokol & tipe dibagi lewat package `@knitto/shared`.
 
 ---
 
@@ -54,6 +54,7 @@ knitto-browser-agent/
 ├── Dockerfile                 # Multi-stage build (build / backend / frontend)
 ├── docker-compose.yml
 ├── docker.env                 # Env default container backend
+├── .nvmrc                     # Node 24.16.0 (nvm / fnm)
 ├── package.json
 └── pnpm-workspace.yaml
 ```
@@ -64,8 +65,8 @@ knitto-browser-agent/
 
 ### Development lokal
 
-- Node.js **20+** (disarankan 22+)
-- pnpm **9+** (repo memakai `pnpm@11`)
+- Node.js **24.16.0** (lihat `.nvmrc` / `.node-version`; `corepack enable` disarankan)
+- pnpm **11.5.2** (`corepack prepare pnpm@11.5.2 --activate` — juga diatur di `packageManager` root)
 - **ffmpeg** di PATH (`ffmpeg -version`) — wajib untuk rekaman video agent; opsional `AUTOMATION_FFMPEG_PATH`
 - API key: Gemini dan/atau Cursor (Web UI atau `.env`)
 - 9Router opsional (`NINEROUTER_BASE_URL`)
@@ -80,6 +81,8 @@ knitto-browser-agent/
 ## Instalasi & menjalankan (development)
 
 ```bash
+corepack enable
+corepack prepare pnpm@11.5.2 --activate
 pnpm install
 cp apps/backend/.env.example apps/backend/.env
 cp apps/frontend/.env.example apps/frontend/.env
@@ -126,7 +129,7 @@ docker compose up -d --build
 | Layanan | URL | Image |
 |---------|-----|-------|
 | Web UI | http://localhost:3000 | nginx + static Vite build |
-| Backend API | http://localhost:3080/api/health | Node 22 + Chromium + ffmpeg |
+| Backend API | http://localhost:3080/api/health | Node 24.16.0 + Chromium + ffmpeg |
 
 ### Stage build (`Dockerfile`)
 
@@ -328,4 +331,4 @@ Lihat `memory/` untuk pola navigasi CMS Knitto dan `prompt-shortcuts/` untuk tem
 | Docker: `backend unhealthy` | Build lama / env salah | `docker compose up -d --build`; cek `docker compose logs backend` |
 | Docker: Chromium tidak terlihat | Container tanpa display GUI | Normal — pantau lewat screenshot/video di UI |
 | Docker: 9Router tidak terjangkau | URL salah dari dalam container | Pakai `host.docker.internal` (sudah di `docker.env`) atau sesuaikan `NINEROUTER_BASE_URL` |
-| `docker compose` gagal build pnpm | Node versi lama di image | Image memakai Node **22** (pnpm 11 membutuhkan Node 22+) |
+| `docker compose` gagal build pnpm | Node/pnpm tidak selaras | Pakai Node **24.16.0** + pnpm **11.5.2** (sama dengan image Docker & `package.json` engines) |

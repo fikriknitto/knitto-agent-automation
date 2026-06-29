@@ -2,20 +2,27 @@ import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcut
 import { useState } from "react";
 import type { PromptShortcut } from "../lib/prompt-shortcuts";
 import { PromptShortcutApplyModal } from "./prompt-shortcut-apply-modal";
+import { PromptShortcutPreviewModal } from "./prompt-shortcut-preview-modal";
 import { PromptShortcutItem } from "./prompt-shortcut-item";
 
 type PromptShortcutsPanelProps = {
   disabled?: boolean;
+  /** Preview modal: allow inline edit & save template. */
+  previewEditable?: boolean;
+  onSelect?: (shortcut: PromptShortcut) => void;
   onAddPromptBase: (shortcut: PromptShortcut, filledText: string) => void;
   onApplyMainPrompt: (filledText: string) => void;
 };
 
 export function PromptShortcutsPanel({
   disabled,
+  previewEditable = false,
+  onSelect,
   onAddPromptBase,
   onApplyMainPrompt,
 }: PromptShortcutsPanelProps) {
   const { data: shortcuts = [], isError, error } = usePromptShortcuts();
+  const [previewShortcut, setPreviewShortcut] = useState<PromptShortcut | null>(null);
   const [pendingShortcut, setPendingShortcut] = useState<PromptShortcut | null>(null);
 
   const loadError = isError
@@ -26,6 +33,15 @@ export function PromptShortcutsPanel({
 
   const handleSelect = (shortcut: PromptShortcut) => {
     if (disabled) return;
+    setPreviewShortcut(shortcut);
+    onSelect?.(shortcut);
+  };
+
+  const handleSaved = (shortcut: PromptShortcut) => {
+    setPreviewShortcut(shortcut);
+  };
+
+  const handleApplyFromPreview = (shortcut: PromptShortcut) => {
     setPendingShortcut(shortcut);
   };
 
@@ -66,6 +82,15 @@ export function PromptShortcutsPanel({
           </div>
         )}
       </div>
+
+      <PromptShortcutPreviewModal
+        open={previewShortcut !== null}
+        shortcut={previewShortcut}
+        editable={previewEditable}
+        onClose={() => setPreviewShortcut(null)}
+        onApply={handleApplyFromPreview}
+        onSaved={handleSaved}
+      />
 
       <PromptShortcutApplyModal
         shortcut={pendingShortcut}

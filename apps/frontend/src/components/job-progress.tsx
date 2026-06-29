@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 import type { ChatPromptBase } from "../lib/prompt-compose";
 import type { ChatLine } from "../lib/types";
 import { statusLine } from "../lib/ui";
 import { MarkdownPreview } from "./markdown-preview";
 import { ChatAttachments } from "./prompt-attachment-chip";
+import { PromptShortcutPreviewModal } from "./prompt-shortcut-preview-modal";
 import { Badge, Card, CardTitle } from "./ui";
 
 const promptBaseVariantClasses: Record<ChatPromptBase["variant"], string> = {
@@ -14,7 +15,13 @@ const promptBaseVariantClasses: Record<ChatPromptBase["variant"], string> = {
   neutral: "border-slate-400/30 bg-slate-400/10 text-slate-300",
 };
 
-function ChatPromptBases({ bases }: { bases: ChatPromptBase[] }) {
+function ChatPromptBases({
+  bases,
+  onPreview,
+}: {
+  bases: ChatPromptBase[];
+  onPreview: (base: ChatPromptBase) => void;
+}) {
   if (!bases.length) return null;
 
   return (
@@ -22,17 +29,19 @@ function ChatPromptBases({ bases }: { bases: ChatPromptBase[] }) {
       <div className="text-xs font-semibold text-slate-500">System Prompt</div>
       <div className="flex flex-wrap gap-1.5" aria-label="System Prompt">
         {bases.map((base) => (
-          <span
+          <button
             key={base.id}
+            type="button"
             className={cn(
-              "inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-0.5 text-xs",
+              "inline-flex max-w-full cursor-pointer items-center gap-1 rounded-md border px-2 py-0.5 text-xs transition hover:opacity-80",
               promptBaseVariantClasses[base.variant]
             )}
-            title={base.path}
+            title={`${base.path} — klik untuk preview`}
+            onClick={() => onPreview(base)}
           >
             {base.icon ? `${base.icon} ` : ""}
             <span className="truncate">{base.label}</span>
-          </span>
+          </button>
         ))}
       </div>
     </div>
@@ -76,6 +85,7 @@ function isAgentResult(status: string | undefined): boolean {
 
 export function ChatHistory({ lines }: { lines: ChatLine[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [previewBaseId, setPreviewBaseId] = useState<string | null>(null);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -84,17 +94,23 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
   }, [lines]);
 
   return (
-    <div
-      ref={scrollRef}
-      className="flex flex-col gap-4  py-4"
-    >
+    <>
+      <div
+        ref={scrollRef}
+        className="flex flex-col gap-4  py-4"
+      >
 
 
       {lines.map((line) =>
         line.role === "user" ? (
           <div key={`${line.role}-${line.id}`} className="flex justify-end">
             <div className="max-w-[85%] rounded-lg bg-[#2f2f2f] px-4 py-3 text-sm leading-relaxed text-slate-100">
-              {line.promptBases?.length ? <ChatPromptBases bases={line.promptBases} /> : null}
+              {line.promptBases?.length ? (
+                <ChatPromptBases
+                  bases={line.promptBases}
+                  onPreview={(base) => setPreviewBaseId(base.id)}
+                />
+              ) : null}
               {line.attachments?.length && (
                 <div className="mb-2">
                   <div className="text-xs font-semibold text-slate-500">Attachments</div>
@@ -106,7 +122,7 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
 
               {line.text.trim() && (
                 <div>
-                  {(line?.promptBases?.length && line?.promptBases?.length > 0) || (line?.attachments?.length && line?.attachments?.length > 0) && <div className="text-xs font-semibold text-slate-500">Prompt</div>}
+                  {((line?.promptBases?.length && line?.promptBases?.length > 0) || (line?.attachments?.length && line?.attachments?.length > 0)) && <div className="text-xs font-semibold text-slate-500">Prompt</div>}
                   <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
                     <MarkdownPreview text={line.text} />
                   </div>
@@ -140,6 +156,13 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
           </div>
         )
       )}
-    </div>
+      </div>
+
+      <PromptShortcutPreviewModal
+        open={previewBaseId !== null}
+        shortcutId={previewBaseId}
+        onClose={() => setPreviewBaseId(null)}
+      />
+    </>
   );
 }

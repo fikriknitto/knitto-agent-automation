@@ -1,5 +1,5 @@
-import type { AppliedPromptShortcut } from "../lib/prompt-compose";
 import type { PromptAttachment } from "../lib/prompt-attachment";
+import type { AppliedPromptShortcut } from "../lib/prompt-compose";
 import type { PromptShortcut } from "../lib/prompt-shortcuts";
 import type { BridgeSummary, ChatLine, ConnectionState } from "../lib/types";
 import { ChatHistory } from "./job-progress";
@@ -55,6 +55,7 @@ export function ChatMain({
         disabled={workerState === "busy"}
         onAddPromptBase={onAddPromptBase}
         onApplyMainPrompt={onApplyMainPrompt}
+        previewEditable
       />
       <PromptEditor
         variant="composer"

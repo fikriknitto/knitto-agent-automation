@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ── 1. Compile (toolchain only — no Chromium) ─────────────────────────────────
-FROM node:22-bookworm-slim AS build
+FROM node:24.16.0-bookworm-slim AS build
 
 RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 
@@ -23,7 +23,7 @@ COPY prompt-shortcuts prompt-shortcuts
 RUN pnpm build:shared && pnpm build:backend && pnpm build:frontend
 
 # ── 2. Production deps (backend + @knitto/shared only — no frontend toolchain) ──
-FROM node:22-bookworm-slim AS backend-deps
+FROM node:24.16.0-bookworm-slim AS backend-deps
 
 RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 
@@ -41,7 +41,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     && pnpm prune --prod
 
 # ── 3. Browser OS packages (Chromium + ffmpeg) ────────────────────────────────
-FROM node:22-bookworm-slim AS browser-base
+FROM node:24.16.0-bookworm-slim AS browser-base
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
