@@ -6,7 +6,7 @@ defaults:
   password: ""
 ---
 # Login Page
-1. Buka halaman login incident status http://192.168.20.27:11011
+1. Buka halaman login incident status http://192.168.20.27:11011/login
 2. Tunggu hingga halaman selesai dimuat dan form login ditampilkan.
 3. Isi field username dengan {username}.
 4. Isi field password dengan {password}.

@@ -4,11 +4,10 @@ icon: "🔑"
 variant: amber
 order: 1
 defaults:
-  url: ""
   username: "fikri"
   password: "11221122"
 ---
-1. Buka halaman {url}.
+1. Buka halaman http://192.168.20.27:5420/.
 2. Tunggu hingga halaman selesai dimuat.
 3. Cari form login.
 4. Isi username/email dengan:
