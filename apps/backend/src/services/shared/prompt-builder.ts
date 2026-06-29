@@ -55,6 +55,15 @@ Match each file to the correct input using user request + snapshot (inputType=fi
 `;
 }
 
+function buildPromptBasePathsBlock(paths: string[]): string {
+  if (!paths.length) return "";
+  const lines = paths.map((path, index) => `${index + 1}. ${path}`);
+  return `
+System prompt base files (reference only — content is on disk, do not assume inline):
+${lines.join("\n")}
+`;
+}
+
 export function buildAgentPrompt(args: {
   channel: string;
   text: string;
@@ -62,12 +71,14 @@ export function buildAgentPrompt(args: {
   attachments?: PromptAttachment[];
   visionAttachments?: VisionAttachment[];
   savedAttachments?: SavedAttachment[];
+  promptBasePaths?: string[];
 }): AgentPromptInput {
   const strategyKey = args.strategy as AutomationStrategyKey | undefined;
   const visionCount =
     args.visionAttachments?.length ?? visionAttachmentsFrom(args.attachments).length;
   const hasVision = visionCount > 0;
   const hasSavedFiles = Boolean(args.savedAttachments?.length);
+  const hasPromptBasePaths = Boolean(args.promptBasePaths?.length);
 
   const strategyBody =
     strategyKey && strategyKey in AUTOMATION_PROMPT_STRATEGIES
@@ -82,7 +93,7 @@ Channel (for logging): ${args.channel}
 
 Strategy:
 ${strategyBody}
-${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}
+${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}
 Behave like a human tester:
 - Observe the page (automation_get_page_snapshot; elements include bbox, inViewport, disabled, inputType for inputs; div>svg menu icons appear as role=button; div cursor-pointer menu rows appear as role=menuitem)
 - Call automation_take_screenshot when the snapshot is ambiguous or you need visual confirmation (optional path = filename only; files are saved under screenshoot/agents/{jobId}/)

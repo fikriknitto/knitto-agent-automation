@@ -1,9 +1,43 @@
 import { useEffect, useRef } from "react";
+import { cn } from "../lib/cn";
+import type { ChatPromptBase } from "../lib/prompt-compose";
 import type { ChatLine } from "../lib/types";
 import { statusLine } from "../lib/ui";
 import { MarkdownPreview } from "./markdown-preview";
 import { ChatAttachments } from "./prompt-attachment-chip";
 import { Badge, Card, CardTitle } from "./ui";
+
+const promptBaseVariantClasses: Record<ChatPromptBase["variant"], string> = {
+  blue: "border-blue-500/30 bg-blue-500/10 text-blue-300",
+  green: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+  amber: "border-amber-500/30 bg-amber-500/10 text-yellow-300",
+  neutral: "border-slate-400/30 bg-slate-400/10 text-slate-300",
+};
+
+function ChatPromptBases({ bases }: { bases: ChatPromptBase[] }) {
+  if (!bases.length) return null;
+
+  return (
+    <div className="mb-2 flex flex-col gap-1.5">
+      <div className="text-xs font-semibold text-slate-500">System Prompt</div>
+      <div className="flex flex-wrap gap-1.5" aria-label="System Prompt">
+        {bases.map((base) => (
+          <span
+            key={base.id}
+            className={cn(
+              "inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-0.5 text-xs",
+              promptBaseVariantClasses[base.variant]
+            )}
+            title={base.path}
+          >
+            {base.icon ? `${base.icon} ` : ""}
+            <span className="truncate">{base.label}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 type JobProgressProps = {
   workerState: "idle" | "busy";
@@ -60,18 +94,25 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
         line.role === "user" ? (
           <div key={`${line.role}-${line.id}`} className="flex justify-end">
             <div className="max-w-[85%] rounded-lg bg-[#2f2f2f] px-4 py-3 text-sm leading-relaxed text-slate-100">
-
-              {line.text.trim() && (
-                <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
-                  <MarkdownPreview text={line.text} />
+              {line.promptBases?.length ? <ChatPromptBases bases={line.promptBases} /> : null}
+              {line.attachments?.length && (
+                <div className="mb-2">
+                  <div className="text-xs font-semibold text-slate-500">Attachments</div>
+                  <div className={line.text.trim() || line.promptBases?.length ? "mt-2" : undefined}>
+                    <ChatAttachments attachments={line.attachments} />
+                  </div>
                 </div>
               )}
 
-              {line.attachments?.length ? (
-                <div className={line.text.trim() ? "mt-2" : undefined}>
-                  <ChatAttachments attachments={line.attachments} />
+              {line.text.trim() && (
+                <div>
+                  {(line?.promptBases?.length > 0 || line?.attachments?.length > 0) && <div className="text-xs font-semibold text-slate-500">Prompt</div>}
+                  <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
+                    <MarkdownPreview text={line.text} />
+                  </div>
                 </div>
-              ) : null}
+              )}
+
             </div>
           </div>
         ) : (

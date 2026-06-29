@@ -1,6 +1,10 @@
 import type { AgentJobMessage, BridgeJob, UserPromptMessage } from "@knitto/shared";
-import { mergePromptParts } from "@knitto/shared";
 import { agentMessages } from "./agent-messages.js";
+import {
+  PromptBaseInvalidPathError,
+  PromptBaseNotFoundError,
+  resolvePromptBasePaths,
+} from "../prompt-base-resolver.js";
 
 export type JobEmitter = (msg: AgentJobMessage) => void;
 
@@ -23,16 +27,55 @@ export class JobQueue {
   ) {}
 
   enqueueFromMessage(msg: UserPromptMessage): void {
-    const text = mergePromptParts(msg.promptBases ?? [], msg.mainPrompt ?? msg.text);
+    void this.enqueueFromMessageAsync(msg);
+  }
+
+  private async enqueueFromMessageAsync(msg: UserPromptMessage): Promise<void> {
+    const main = (msg.mainPrompt ?? msg.text).trim();
+
+    let promptBasePaths: string[] | undefined;
+    if (msg.promptBasePaths?.length) {
+      try {
+        promptBasePaths = await resolvePromptBasePaths(msg.promptBasePaths);
+      } catch (error) {
+        const message =
+          error instanceof PromptBaseNotFoundError ||
+          error instanceof PromptBaseInvalidPathError
+            ? error.message
+            : "Failed to resolve prompt base paths";
+        this.emit({
+          type: "agent_job",
+          id: msg.id,
+          channel: msg.channel,
+          status: "error",
+          message,
+          progress: 100,
+        });
+        return;
+      }
+    }
+
+    if (!main && !msg.attachments?.length && !promptBasePaths?.length) {
+      this.emit({
+        type: "agent_job",
+        id: msg.id,
+        channel: msg.channel,
+        status: "error",
+        message: "Prompt, attachment, or prompt base is required",
+        progress: 100,
+      });
+      return;
+    }
+
     this.enqueue({
       id: msg.id,
       channel: msg.channel,
-      text,
+      text: main,
       strategy: msg.strategy,
       model: msg.model,
       attachments: msg.attachments,
-      promptBases: msg.promptBases,
-      mainPrompt: msg.mainPrompt,
+      promptBasePaths,
+      mainPrompt: main || undefined,
     });
   }
 

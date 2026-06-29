@@ -55,6 +55,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       attachments: job.attachments,
       visionAttachments,
       savedAttachments,
+      promptBasePaths: job.promptBasePaths,
     });
 
     const modelId = job.model ?? config.modelId;

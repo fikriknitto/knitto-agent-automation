@@ -1,14 +1,14 @@
-import { XIcon } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import type { AppMemorySummary } from "@/lib/app-memory/types";
+import { useAppMemory } from "@/hooks/app-memory/use-app-memories";
 import {
   useCreateAppMemory,
   useUpdateAppMemory,
 } from "@/hooks/app-memory/use-app-memory-mutations";
-import { useAppMemory } from "@/hooks/app-memory/use-app-memories";
-import { MarkdownEditor } from "./markdown-editor";
+import type { AppMemorySummary } from "@/lib/app-memory/types";
+import { XIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { modalBackdrop, modalHeader, modalTitle } from "../lib/ui";
+import { MarkdownEditor } from "./markdown-editor";
 import { Button, Input, Label } from "./ui";
 
 type AppMemoryFormModalProps = {
@@ -26,31 +26,50 @@ export function AppMemoryFormModal({
   onClose,
   onSaved,
 }: AppMemoryFormModalProps) {
+  const editingAppId = open && mode === "edit" ? memory?.appId : null;
+  const {
+    data: loadedMemory,
+    isError: loadFailed,
+    error: loadError,
+  } = useAppMemory(editingAppId);
+
+  const detailReady =
+    mode === "create" ||
+    Boolean(loadedMemory && memory && loadedMemory.appId === memory.appId);
+
   const createMutation = useCreateAppMemory();
   const updateMutation = useUpdateAppMemory();
-  const { data: loadedMemory, isLoading: loadingDetail } = useAppMemory(
-    open && mode === "edit" ? memory?.appId : null
-  );
 
   const [appId, setAppId] = useState("");
   const [content, setContent] = useState("");
+  const [initializedFor, setInitializedFor] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const saving = createMutation.isPending || updateMutation.isPending;
-  const isBusy = saving || (mode === "edit" && loadingDetail);
+  const isBusy = saving || (mode === "edit" && !detailReady);
+  const editorReady = mode === "create" ? open : initializedFor === memory?.appId;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setInitializedFor(null);
+      return;
+    }
 
-    if (mode === "edit" && loadedMemory) {
-      setAppId(loadedMemory.appId);
-      setContent(loadedMemory.content);
-    } else if (mode === "create") {
+    if (mode === "create") {
       setAppId("");
       setContent("");
+      setInitializedFor("create");
+      setError("");
+      return;
     }
+
+    if (!detailReady || !loadedMemory || !memory) return;
+
+    setAppId(loadedMemory.appId);
+    setContent(loadedMemory.content);
+    setInitializedFor(loadedMemory.appId);
     setError("");
-  }, [open, mode, loadedMemory]);
+  }, [open, mode, detailReady, loadedMemory, memory]);
 
   useEffect(() => {
     if (!open) return;
@@ -101,7 +120,7 @@ export function AppMemoryFormModal({
     <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4" role="presentation">
       <div className={modalBackdrop} aria-label="Tutup" onClick={handleClose} />
       <div
-        className="relative z-[1] flex max-h-[min(92vh,720px)] w-[min(92vw,720px)] flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[rgba(12,14,22,0.98)] shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+        className="relative z-[1] flex max-h-[min(92vh,720px)] w-[min(92vw,1080px)] flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[rgba(12,14,22,0.98)] shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="app-memory-form-title"
@@ -142,10 +161,15 @@ export function AppMemoryFormModal({
 
           <div className="flex min-h-0 flex-1 flex-col gap-1.5">
             <Label>Konten markdown</Label>
-            {mode === "edit" && loadingDetail ? (
+            {mode === "edit" && loadFailed ? (
+              <p className="m-0 text-sm text-red-400">
+                {loadError instanceof Error ? loadError.message : "Gagal memuat konten memory"}
+              </p>
+            ) : mode === "edit" && !editorReady ? (
               <p className="m-0 text-sm text-slate-500">Memuat konten…</p>
             ) : (
               <MarkdownEditor
+                key={mode === "edit" ? memory?.appId : "create"}
                 value={content}
                 onChange={setContent}
                 disabled={isBusy}

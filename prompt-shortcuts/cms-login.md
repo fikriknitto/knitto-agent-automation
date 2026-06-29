@@ -1,29 +1,20 @@
 ---
-label: Login
+label: CMS - Login
 icon: "🔑"
 variant: amber
 order: 1
 defaults:
-  URL: "http://192.168.20.27:5420"
-  USERNAME: "fikri"
-  PASSWORD: "11221122"
+  url: ""
+  username: "fikri"
+  password: "11221122"
 ---
-TUJUAN:
-Login ke CMS dan memastikan dashboard berhasil terbuka.
-
-PARAMETER:
-URL=http://192.168.20.27:5420/
-USERNAME=fikri
-PASSWORD=11221122
-
-LANGKAH:
-1. Buka halaman {URL}.
+1. Buka halaman {url}.
 2. Tunggu hingga halaman selesai dimuat.
 3. Cari form login.
 4. Isi username/email dengan:
-   {USERNAME}
+   {username}
 5. Isi password dengan:
-   {PASSWORD}
+   {password}
 6. Klik tombol Login / Sign In / Masuk.
 7. Tunggu proses autentikasi selesai.
 8. Verifikasi bahwa login berhasil dengan memastikan dashboard atau halaman admin terbuka.

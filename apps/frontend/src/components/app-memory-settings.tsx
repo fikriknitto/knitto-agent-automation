@@ -117,8 +117,14 @@ export function AppMemorySettings() {
         mode={formMode === "edit" ? "edit" : "create"}
         memory={editingMemory}
         open={formMode !== null}
-        onClose={() => setFormMode(null)}
-        onSaved={() => setFormMode(null)}
+        onClose={() => {
+          setFormMode(null);
+          setEditingMemory(null);
+        }}
+        onSaved={() => {
+          setFormMode(null);
+          setEditingMemory(null);
+        }}
       />
 
       <AppMemoryDeleteModal

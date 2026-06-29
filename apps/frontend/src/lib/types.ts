@@ -1,5 +1,6 @@
 import type { AgentJobMessage, BridgeInfo } from "@knitto/shared";
 import type { PromptAttachment } from "@knitto/shared";
+import type { ChatPromptBase } from "./prompt-compose";
 
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "error";
 
@@ -12,6 +13,7 @@ export type ChatLine = {
   role: "user" | "agent" | "system";
   text: string;
   attachments?: PromptAttachment[];
+  promptBases?: ChatPromptBase[];
   status?: AgentJobMessage["status"];
   progress?: number;
   result?: string;

@@ -77,7 +77,7 @@ export class AutomationWsClient {
     text: string;
     strategy: string;
     model: string;
-    promptBases?: string[];
+    promptBasePaths?: string[];
     mainPrompt?: string;
     attachments?: Array<{
       storagePath: string;
@@ -94,7 +94,7 @@ export class AutomationWsClient {
       text: payload.text,
       strategy: payload.strategy,
       model: payload.model,
-      ...(payload.promptBases?.length ? { promptBases: payload.promptBases } : {}),
+      ...(payload.promptBasePaths?.length ? { promptBasePaths: payload.promptBasePaths } : {}),
       ...(payload.mainPrompt ? { mainPrompt: payload.mainPrompt } : {}),
       ...(payload.attachments?.length ? { attachments: payload.attachments } : {}),
     });

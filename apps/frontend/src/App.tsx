@@ -7,7 +7,7 @@ import { PromptShortcutsSettings } from "./components/prompt-shortcuts-settings"
 import { AppMemorySettings } from "./components/app-memory-settings";
 import { SettingsModal } from "./components/settings-modal";
 import { type PromptAttachment } from "./lib/prompt-attachment";
-import { type AppliedPromptShortcut, mergePromptParts } from "./lib/prompt-compose";
+import { type AppliedPromptShortcut, promptShortcutPath } from "./lib/prompt-compose";
 import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
 import type { PromptShortcut } from "./lib/prompt-shortcuts";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
@@ -177,10 +177,9 @@ export function App() {
   };
 
   const handleSend = () => {
-    const baseTexts = promptBases.map((b) => b.filledText);
     const main = prompt.trim();
-    const merged = mergePromptParts(baseTexts, main);
-    if ((!merged && !promptAttachments.length) || !selectedBridgeId) return;
+    const basePaths = promptBases.map((b) => promptShortcutPath(b.id));
+    if ((!main && !promptAttachments.length && !basePaths.length) || !selectedBridgeId) return;
 
     const bridge = bridges.find((b) => b.bridgeId === selectedBridgeId);
 
@@ -188,12 +187,21 @@ export function App() {
     activeJobId.current = id;
 
     const attachments = promptAttachments.length ? [...promptAttachments] : undefined;
+    const baseSnapshot = promptBases.map((b) => ({
+      id: b.id,
+      label: b.label,
+      icon: b.icon,
+      variant: b.variant,
+      path: promptShortcutPath(b.id),
+    }));
+
     setChatLines((prev) => [
       ...prev,
       {
         id: `u-${id}`,
         role: "user",
-        text: merged || "Gunakan lampiran sesuai instruksi di prompt user.",
+        text: main,
+        promptBases: baseSnapshot.length ? baseSnapshot : undefined,
         attachments,
       },
     ]);
@@ -205,8 +213,8 @@ export function App() {
     wsRef.current?.sendUserPrompt({
       id,
       bridgeId: selectedBridgeId,
-      text: merged || "Gunakan lampiran sesuai instruksi di prompt user.",
-      promptBases: baseTexts.length ? baseTexts : undefined,
+      text: main || "Gunakan lampiran sesuai instruksi di prompt user.",
+      promptBasePaths: basePaths.length ? basePaths : undefined,
       mainPrompt: main || undefined,
       strategy,
       model:
@@ -214,7 +222,7 @@ export function App() {
         bridge?.defaultModel ||
         bridge?.models?.[0]?.id ||
         "",
-      attachments: promptAttachments.length ? promptAttachments : undefined,
+      attachments,
     });
   };
 

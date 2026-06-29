@@ -36,7 +36,7 @@ export const userPromptMessageSchema = z.object({
   strategy: z.string().optional(),
   model: z.string().optional(),
   attachments: z.array(promptAttachmentSchema).optional(),
-  promptBases: z.array(z.string()).optional(),
+  promptBasePaths: z.array(z.string().min(1)).optional(),
   mainPrompt: z.string().optional(),
 });
 
@@ -74,7 +74,7 @@ export interface BridgeJob {
   strategy?: string;
   model?: string;
   attachments?: PromptAttachment[];
-  promptBases?: string[];
+  promptBasePaths?: string[];
   mainPrompt?: string;
 }
 

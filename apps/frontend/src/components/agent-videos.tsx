@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import { resolveApiUrl } from "@/lib/api/config";
+import { useEffect, useRef, useState } from "react";
 
 type AgentVideosProps = {
   url: string;
@@ -46,7 +46,7 @@ export function AgentVideos({ url }: AgentVideosProps) {
         controls
         className="mt-3 max-h-[360px] rounded-lg border mx-auto border-white/10 bg-black"
         src={playbackUrl}
-        preload="metadata"
+        preload="auto"
         onError={handleError}
       />
       <div className="text-center w-full mt-2 text-gray-500 italic text-sm truncate">Video : {filename}</div>

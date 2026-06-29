@@ -6,13 +6,34 @@
 - Tutup/batal: klik Batal/Cancel, tombol X/Tutup, atau click_at di backdrop luar bbox modal
 - Setelah isi form lengkap, jangan klik Batal/X/backdrop kecuali user minta batal
 
+## List page column search (global)
+- Filter kolom tabel (mis. nama kain web, warna kain, slug, kategori): `automation_fill` keyword target → tunggu baris terfilter → klik baris/edit yang cocok
+- Setelah memasukkan keyword yang sesuai, **tekan Enter opsional** — cukup klik hasil jika list sudah terfilter; gunakan Enter hanya bila UI belum memfilter otomatis
+
+## Navigasi Menu (flow ke halaman target)
+1. **Snapshot** — cek apakah ada **icon menu hamburger** di **pojok kanan atas** (role=button, div+svg, name "Menu" / "Icon button").
+2. **Klik icon hamburger** — `automation_click` dengan `clickCenter:true` jika icon kecil; `automation_wait_for` sampai daftar menu muncul.
+3. **Snapshot ulang** — baca menuitem/link yang terbuka.
+4. **Cari menu target** — pilih item yang **namanya sama** atau **mendekati** permintaan user (partial match, kata kunci).
+5. **Klik menu tersebut** — `automation_click` pada menuitem/link (locator `ref` dari snapshot, atau `role`+`name` / `text`).
+6. **Tunggu & cek navigasi** — `automation_wait_for` type=network_idle; snapshot/cek URL atau konten halaman baru sudah muncul.
+7. **Retry jika belum navigate** (ulangi sampai **3 kali** per menu):
+   - Attempt 1: `automation_click` menu item
+   - Jika halaman belum berubah → Attempt 2: `automation_click` **parent** menu item (wrapper/li/div pembungkus dari snapshot atau elemen induk terdekat)
+   - Jika masih belum navigate → Attempt 3: `automation_click_at` pada pusat bbox menu (x,y dari snapshot)
+   - Setelah setiap attempt: `automation_wait_for` + snapshot untuk verifikasi navigasi; stop jika sudah berhasil
+8. **Snapshot lagi** sebelum interaksi berikutnya.
+
+Contoh: user minta "Content Manager" → klik item yang text/name mengandung "Content Manager".
+
+
 ## Dropdown selection (global)
 - Buka dropdown: `automation_click` pada field/trigger combobox, atau `automation_select_option` untuk native `<select>`
 - Setelah menu dropdown terbuka (listbox / daftar option terlihat di snapshot):
   1. `automation_get_page_snapshot` — cari item yang **teksnya sama** atau **mengandung** nilai yang dicari (exact match dulu, lalu partial/contains)
   2. `automation_click` item tersebut (`role=option`, `role=menuitem`, atau `text` locator); jika gagal, `automation_click_at` pada bbox center opsi
   3. Alternatif keyboard: `automation_press_key` **ArrowDown** / **ArrowUp** sampai item aktif sesuai target, lalu **Enter**
-- Dropdown dengan search/filter: isi field pencarian dulu (`automation_fill`), tunggu hasil filter, lalu klik baris yang teksnya cocok/mengandung target
+- Dropdown dengan search/filter: isi field pencarian dulu (`automation_fill`) dengan keyword yang sesuai → `automation_wait_for` hasil filter muncul → klik baris yang teksnya cocok/mengandung target. **Enter opsional** setelah isi keyword (boleh `automation_press_key` Enter jika filter belum muncul; jika hasil sudah terfilter, langsung klik baris tanpa Enter)
 - Jangan gunakan Escape untuk menutup dropdown (tool diblokir); pilih option atau klik di luar menu
 
 ## Login Page
@@ -124,3 +145,17 @@
 - Scroll up inside modal (locator e8) to reach Simpan (e10 in modal context)
 - After Simpan: modal closes, row 1 list shows "Beli Bahan kualiatas dewa"
 - Screenshot: banner1-text-updated.png
+
+## Session 2026-06-29 (Warna Kain — upload foto produk MAROON)
+- Channel: automation-default
+- Task: update foto produk for COTTON COMBED 30S / MAROON / PLAIN
+- Login fikri/11221122 → sidebar toggle ref e25/e30 (top-left) → menu "Warna Kain (Detail Kain)" ref e33
+- List URL: /content-manager/belanja/warna-kain
+- Filter column inputs (header row y~194): e6=Nama Kain Web, e7=Warna Kain, e8=Kategori Kain Web & Portal — fill value + Enter each
+- Row action buttons (per row, x~1260-1288): LEFT e22 = edit (pencil) → /warna-kain/{id}/edit; RIGHT e23 = history (read-only) — do NOT use e23 for edit
+- Edit page: sidebar tab "foto produk" ref e104; scroll down to Upload Foto section
+- Upload Foto file input: e43 (inputType=file, hidden — automation_upload_file works directly); label e42 "Upload Foto"
+- Additional file inputs in foto section: e33, e37, e41 (per photo slot)
+- Save: Simpan button ref e8 (top-right header on edit page, not modal)
+- Upload path used: C:\Users\Fikri\Desktop\APP\knitto-agent-browser\storage\cot-bamboo-24s-putih-netral-1 (1).webp
+- Verified: COTTON COMBED and PLAIN visible on edit page after save; remained on /warna-kain/2/edit
