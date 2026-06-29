@@ -1,12 +1,10 @@
 ---
-label: Cari Combed 20s di knitto.co.id
+label: Cari Produk knitto.co.id
 icon: "🔍"
 variant: blue
 order: 2
 defaults:
   PRODUCT_NAME: "Combed 20s"
-  MAX_PRICE: "100000"
-  MIN_RATING: "4"
   MARKETPLACE: "knitto.co.id"
 ---
 TUJUAN:
@@ -14,8 +12,6 @@ Mencari produk yang paling relevan berdasarkan kriteria yang diberikan.
 
 PARAMETER:
 PRODUCT_NAME={PRODUCT_NAME}
-MAX_PRICE={MAX_PRICE}
-MIN_RATING={MIN_RATING}
 MARKETPLACE={MARKETPLACE}
 
 LANGKAH:
@@ -25,8 +21,6 @@ LANGKAH:
 4. Analisis hasil pencarian.
 5. Prioritaskan produk berdasarkan:
    - Nama paling relevan
-   - Jumlah penjualan terbanyak
-   - Harga tidak melebihi {MAX_PRICE}
 6. Buka maksimal 5 produk teratas untuk verifikasi.
 7. Pilih produk terbaik yang memenuhi kriteria.
 8. Ambil informasi berikut:

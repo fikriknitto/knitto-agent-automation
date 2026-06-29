@@ -13,7 +13,7 @@ COPY apps/frontend/package.json apps/frontend/
 COPY packages/shared/package.json packages/shared/
 
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --ignore-scripts
 
 COPY packages/shared packages/shared
 COPY apps/backend apps/backend
@@ -37,7 +37,7 @@ COPY --from=build /app/apps/backend/dist apps/backend/dist
 
 ENV CI=true
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prod --filter @knitto/backend... \
+    pnpm install --frozen-lockfile --prod --filter @knitto/backend... --ignore-scripts \
     && pnpm prune --prod
 
 # ── 3. Browser OS packages (Chromium + ffmpeg) ────────────────────────────────
