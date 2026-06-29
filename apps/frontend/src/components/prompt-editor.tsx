@@ -1,8 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import type { StorageEntry } from "@knitto/shared";
-import Placeholder from "@tiptap/extension-placeholder";
-import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { SendIcon, StopCircleIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/cn";
@@ -23,6 +21,8 @@ import { PromptAttachments } from "./prompt-attachment-chip";
 import { PromptTemplateShortcut } from "./prompt-template-shortcut";
 import { StorageMediaModal } from "./storage-media-modal";
 import { Button } from "./ui";
+import { invalidateStorageEntries } from "@/query/invalidate-storage";
+import { createPromptEditorExtensions } from "@/lib/tiptap/prompt-editor-extensions";
 
 const MIN_HEIGHT_PX = 96;
 const MAX_HEIGHT_PX = 256;
@@ -88,10 +88,33 @@ function isEmptyMarkdown(markdown: string): boolean {
   return !markdown.trim();
 }
 
+function normalizeMarkdown(markdown: string): string {
+  return markdown.replace(/\r\n/g, "\n").trim();
+}
+
 /** TipTap empty doc may serialize differently than parent `""` — treat both as empty. */
 function markdownMatches(a: string, b: string): boolean {
-  if (isEmptyMarkdown(a) && isEmptyMarkdown(b)) return true;
-  return a === b;
+  const left = normalizeMarkdown(a);
+  const right = normalizeMarkdown(b);
+  if (!left && !right) return true;
+  return left === right;
+}
+
+function setEditorPlainText(
+  editor: NonNullable<ReturnType<typeof useEditor>>,
+  text: string
+): void {
+  const lines = text.split("\n");
+  editor.commands.setContent(
+    {
+      type: "doc",
+      content: lines.map((line) => ({
+        type: "paragraph",
+        content: line ? [{ type: "text", text: line }] : [],
+      })),
+    },
+    { emitUpdate: false }
+  );
 }
 
 function applyEditorMarkdown(
@@ -104,8 +127,19 @@ function applyEditorMarkdown(
     editor.commands.clearContent(false);
   } else {
     editor.commands.setContent(markdown, { contentType: "markdown", emitUpdate: false });
+    if (!normalizeMarkdown(editor.getMarkdown())) {
+      setEditorPlainText(editor, markdown);
+    }
   }
   autosizeEditor(editor.view.dom as HTMLElement, minHeight, maxHeight);
+}
+
+function releaseSkipEmit(skipEmit: { current: boolean }): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      skipEmit.current = false;
+    });
+  });
 }
 
 export function PromptEditor({
@@ -133,6 +167,7 @@ export function PromptEditor({
 
   const skipEmit = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   const [dragOver, setDragOver] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
   const [storageModalOpen, setStorageModalOpen] = useState(false);
@@ -170,12 +205,13 @@ export function PromptEditor({
         }
         const next = await filesToPromptAttachments(accepted);
         onAttachmentsChange([...attachments, ...next]);
+        await invalidateStorageEntries(queryClient);
         setAttachError(null);
       } catch (error) {
         setAttachError(error instanceof Error ? error.message : String(error));
       }
     },
-    [attachments, onAttachmentsChange]
+    [attachments, onAttachmentsChange, queryClient]
   );
 
   const attachedStoragePaths = useMemo(
@@ -248,15 +284,7 @@ export function PromptEditor({
   };
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-        blockquote: false,
-        horizontalRule: false,
-      }),
-      Placeholder.configure({ placeholder }),
-      Markdown,
-    ],
+    extensions: createPromptEditorExtensions(placeholder),
     content: value,
     contentType: "markdown",
     immediatelyRender: false,
@@ -288,10 +316,8 @@ export function PromptEditor({
 
     skipEmit.current = true;
     applyEditorMarkdown(editor, value, minHeight, maxHeight);
-    queueMicrotask(() => {
-      skipEmit.current = false;
-    });
-  }, [editor, value]);
+    releaseSkipEmit(skipEmit);
+  }, [editor, value, minHeight, maxHeight]);
 
   const isBusy = workerState === "busy";
   const actionTitle = isBusy ? "Stop job" : validationMessage ?? "Send prompt";

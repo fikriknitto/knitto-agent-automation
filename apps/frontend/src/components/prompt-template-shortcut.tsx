@@ -24,8 +24,8 @@ export function PromptTemplateShortcut({
   return (
     <div className="w-full h-full">
       <div className="mb-2.5 flex flex-col flex-wrap gap-2 rounded-xl bg-black/50 p-2">
-        <div className="text-sm font-medium text-gray-500">Base Prompt</div>
-        <div className="flex flex-wrap gap-2" aria-label="Base Prompt">
+        <div className="text-sm font-medium text-gray-500">System Prompt</div>
+        <div className="flex flex-wrap gap-2" aria-label="System Prompt">
           {bases.map((base) => (
             <div
               key={base.id}

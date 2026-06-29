@@ -32,6 +32,26 @@
     background: linear-gradient(to top, #0d0d0d 70%, transparent);
   }
 
+  .chat-main-scroll {
+    scrollbar-gutter: stable;
+  }
+
+  .chat-main-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .chat-main-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chat-main-scroll::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-white/15;
+  }
+
+  .chat-main-scroll::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/25;
+  }
+
   .prompt-editor-content {
     overflow-wrap: anywhere;
     @apply min-h-24 text-sm leading-relaxed text-slate-100 outline-none ring-0;
@@ -56,6 +76,32 @@
 
   .prompt-editor-content p:last-child {
     @apply mb-0;
+  }
+
+  .prompt-editor-content h1 {
+    @apply mb-2 mt-3 text-lg font-bold text-slate-50;
+  }
+
+  .prompt-editor-content h2 {
+    @apply mb-1.5 mt-2.5 text-base font-semibold text-slate-50;
+  }
+
+  .prompt-editor-content h3 {
+    @apply mb-1 mt-2 text-sm font-semibold text-slate-100;
+  }
+
+  .prompt-editor-content h1:first-child,
+  .prompt-editor-content h2:first-child,
+  .prompt-editor-content h3:first-child {
+    @apply mt-0;
+  }
+
+  .prompt-editor-content blockquote {
+    @apply my-2 border-l-2 border-white/20 pl-3 text-slate-300 italic;
+  }
+
+  .prompt-editor-content hr {
+    @apply my-2 border-0 border-t border-white/10;
   }
 
   .prompt-editor-content ul,
@@ -97,5 +143,17 @@
 
   .prompt-editor-content--composer {
     @apply min-h-11 text-sm;
+  }
+
+  .prompt-editor-content--composer h1 {
+    @apply text-base;
+  }
+
+  .prompt-editor-content--composer h2 {
+    @apply text-sm;
+  }
+
+  .prompt-editor-content--composer h3 {
+    @apply text-sm font-medium;
   }
 }

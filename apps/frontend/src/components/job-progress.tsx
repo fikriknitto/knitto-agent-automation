@@ -60,7 +60,13 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
         line.role === "user" ? (
           <div key={`${line.role}-${line.id}`} className="flex justify-end">
             <div className="max-w-[85%] rounded-lg bg-[#2f2f2f] px-4 py-3 text-sm leading-relaxed text-slate-100">
-              {line.text.trim() && <span className="wrap-break-word">{line.text}</span>}
+
+              {line.text.trim() && (
+                <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
+                  <MarkdownPreview text={line.text} />
+                </div>
+              )}
+
               {line.attachments?.length ? (
                 <div className={line.text.trim() ? "mt-2" : undefined}>
                   <ChatAttachments attachments={line.attachments} />
@@ -69,7 +75,7 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
             </div>
           </div>
         ) : (
-          <div key={`${line.role}-${line.id}`} className="flex w-full justify-start pb-[200px]">
+          <div key={`${line.role}-${line.id}`} className="flex w-full justify-start">
             <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-200">
               {isAgentResult(line.status) ? (
                 <div className="rounded-xl px-4 py-3">

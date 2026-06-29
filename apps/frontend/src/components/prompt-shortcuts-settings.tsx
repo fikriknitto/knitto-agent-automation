@@ -1,12 +1,10 @@
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import {
-  deletePromptShortcut,
-  fetchPromptShortcuts,
-  type PromptShortcut,
-} from "../lib/prompt-shortcuts";
+import { useState } from "react";
+import type { PromptShortcut } from "../lib/prompt-shortcuts";
 import type { ConnectionState } from "../lib/types";
 import { cn } from "../lib/cn";
+import { useDeletePromptShortcut } from "@/hooks/prompt-shortcuts/use-prompt-shortcut-mutations";
+import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
 import {
   DeletePromptShortcutModal,
   PromptShortcutFormModal,
@@ -31,28 +29,18 @@ export function PromptShortcutsSettings({
   selectedModel,
   connectionState,
 }: PromptShortcutsSettingsProps) {
-  const [shortcuts, setShortcuts] = useState<PromptShortcut[]>([]);
+  const { data: shortcuts = [], isError, error } = usePromptShortcuts();
+  const deleteMutation = useDeletePromptShortcut();
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [editingShortcut, setEditingShortcut] = useState<PromptShortcut | null>(null);
   const [deletingShortcut, setDeletingShortcut] = useState<PromptShortcut | null>(null);
-  const [formBusy, setFormBusy] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
-  const [loadError, setLoadError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
-  const reload = useCallback(async () => {
-    try {
-      const items = await fetchPromptShortcuts();
-      setShortcuts(items);
-      setLoadError("");
-    } catch (err) {
-      setShortcuts([]);
-      setLoadError(err instanceof Error ? err.message : "Gagal memuat prompt shortcuts");
-    }
-  }, []);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const loadError = isError
+    ? error instanceof Error
+      ? error.message
+      : "Gagal memuat prompt shortcuts"
+    : deleteError;
 
   const canGenerate =
     connectionState === "connected" && Boolean(selectedBridgeId) && Boolean(selectedModel);
@@ -69,15 +57,12 @@ export function PromptShortcutsSettings({
 
   const handleDelete = async () => {
     if (!deletingShortcut) return;
-    setDeleteBusy(true);
+    setDeleteError("");
     try {
-      await deletePromptShortcut(deletingShortcut.id);
+      await deleteMutation.mutateAsync(deletingShortcut.id);
       setDeletingShortcut(null);
-      await reload();
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Gagal menghapus prompt shortcut");
-    } finally {
-      setDeleteBusy(false);
+      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus prompt shortcut");
     }
   };
 
@@ -100,10 +85,7 @@ export function PromptShortcutsSettings({
       ) : (
         <div className="divide-y divide-white/8">
           {shortcuts.map((shortcut) => (
-            <div
-              key={shortcut.id}
-              className="flex items-center justify-between gap-4 py-4"
-            >
+            <div key={shortcut.id} className="flex items-center justify-between gap-4 py-4">
               <div className="min-w-0 flex-1">
                 <div
                   className={cn("truncate text-sm font-medium", variantClasses[shortcut.variant])}
@@ -142,18 +124,16 @@ export function PromptShortcutsSettings({
         mode={formMode === "edit" ? "edit" : "create"}
         shortcut={editingShortcut}
         open={formMode !== null}
-        busy={formBusy}
         selectedBridgeId={selectedBridgeId}
         selectedModel={selectedModel}
         canGenerate={canGenerate}
         onClose={() => setFormMode(null)}
-        onSaved={() => void reload()}
-        onBusyChange={setFormBusy}
+        onSaved={() => setFormMode(null)}
       />
 
       <DeletePromptShortcutModal
         shortcut={deletingShortcut}
-        busy={deleteBusy}
+        busy={deleteMutation.isPending}
         onClose={() => setDeletingShortcut(null)}
         onConfirm={() => void handleDelete()}
       />

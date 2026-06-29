@@ -29,10 +29,3 @@ LANGKAH:
 8. Verifikasi bahwa login berhasil dengan memastikan dashboard atau halaman admin terbuka.
 9. Jika muncul popup, notifikasi, atau banner, tutup jika menghalangi.
 10. Jika login gagal, ambil pesan error yang muncul dan laporkan.
-
-ATURAN:
-- Jangan mengubah data apa pun setelah login.
-- Jangan logout.
-- Jangan membuka menu yang tidak diperlukan.
-- Berhenti setelah dashboard berhasil terbuka.
-- Laporkan status akhir login.

@@ -1,6 +1,6 @@
 import type { PromptAttachment } from "@knitto/shared";
 export type { PromptAttachment } from "@knitto/shared";
-import { uploadStorageFiles } from "./file-manager-api";
+import { uploadStorageFiles } from "./api/file-manager-api";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;

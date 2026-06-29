@@ -38,7 +38,7 @@ export function AgentVideos({ url }: AgentVideosProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative pb-10">
       <video
         key={playbackUrl}
         controls

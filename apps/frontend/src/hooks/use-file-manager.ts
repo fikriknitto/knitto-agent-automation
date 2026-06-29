@@ -1,12 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ListEntriesResponse, StorageEntry, StorageSummary } from "@knitto/shared";
-import {
-  createStorageFolder,
-  deleteStorageEntry,
-  listStorageEntries,
-  renameStorageEntry,
-  uploadStorageFiles,
-} from "../lib/file-manager-api";
+import { useCallback, useMemo, useState } from "react";
+import type { StorageEntry, StorageSummary } from "@knitto/shared";
+import { useStorageEntries } from "./file-manager/use-storage-entries";
+import { useStorageMutations } from "./file-manager/use-storage-mutations";
 
 export type SortField = "name" | "date" | "size";
 export type SortDirection = "asc" | "desc";
@@ -18,108 +13,103 @@ type UseFileManagerOptions = {
 
 export function useFileManager({ enabled }: UseFileManagerOptions) {
   const [currentPath, setCurrentPath] = useState("");
-  const [entries, setEntries] = useState<StorageEntry[]>([]);
-  const [summary, setSummary] = useState<StorageSummary>({ itemCount: 0, totalBytes: 0 });
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result: ListEntriesResponse = await listStorageEntries(currentPath);
-      setEntries(result.entries);
-      setSummary(result.summary);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat file");
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPath]);
+  const {
+    data,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useStorageEntries(currentPath, { enabled });
 
-  useEffect(() => {
-    if (!enabled) return;
-    void refresh();
-  }, [enabled, refresh]);
+  const mutations = useStorageMutations(currentPath);
+
+  const entries = data?.entries ?? [];
+  const summary: StorageSummary = data?.summary ?? { itemCount: 0, totalBytes: 0 };
+  const loading = isLoading;
+  const error =
+    mutationError ??
+    (isError
+      ? queryError instanceof Error
+        ? queryError.message
+        : "Gagal memuat file"
+      : null);
 
   const navigate = useCallback((path: string) => {
     setSearchQuery("");
     setCurrentPath(path);
+    setMutationError(null);
   }, []);
 
-  const openFolder = useCallback((entry: StorageEntry) => {
-    if (entry.type !== "folder") return;
-    navigate(entry.path);
-  }, [navigate]);
+  const openFolder = useCallback(
+    (entry: StorageEntry) => {
+      if (entry.type !== "folder") return;
+      navigate(entry.path);
+    },
+    [navigate]
+  );
 
   const uploadFiles = useCallback(
     async (files: FileList | File[]) => {
       const list = Array.from(files);
       if (!list.length) return;
-      setUploading(true);
-      setError(null);
+      setMutationError(null);
       try {
-        await uploadStorageFiles(currentPath, list);
-        await refresh();
+        await mutations.uploadFiles(list);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Gagal mengunggah file");
-      } finally {
-        setUploading(false);
+        setMutationError(err instanceof Error ? err.message : "Gagal mengunggah file");
       }
     },
-    [currentPath, refresh]
+    [mutations]
   );
 
   const createFolder = useCallback(
     async (name: string) => {
       const trimmed = name.trim();
       if (!trimmed) return;
-      setError(null);
+      setMutationError(null);
       try {
-        await createStorageFolder(currentPath, trimmed);
-        await refresh();
+        await mutations.createFolder(trimmed);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Gagal membuat folder");
+        setMutationError(err instanceof Error ? err.message : "Gagal membuat folder");
         throw err;
       }
     },
-    [currentPath, refresh]
+    [mutations]
   );
 
   const renameEntry = useCallback(
     async (path: string, name: string) => {
       const trimmed = name.trim();
       if (!trimmed) return null;
-      setError(null);
+      setMutationError(null);
       try {
-        const entry = await renameStorageEntry(path, trimmed);
-        await refresh();
+        const entry = await mutations.renameEntry(path, trimmed);
         return entry;
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Gagal mengubah nama");
+        setMutationError(err instanceof Error ? err.message : "Gagal mengubah nama");
         throw err;
       }
     },
-    [refresh]
+    [mutations]
   );
 
   const deleteEntry = useCallback(
     async (path: string) => {
-      setError(null);
+      setMutationError(null);
       try {
-        await deleteStorageEntry(path);
-        await refresh();
+        await mutations.deleteEntry(path);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Gagal menghapus");
+        setMutationError(err instanceof Error ? err.message : "Gagal menghapus");
         throw err;
       }
     },
-    [refresh]
+    [mutations]
   );
 
   const visibleEntries = useMemo(() => {
@@ -150,7 +140,7 @@ export function useFileManager({ enabled }: UseFileManagerOptions) {
     entries: visibleEntries,
     summary,
     loading,
-    uploading,
+    uploading: mutations.isUploading,
     error,
     searchQuery,
     sortField,
@@ -166,7 +156,7 @@ export function useFileManager({ enabled }: UseFileManagerOptions) {
     createFolder,
     renameEntry,
     deleteEntry,
-    refresh,
-    setError,
+    refresh: () => void refetch(),
+    setError: setMutationError,
   };
 }

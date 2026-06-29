@@ -86,7 +86,7 @@ export function PromptShortcutApplyModal({
           >
             <LayersIcon className="mt-0.5 size-5 shrink-0 text-blue-300" aria-hidden />
             <div>
-              <div className="text-sm font-medium text-slate-100">Base Prompt</div>
+              <div className="text-sm font-medium text-slate-100">System Prompt</div>
               <div className="mt-1 text-xs text-slate-500">
                 Instruksi otomasi / template. Ditampilkan sebagai chip di atas editor.
               </div>
@@ -102,7 +102,7 @@ export function PromptShortcutApplyModal({
             <div>
               <div className="text-sm font-medium text-slate-100">Main prompt</div>
               <div className="mt-1 text-xs text-slate-500">
-                Instruksi utama di composer. Mengganti isi editor TipTap.
+                Instruksi utama di composer. Mengganti isi editor
               </div>
             </div>
           </button>

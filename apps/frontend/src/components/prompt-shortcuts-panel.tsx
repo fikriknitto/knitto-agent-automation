@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import {
-  fetchPromptShortcuts,
-  type PromptShortcut,
-} from "../lib/prompt-shortcuts";
+import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
+import { useState } from "react";
+import type { PromptShortcut } from "../lib/prompt-shortcuts";
 import { PromptShortcutApplyModal } from "./prompt-shortcut-apply-modal";
 import { PromptShortcutItem } from "./prompt-shortcut-item";
 
@@ -17,24 +15,14 @@ export function PromptShortcutsPanel({
   onAddPromptBase,
   onApplyMainPrompt,
 }: PromptShortcutsPanelProps) {
-  const [shortcuts, setShortcuts] = useState<PromptShortcut[]>([]);
-  const [loadError, setLoadError] = useState("");
+  const { data: shortcuts = [], isError, error } = usePromptShortcuts();
   const [pendingShortcut, setPendingShortcut] = useState<PromptShortcut | null>(null);
 
-  const reload = useCallback(async () => {
-    try {
-      const items = await fetchPromptShortcuts();
-      setShortcuts(items);
-      setLoadError("");
-    } catch (err) {
-      setShortcuts([]);
-      setLoadError(err instanceof Error ? err.message : "Gagal memuat prompt shortcuts");
-    }
-  }, []);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const loadError = isError
+    ? error instanceof Error
+      ? error.message
+      : "Gagal memuat prompt shortcuts"
+    : "";
 
   const handleSelect = (shortcut: PromptShortcut) => {
     if (disabled) return;

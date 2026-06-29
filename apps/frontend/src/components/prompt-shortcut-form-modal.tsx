@@ -2,13 +2,15 @@ import { XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  createPromptShortcut,
   extractTemplatePlaceholders,
-  generatePromptShortcutTemplate,
   type PromptShortcut,
   type PromptShortcutVariant,
-  updatePromptShortcut,
 } from "../lib/prompt-shortcuts";
+import {
+  useCreatePromptShortcut,
+  useGeneratePromptShortcut,
+  useUpdatePromptShortcut,
+} from "@/hooks/prompt-shortcuts/use-prompt-shortcut-mutations";
 import { modalBackdrop, modalHeader, modalTitle } from "../lib/ui";
 import { Button, Input, Label, Select, Textarea } from "./ui";
 
@@ -16,15 +18,12 @@ type PromptShortcutFormModalProps = {
   mode: "create" | "edit";
   shortcut: PromptShortcut | null;
   open: boolean;
-  busy: boolean;
   selectedBridgeId: string;
   selectedModel: string;
   canGenerate: boolean;
   onClose: () => void;
   onSaved: (shortcut: PromptShortcut) => void;
-  onBusyChange: (busy: boolean) => void;
 };
-
 const VARIANTS: PromptShortcutVariant[] = ["blue", "green", "amber", "neutral"];
 
 type DefaultsRow = { key: string; value: string };
@@ -47,22 +46,26 @@ export function PromptShortcutFormModal({
   mode,
   shortcut,
   open,
-  busy,
   selectedBridgeId,
   selectedModel,
   canGenerate,
   onClose,
   onSaved,
-  onBusyChange,
 }: PromptShortcutFormModalProps) {
+  const createMutation = useCreatePromptShortcut();
+  const updateMutation = useUpdatePromptShortcut();
+  const generateMutation = useGeneratePromptShortcut();
+
   const [label, setLabel] = useState("");
   const [variant, setVariant] = useState<PromptShortcutVariant>("neutral");
   const [template, setTemplate] = useState("");
   const [defaultsRows, setDefaultsRows] = useState<DefaultsRow[]>([{ key: "", value: "" }]);
   const [brief, setBrief] = useState("");
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
 
+  const saving = createMutation.isPending || updateMutation.isPending;
+  const generating = generateMutation.isPending;
+  const isBusy = saving || generating;
   useEffect(() => {
     if (!open) return;
 
@@ -85,7 +88,7 @@ export function PromptShortcutFormModal({
     if (!open) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busy && !generating) {
+      if (event.key === "Escape" && !isBusy) {
         event.preventDefault();
         event.stopImmediatePropagation();
         onClose();
@@ -94,16 +97,14 @@ export function PromptShortcutFormModal({
 
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [open, busy, generating, onClose]);
-
+  }, [open, isBusy, onClose]);
   if (!open) return null;
 
   const handleGenerate = async () => {
     if (!canGenerate || !brief.trim()) return;
-    setGenerating(true);
     setError("");
     try {
-      const result = await generatePromptShortcutTemplate({
+      const result = await generateMutation.mutateAsync({
         bridgeId: selectedBridgeId,
         model: selectedModel,
         brief: brief.trim(),
@@ -118,8 +119,6 @@ export function PromptShortcutFormModal({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal generate prompt");
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -129,7 +128,6 @@ export function PromptShortcutFormModal({
       return;
     }
 
-    onBusyChange(true);
     setError("");
     try {
       const payload = {
@@ -141,18 +139,15 @@ export function PromptShortcutFormModal({
 
       const saved =
         mode === "create"
-          ? await createPromptShortcut(payload)
-          : await updatePromptShortcut(shortcut!.id, payload);
+          ? await createMutation.mutateAsync(payload)
+          : await updateMutation.mutateAsync({ id: shortcut!.id, input: payload });
 
       onSaved(saved);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan prompt shortcut");
-    } finally {
-      onBusyChange(false);
     }
   };
-
   const updateDefaultRow = (index: number, field: "key" | "value", value: string) => {
     setDefaultsRows((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
   };
@@ -165,10 +160,7 @@ export function PromptShortcutFormModal({
     setDefaultsRows((rows) => (rows.length <= 1 ? [{ key: "", value: "" }] : rows.filter((_, i) => i !== index)));
   };
 
-  const isBusy = busy || generating;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4" role="presentation">
+  return createPortal(    <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4" role="presentation">
       <div
         className={modalBackdrop}
         aria-label="Tutup"
@@ -316,9 +308,8 @@ export function PromptShortcutFormModal({
               Batal
             </Button>
             <Button type="submit" size="sm" variant="default" disabled={isBusy}>
-              {busy ? "Menyimpan…" : "Simpan"}
-            </Button>
-          </div>
+              {saving ? "Menyimpan…" : "Simpan"}
+            </Button>          </div>
         </form>
       </div>
     </div>,
