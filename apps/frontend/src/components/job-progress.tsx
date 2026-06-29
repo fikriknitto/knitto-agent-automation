@@ -102,11 +102,3 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
     </div>
   );
 }
-
-
-function EmptyState() {
-  return <div className="max-w-[800px] h-full mx-auto  w-full flex flex-col items-center justify-center">
-    <div className="text-2xl font-bold">Apa yang ingin Anda otomatisasi?</div>
-
-  </div>
-}
