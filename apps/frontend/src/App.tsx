@@ -1,3 +1,4 @@
+import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BridgeCredentials } from "./components/bridge-credentials";
 import { ChatHeader } from "./components/chat-header";
@@ -12,6 +13,7 @@ import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protoco
 import type { PromptShortcut } from "./lib/prompt-shortcuts";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
+import { toMobileConfigPayload } from "./components/platform-selector";
 
 const STORAGE_KEY = "knitto-automation-web";
 
@@ -28,6 +30,8 @@ type PersistedState = {
   openRouterKey?: string;
   nineRouterBaseUrl?: string;
   nineRouterKey?: string;
+  platform?: AutomationPlatform;
+  mobileConfig?: MobileConfig;
 };
 
 function loadState(): PersistedState {
@@ -63,6 +67,10 @@ export function App() {
   const [selectedBridgeId, setSelectedBridgeId] = useState(persisted.selectedBridgeId ?? "");
   const [selectedModel, setSelectedModel] = useState(persisted.selectedModel ?? "");
   const [strategy] = useState(persisted.strategy ?? "automation_human_strategy");
+  const [platform, setPlatform] = useState<AutomationPlatform>(persisted.platform ?? "browser");
+  const [mobileConfig, setMobileConfig] = useState<MobileConfig>(
+    persisted.mobileConfig ?? { appPackage: "" }
+  );
   const [prompt, setPrompt] = useState("");
   const [promptBases, setPromptBases] = useState<AppliedPromptShortcut[]>([]);
   const [promptAttachments, setPromptAttachments] = useState<PromptAttachment[]>([]);
@@ -95,6 +103,8 @@ export function App() {
       openRouterKey,
       nineRouterBaseUrl,
       nineRouterKey,
+      platform,
+      mobileConfig: mobileConfig.appPackage ? mobileConfig : undefined,
     });
   }, [
     host,
@@ -109,6 +119,8 @@ export function App() {
     openRouterKey,
     nineRouterBaseUrl,
     nineRouterKey,
+    platform,
+    mobileConfig,
   ]);
 
   useEffect(() => {
@@ -223,6 +235,8 @@ export function App() {
         bridge?.models?.[0]?.id ||
         "",
       attachments,
+      platform,
+      mobileConfig: platform === "mobile" ? toMobileConfigPayload(mobileConfig) : undefined,
     });
   };
 
@@ -294,6 +308,8 @@ export function App() {
         prompt={prompt}
         promptBases={promptBases}
         promptAttachments={promptAttachments}
+        platform={platform}
+        mobileConfig={mobileConfig}
         workerState={workerState}
         connectionState={connectionState}
         selectedBridgeId={selectedBridgeId}
@@ -306,6 +322,8 @@ export function App() {
         onPromptAttachmentsChange={setPromptAttachments}
         onSelectBridge={setSelectedBridgeId}
         onSelectModel={setSelectedModel}
+        onPlatformChange={setPlatform}
+        onMobileConfigChange={setMobileConfig}
         onSend={handleSend}
         onCancel={handleCancel}
       />

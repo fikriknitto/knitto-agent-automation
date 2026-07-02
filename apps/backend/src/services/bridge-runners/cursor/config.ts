@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveAutomationMcpPath } from "../../shared/automation-mcp-config.js";
+import { resolveAutomationMcpPath, resolveMobileMcpPath } from "../../shared/automation-mcp-config.js";
 
 function resolveBridgeCwd(): string {
   if (process.env.KNITTO_BRIDGE_CWD) return process.env.KNITTO_BRIDGE_CWD;
@@ -21,6 +21,7 @@ export default {
     return cursorApiKey;
   },
   automationMcpPath: resolveAutomationMcpPath(),
+  mobileMcpPath: resolveMobileMcpPath(),
   get automationMcpCommand() {
     return process.env.AUTOMATION_MCP_COMMAND?.trim() || "pnpm";
   },

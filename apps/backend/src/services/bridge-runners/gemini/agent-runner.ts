@@ -7,7 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { createLogger } from "../../../automation/core/index.js";
 import { connectAutomationMcp } from "../../shared/automation-mcp-client.js";
 import { setAutomationJobId } from "../../../automation/libs/job-context.js";
-import { buildAgentPrompt, buildGeminiContents } from "../../shared/prompt-builder.js";
+import { buildPromptForJob, buildGeminiContents } from "../../shared/prompt-builder.js";
 import {
   cleanupJobAttachments,
   loadVisionAttachments,
@@ -16,7 +16,7 @@ import {
 import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-screenshot.js";
 import { jobMediaPayload, jobMediaPayloadAsync } from "../../shared/job-media-payload.js";
 import { agentMessages } from "../../shared/agent-messages.js";
-import { closeAutomationBrowser } from "../../shared/mcp-browser.js";
+import { closeMcpSession } from "../../shared/mcp-session-cleanup.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
 
@@ -71,7 +71,10 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
 
     const savedAttachments = await resolveJobAttachments(job.attachments);
     const visionAttachments = await loadVisionAttachments(job.attachments);
-    const promptInput = buildAgentPrompt({
+    const platform = job.platform ?? "browser";
+    const promptInput = buildPromptForJob({
+      platform,
+      mobileConfig: job.mobileConfig,
       channel: job.channel,
       text: job.text,
       strategy: job.strategy,
@@ -93,7 +96,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       progress: 5,
     });
 
-    const mcpClient = await connectAutomationMcp(job.id);
+    const mcpClient = await connectAutomationMcp(job.id, platform, job.mobileConfig);
 
     let lastTool = "";
     let lastScreenshot: string | undefined;
@@ -183,7 +186,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
     } finally {
       clearTimeout(timeout);
       setAutomationJobId(null);
-      await closeAutomationBrowser(mcpClient);
+      await closeMcpSession(mcpClient, platform);
       const media = await jobMediaPayloadAsync(job.id);
 
       if (terminal?.kind === "completed") {

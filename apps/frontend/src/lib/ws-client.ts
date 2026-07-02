@@ -1,3 +1,4 @@
+import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { resolveWsUrl } from "./api-client";
 import type { AgentJobMessage, BridgeSummary, ConnectionState } from "./types";
 
@@ -79,6 +80,8 @@ export class AutomationWsClient {
     model: string;
     promptBasePaths?: string[];
     mainPrompt?: string;
+    platform?: AutomationPlatform;
+    mobileConfig?: MobileConfig;
     attachments?: Array<{
       storagePath: string;
       mimeType: string;
@@ -96,6 +99,8 @@ export class AutomationWsClient {
       model: payload.model,
       ...(payload.promptBasePaths?.length ? { promptBasePaths: payload.promptBasePaths } : {}),
       ...(payload.mainPrompt ? { mainPrompt: payload.mainPrompt } : {}),
+      ...(payload.platform ? { platform: payload.platform } : {}),
+      ...(payload.mobileConfig ? { mobileConfig: payload.mobileConfig } : {}),
       ...(payload.attachments?.length ? { attachments: payload.attachments } : {}),
     });
   }

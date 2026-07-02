@@ -67,6 +67,42 @@ export class JobQueue {
       return;
     }
 
+    if (msg.platform === "mobile" && !msg.mobileConfig?.appPackage?.trim()) {
+      this.emit({
+        type: "agent_job",
+        id: msg.id,
+        channel: msg.channel,
+        status: "error",
+        message: "Mobile job requires appPackage — pilih package di UI",
+        progress: 100,
+      });
+      return;
+    }
+
+    if (!main && !msg.attachments?.length && !promptBasePaths?.length) {
+      this.emit({
+        type: "agent_job",
+        id: msg.id,
+        channel: msg.channel,
+        status: "error",
+        message: "Prompt, attachment, or prompt base is required",
+        progress: 100,
+      });
+      return;
+    }
+
+    if (msg.platform === "mobile" && !msg.mobileConfig?.appPackage?.trim()) {
+      this.emit({
+        type: "agent_job",
+        id: msg.id,
+        channel: msg.channel,
+        status: "error",
+        message: "Mobile job requires appPackage — pilih package di UI",
+        progress: 100,
+      });
+      return;
+    }
+
     this.enqueue({
       id: msg.id,
       channel: msg.channel,
@@ -76,6 +112,8 @@ export class JobQueue {
       attachments: msg.attachments,
       promptBasePaths,
       mainPrompt: main || undefined,
+      platform: msg.platform,
+      mobileConfig: msg.mobileConfig,
     });
   }
 

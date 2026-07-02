@@ -44,6 +44,19 @@ export function resolveMcpStdioEntry(root = resolveMonorepoRoot()): string {
   return join(root, "apps", "backend", "src", "automation", "mcp-stdio-server.ts");
 }
 
+export function resolveMobileMcpStdioEntry(root = resolveMonorepoRoot()): string {
+  if (process.env.MOBILE_MCP_PATH?.trim()) {
+    return resolve(root, process.env.MOBILE_MCP_PATH.trim());
+  }
+  return join(root, "apps", "backend", "src", "mobile-automation", "mcp-stdio-server.ts");
+}
+
+export function resolveMobileMemoryDir(root = resolveMonorepoRoot()): string {
+  const fromEnv = process.env.MOBILE_MEMORY_DIR?.trim();
+  if (!fromEnv) return join(root, "memory", "mobile");
+  return resolve(root, fromEnv);
+}
+
 export function resolveStorageRoot(root = resolveMonorepoRoot()): string {
   const fromEnv = process.env.STORAGE_ROOT?.trim();
   if (!fromEnv) return join(root, "storage");

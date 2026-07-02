@@ -11,7 +11,21 @@ export const queryKeys = {
   },
   appMemory: {
     all: ["app-memory"] as const,
-    list: () => [...queryKeys.appMemory.all, "list"] as const,
-    detail: (appId: string) => [...queryKeys.appMemory.all, "detail", appId] as const,
+    browser: {
+      list: () => [...queryKeys.appMemory.all, "browser", "list"] as const,
+      detail: (appId: string) => [...queryKeys.appMemory.all, "browser", "detail", appId] as const,
+    },
+    mobile: {
+      all: ["app-memory", "mobile"] as const,
+      list: () => [...queryKeys.appMemory.mobile.all, "list"] as const,
+      detail: (appId: string) => [...queryKeys.appMemory.mobile.all, "detail", appId] as const,
+    },
+    list: () => [...queryKeys.appMemory.browser.list()] as const,
+    detail: (appId: string) => [...queryKeys.appMemory.browser.detail(appId)] as const,
+  },
+  mobilePackages: {
+    all: ["mobile-packages"] as const,
+    list: (udid: string, query: string) =>
+      [...queryKeys.mobilePackages.all, udid, query] as const,
   },
 };

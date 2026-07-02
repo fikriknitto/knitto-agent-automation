@@ -1,5 +1,5 @@
+import type { AutomationPlatform, MobileConfig, StorageEntry } from "@knitto/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import type { StorageEntry } from "@knitto/shared";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { SendIcon, StopCircleIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +17,8 @@ import {
 import type { AppliedPromptShortcut } from "../lib/prompt-compose";
 import type { BridgeSummary, ConnectionState } from "../lib/types";
 import { BridgeAndModel } from "./bridge-and-model";
+import { PlatformSelector } from "./platform-selector";
+import { useMobileDevicesStream } from "@/hooks/mobile/use-mobile-devices-stream";
 import { PromptAttachments } from "./prompt-attachment-chip";
 import { PromptTemplateShortcut } from "./prompt-template-shortcut";
 import { StorageMediaModal } from "./storage-media-modal";
@@ -41,6 +43,8 @@ type PromptEditorProps = {
   value: string;
   attachments: PromptAttachment[];
   promptBases: AppliedPromptShortcut[];
+  platform: AutomationPlatform;
+  mobileConfig: MobileConfig;
   placeholder?: string;
   connectionState: ConnectionState;
   selectedBridgeId: string;
@@ -52,6 +56,8 @@ type PromptEditorProps = {
   onRemovePromptBase: (id: string) => void;
   onSelectBridge: (id: string) => void;
   onSelectModel: (id: string) => void;
+  onPlatformChange: (platform: AutomationPlatform) => void;
+  onMobileConfigChange: (config: MobileConfig) => void;
   onSend: () => void;
   onCancel: () => void;
 };
@@ -59,7 +65,10 @@ type PromptEditorProps = {
 function resolveValidationMessage(
   connectionState: ConnectionState,
   selectedBridgeId: string,
-  hasContent: boolean
+  hasContent: boolean,
+  platform: AutomationPlatform,
+  mobileConfig: MobileConfig,
+  mobileDeviceCount: number
 ): string | null {
   if (connectionState !== "connected") {
     if (connectionState === "connecting") {
@@ -76,6 +85,14 @@ function resolveValidationMessage(
   if (!hasContent) {
     return "Tulis prompt atau lampirkan file sebelum mengirim.";
   }
+  if (platform === "mobile") {
+    if (!mobileConfig.appPackage?.trim()) {
+      return "Pilih package Android terlebih dahulu.";
+    }
+    if (mobileDeviceCount === 0) {
+      return "Tidak ada device Android terhubung.";
+    }
+  }
   return null;
 }
 
@@ -84,6 +101,8 @@ export function PromptEditor({
   value,
   attachments,
   promptBases,
+  platform,
+  mobileConfig,
   placeholder = 'e.g. carikan produk "combed 30s" di halaman knitto.co.id',
   connectionState,
   selectedBridgeId,
@@ -95,6 +114,8 @@ export function PromptEditor({
   onRemovePromptBase,
   onSelectBridge,
   onSelectModel,
+  onPlatformChange,
+  onMobileConfigChange,
   onSend,
   onCancel,
 }: PromptEditorProps) {
@@ -109,16 +130,38 @@ export function PromptEditor({
   const [attachError, setAttachError] = useState<string | null>(null);
   const [storageModalOpen, setStorageModalOpen] = useState(false);
 
+  const { devices: mobileDevices } = useMobileDevicesStream(platform === "mobile");
   const hasText = Boolean(value.trim());
   const hasContent = hasText || attachments.length > 0 || promptBases.length > 0;
+  const mobileReady =
+    platform !== "mobile" ||
+    (Boolean(mobileConfig.appPackage?.trim()) && mobileDevices.length > 0);
   const canSend =
-    connectionState === "connected" && Boolean(selectedBridgeId) && hasContent;
+    connectionState === "connected" &&
+    Boolean(selectedBridgeId) &&
+    hasContent &&
+    mobileReady;
   const validationMessage = useMemo(
     () =>
       workerState === "busy"
         ? null
-        : resolveValidationMessage(connectionState, selectedBridgeId, hasContent),
-    [connectionState, selectedBridgeId, hasContent, workerState]
+        : resolveValidationMessage(
+            connectionState,
+            selectedBridgeId,
+            hasContent,
+            platform,
+            mobileConfig,
+            mobileDevices.length
+          ),
+    [
+      connectionState,
+      selectedBridgeId,
+      hasContent,
+      workerState,
+      platform,
+      mobileConfig,
+      mobileDevices.length,
+    ]
   );
 
   const appendAttachments = useCallback(
@@ -383,7 +426,15 @@ export function PromptEditor({
           </div>
 
           {isComposer && (
-            <div className="flex items-center justify-between gap-2 px-1 pb-0.5">
+            <div className="flex flex-col gap-2 px-1 pb-0.5">
+              <PlatformSelector
+                platform={platform}
+                mobileConfig={mobileConfig}
+                disabled={isBusy}
+                onPlatformChange={onPlatformChange}
+                onMobileConfigChange={onMobileConfigChange}
+              />
+              <div className="flex items-center justify-between gap-2">
               <BridgeAndModel
                 bridges={bridges}
                 selectedBridgeId={selectedBridgeId}
@@ -437,6 +488,7 @@ export function PromptEditor({
                 >
                   {isBusy ? <StopCircleIcon size={16} /> : <SendIcon size={16} />}
                 </Button>
+              </div>
               </div>
             </div>
           )}

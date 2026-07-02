@@ -1,4 +1,4 @@
-import type { PromptAttachment } from "@knitto/shared";
+import type { AutomationPlatform, MobileConfig, PromptAttachment } from "@knitto/shared";
 import {
   DROPDOWN_SELECTION_WORKFLOW,
 } from "../../automation/libs/prompts/dropdown-workflow.js";
@@ -148,6 +148,80 @@ Ringkasan akhir:
     text,
     visionAttachments: args.visionAttachments?.length ? args.visionAttachments : undefined,
   };
+}
+
+export function buildMobileAgentPrompt(args: {
+  channel: string;
+  text: string;
+  mobileConfig?: MobileConfig;
+  attachments?: PromptAttachment[];
+  visionAttachments?: VisionAttachment[];
+  savedAttachments?: SavedAttachment[];
+  promptBasePaths?: string[];
+}): AgentPromptInput {
+  const visionCount =
+    args.visionAttachments?.length ?? visionAttachmentsFrom(args.attachments).length;
+  const hasVision = visionCount > 0;
+  const hasSavedFiles = Boolean(args.savedAttachments?.length);
+  const hasPromptBasePaths = Boolean(args.promptBasePaths?.length);
+  const appPackage = args.mobileConfig?.appPackage ?? "";
+  const userText = args.text.trim();
+
+  const text = `You are an Android mobile automation tester. Use only MCP tools with the mobile_ prefix.
+
+Channel (for logging): ${args.channel}
+Target app package: ${appPackage}
+${args.mobileConfig?.deepLink ? `Deep link: ${args.mobileConfig.deepLink}` : ""}
+${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!).replace(/automation_upload_file/g, "mobile_upload_file") : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}
+Behave like a human tester on Android:
+- Read mobile app memory first (mobile_get_app_memory with appId = "${appPackage}")
+- Launch app (mobile_launch_app)
+- Observe screen (mobile_get_screen_snapshot; elements have refs e1, e2, … with bbox)
+- Interact via mobile_tap / mobile_tap_at / mobile_scroll / mobile_input_text / mobile_upload_file
+- Capture evidence (mobile_take_screenshot)
+- Persist learnings (mobile_update_app_memory with appId = "${appPackage}")
+- Close session when done (mobile_close_session)
+
+Do NOT use automation_* tools on mobile jobs.
+
+User request:
+${userText}
+
+Workflow:
+1. mobile_get_app_memory — appId = "${appPackage}"
+2. mobile_launch_app
+3. mobile_get_screen_snapshot — discover UI; use refs for interactions
+4. mobile_scroll / mobile_tap / mobile_tap_at / mobile_input_text / mobile_upload_file / mobile_press_key
+5. mobile_assert_visible / mobile_wait_for — validate when needed
+6. mobile_take_screenshot — capture evidence
+7. mobile_update_app_memory — persist locator hints and flows
+8. mobile_close_session — release device
+
+Ringkasan akhir:
+- Tulis seluruh ringkasan hasil dalam Bahasa Indonesia (formal, jelas, dan ringkas).
+- Jelaskan langkah yang dilakukan, hasil verifikasi, dan kesimpulan untuk user.`;
+
+  return {
+    text,
+    visionAttachments: args.visionAttachments?.length ? args.visionAttachments : undefined,
+  };
+}
+
+export function buildPromptForJob(args: {
+  platform?: AutomationPlatform;
+  channel: string;
+  text: string;
+  strategy?: string;
+  mobileConfig?: MobileConfig;
+  attachments?: PromptAttachment[];
+  visionAttachments?: VisionAttachment[];
+  savedAttachments?: SavedAttachment[];
+  promptBasePaths?: string[];
+}): AgentPromptInput {
+  if (args.platform === "mobile") {
+    return buildMobileAgentPrompt(args);
+  }
+  return buildAgentPrompt(args);
 }
 
 type UserContentPart =

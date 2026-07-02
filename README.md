@@ -78,6 +78,27 @@ knitto-browser-agent/
 
 ---
 
+## Mobile automation (Android)
+
+Prasyarat:
+
+1. **Appium** — jalankan `appium` (default `http://127.0.0.1:4723`)
+2. **ADB** di PATH — emulator/device terhubung (`adb devices`)
+3. UiAutomator2 driver terkonfigurasi di Appium
+
+Di Web UI:
+
+1. Toggle **Platform → Mobile** di composer
+2. Pilih **Device** (Auto pool atau UDID spesifik) — daftar live via SSE
+3. Pilih **Package** (wajib) dari app terinstall di device
+4. Kirim prompt — agent memakai tool `mobile_*` (tap, scroll, snapshot, upload, dll.)
+
+Memory mobile terpisah di `memory/mobile/` (tab Mobile di Settings → Memory).
+
+Env terkait: lihat bagian Mobile di `apps/backend/.env.example`.
+
+---
+
 ## Instalasi & menjalankan (development)
 
 ```bash
