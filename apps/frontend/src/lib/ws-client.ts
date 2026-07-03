@@ -21,6 +21,7 @@ export type WsClientCallbacks = {
 export class AutomationWsClient {
   private socket: WebSocket | null = null;
   private channel = "";
+  private connectionId = "";
 
   constructor(private readonly callbacks: WsClientCallbacks) {}
 
@@ -44,7 +45,6 @@ export class AutomationWsClient {
     this.socket.onmessage = (event) => {
       try {
         const data = JSON.parse(String(event.data)) as Record<string, unknown>;
-        console.log("DATA", data)
         this.handleMessage(data);
       } catch {
         // ignore
@@ -65,6 +65,7 @@ export class AutomationWsClient {
       this.socket.close();
       this.socket = null;
     }
+    this.connectionId = "";
     this.callbacks.onConnectionState("disconnected");
   }
 
@@ -152,6 +153,9 @@ export class AutomationWsClient {
     switch (data.type) {
       case "joined":
       case "system":
+        if (typeof data.connectionId === "string") {
+          this.connectionId = data.connectionId;
+        }
         this.callbacks.onConnectionState("connected");
         this.refreshStatus();
         break;
@@ -164,9 +168,14 @@ export class AutomationWsClient {
           this.callbacks.onBridges(data.bridges as BridgeSummary[]);
         }
         break;
-      case "agent_job":
-        this.callbacks.onAgentJob(data as unknown as AgentJobMessage);
+      case "agent_job": {
+        const msg = data as unknown as AgentJobMessage;
+        if (msg.connectionId && this.connectionId && msg.connectionId !== this.connectionId) {
+          break;
+        }
+        this.callbacks.onAgentJob(msg);
         break;
+      }
       case "bridge_credentials_request":
         this.callbacks.onCredentialsRequest({
           bridgeId: String(data.bridgeId ?? ""),

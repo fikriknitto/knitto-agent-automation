@@ -42,6 +42,7 @@ export const userPromptMessageSchema = z.object({
   type: z.literal("user_prompt"),
   id: z.string(),
   channel: z.string(),
+  connectionId: z.string().optional(),
   bridgeId: z.string(),
   text: z.string(),
   strategy: z.string().optional(),
@@ -57,6 +58,7 @@ export const agentJobCancelMessageSchema = z.object({
   type: z.literal("agent_job_cancel"),
   id: z.string(),
   channel: z.string(),
+  connectionId: z.string().optional(),
   bridgeId: z.string(),
 });
 
@@ -64,6 +66,7 @@ export const agentJobMessageSchema = z.object({
   type: z.literal("agent_job"),
   id: z.string(),
   channel: z.string(),
+  connectionId: z.string().optional(),
   bridgeId: z.string().optional(),
   status: agentJobStatusSchema,
   message: z.string(),
@@ -84,6 +87,7 @@ export type AgentJobMessage = z.infer<typeof agentJobMessageSchema>;
 export interface BridgeJob {
   id: string;
   channel: string;
+  connectionId?: string;
   text: string;
   strategy?: string;
   model?: string;

@@ -23,7 +23,7 @@ async function main(): Promise<void> {
 
   const bridgeRegistry = new BridgeRegistryService(
     (msg: AgentJobMessage) => {
-      wsHub.broadcastAgentJob(msg.channel, msg);
+      wsHub.emitAgentJob(msg);
     },
     (bridgeId: string, bridgeKind: BridgeKind) => {
       wsHub.broadcastCredentialsRequest(bridgeId, bridgeKind);

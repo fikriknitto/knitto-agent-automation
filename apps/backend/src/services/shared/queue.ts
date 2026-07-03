@@ -15,6 +15,11 @@ export interface BridgeJobHandle {
 
 export type JobRunner = (job: BridgeJob, emit: JobEmitter) => BridgeJobHandle;
 
+function withConnectionId(msg: AgentJobMessage, connectionId?: string): AgentJobMessage {
+  if (!connectionId) return msg;
+  return { ...msg, connectionId };
+}
+
 export class JobQueue {
   private readonly pending = new Map<string, BridgeJob[]>();
   private readonly runningCount = new Map<string, number>();
@@ -32,6 +37,7 @@ export class JobQueue {
 
   private async enqueueFromMessageAsync(msg: UserPromptMessage): Promise<void> {
     const main = (msg.mainPrompt ?? msg.text).trim();
+    const connectionId = msg.connectionId;
 
     let promptBasePaths: string[] | undefined;
     if (msg.promptBasePaths?.length) {
@@ -43,69 +49,61 @@ export class JobQueue {
           error instanceof PromptBaseInvalidPathError
             ? error.message
             : "Failed to resolve prompt base paths";
-        this.emit({
-          type: "agent_job",
-          id: msg.id,
-          channel: msg.channel,
-          status: "error",
-          message,
-          progress: 100,
-        });
+        this.emit(
+          withConnectionId(
+            {
+              type: "agent_job",
+              id: msg.id,
+              channel: msg.channel,
+              status: "error",
+              message,
+              progress: 100,
+            },
+            connectionId
+          )
+        );
         return;
       }
     }
 
     if (!main && !msg.attachments?.length && !promptBasePaths?.length) {
-      this.emit({
-        type: "agent_job",
-        id: msg.id,
-        channel: msg.channel,
-        status: "error",
-        message: "Prompt, attachment, or prompt base is required",
-        progress: 100,
-      });
+      this.emit(
+        withConnectionId(
+          {
+            type: "agent_job",
+            id: msg.id,
+            channel: msg.channel,
+            status: "error",
+            message: "Prompt, attachment, or prompt base is required",
+            progress: 100,
+          },
+          connectionId
+        )
+      );
       return;
     }
 
     if (msg.platform === "mobile" && !msg.mobileConfig?.appPackage?.trim()) {
-      this.emit({
-        type: "agent_job",
-        id: msg.id,
-        channel: msg.channel,
-        status: "error",
-        message: "Mobile job requires appPackage — pilih package di UI",
-        progress: 100,
-      });
-      return;
-    }
-
-    if (!main && !msg.attachments?.length && !promptBasePaths?.length) {
-      this.emit({
-        type: "agent_job",
-        id: msg.id,
-        channel: msg.channel,
-        status: "error",
-        message: "Prompt, attachment, or prompt base is required",
-        progress: 100,
-      });
-      return;
-    }
-
-    if (msg.platform === "mobile" && !msg.mobileConfig?.appPackage?.trim()) {
-      this.emit({
-        type: "agent_job",
-        id: msg.id,
-        channel: msg.channel,
-        status: "error",
-        message: "Mobile job requires appPackage — pilih package di UI",
-        progress: 100,
-      });
+      this.emit(
+        withConnectionId(
+          {
+            type: "agent_job",
+            id: msg.id,
+            channel: msg.channel,
+            status: "error",
+            message: "Mobile job requires appPackage — pilih package di UI",
+            progress: 100,
+          },
+          connectionId
+        )
+      );
       return;
     }
 
     this.enqueue({
       id: msg.id,
       channel: msg.channel,
+      connectionId,
       text: main,
       strategy: msg.strategy,
       model: msg.model,
@@ -118,14 +116,19 @@ export class JobQueue {
   }
 
   enqueue(job: BridgeJob): void {
-    this.emit({
-      type: "agent_job",
-      id: job.id,
-      channel: job.channel,
-      status: "queued",
-      message: agentMessages.waitingInQueue,
-      progress: 0,
-    });
+    this.emit(
+      withConnectionId(
+        {
+          type: "agent_job",
+          id: job.id,
+          channel: job.channel,
+          status: "queued",
+          message: agentMessages.waitingInQueue,
+          progress: 0,
+        },
+        job.connectionId
+      )
+    );
 
     const list = this.pending.get(job.channel) ?? [];
     list.push(job);
@@ -138,14 +141,20 @@ export class JobQueue {
     if (list) {
       const idx = list.findIndex((j) => j.id === jobId);
       if (idx >= 0) {
+        const job = list[idx]!;
         list.splice(idx, 1);
-        this.emit({
-          type: "agent_job",
-          id: jobId,
-          channel,
-          status: "cancelled",
-          message: agentMessages.cancelledWhileQueued,
-        });
+        this.emit(
+          withConnectionId(
+            {
+              type: "agent_job",
+              id: jobId,
+              channel,
+              status: "cancelled",
+              message: agentMessages.cancelledWhileQueued,
+            },
+            job.connectionId
+          )
+        );
         return true;
       }
     }
@@ -173,7 +182,10 @@ export class JobQueue {
 
       this.runningCount.set(channel, this.getRunning(channel) + 1);
 
-      const handle = this.startJob(job, this.emit);
+      const emitForJob: JobEmitter = (msg) => {
+        this.emit(withConnectionId(msg, job.connectionId));
+      };
+      const handle = this.startJob(job, emitForJob);
       this.activeCancels.set(job.id, handle.cancel);
 
       try {

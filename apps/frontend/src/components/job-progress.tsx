@@ -135,7 +135,7 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
           <div key={`${line.role}-${line.id}`} className="flex w-full justify-start">
             <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-200">
               {isAgentResult(line.status) ? (
-                <div className="rounded-xl px-4 py-3">
+                <div className="rounded-xl px-4 pt-3 pb-28">
                   <MarkdownPreview
                     text={line.text}
                     screenshots={line.screenshots}

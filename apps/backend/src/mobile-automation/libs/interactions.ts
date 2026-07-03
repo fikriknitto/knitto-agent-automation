@@ -76,6 +76,84 @@ export async function tapAt(x: number, y: number): Promise<{ success: boolean; x
   return tapAtCoordinates(driver, x, y);
 }
 
+const MIN_SCROLL_DIMENSION = 100;
+
+type ScrollBounds = { left: number; top: number; width: number; height: number };
+
+function computeSafeInsets(screenWidth: number, screenHeight: number) {
+  const topInset = Math.max(48, Math.round(screenHeight * 0.1));
+  const bottomInset = Math.max(48, Math.round(screenHeight * 0.08));
+  const sideInset = Math.round(screenWidth * 0.05);
+  return { topInset, bottomInset, sideInset };
+}
+
+function shrinkInsetsForSmallScreen(
+  screenWidth: number,
+  screenHeight: number,
+  topInset: number,
+  bottomInset: number,
+  sideInset: number
+): ScrollBounds {
+  const reducedTop = Math.round(topInset * 0.5);
+  const reducedBottom = Math.round(bottomInset * 0.5);
+  const reducedSide = Math.round(sideInset * 0.5);
+  return {
+    left: reducedSide,
+    top: reducedTop,
+    width: screenWidth - 2 * reducedSide,
+    height: screenHeight - reducedTop - reducedBottom,
+  };
+}
+
+function applySafeInsetsToBounds(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  screenWidth: number,
+  screenHeight: number
+): ScrollBounds {
+  const { topInset, bottomInset, sideInset } = computeSafeInsets(screenWidth, screenHeight);
+
+  const safeLeft = Math.max(left, sideInset);
+  const safeTop = Math.max(top, topInset);
+  const right = Math.min(left + width, screenWidth - sideInset);
+  const bottom = Math.min(top + height, screenHeight - bottomInset);
+  const safeWidth = right - safeLeft;
+  const safeHeight = bottom - safeTop;
+
+  if (safeWidth < MIN_SCROLL_DIMENSION || safeHeight < MIN_SCROLL_DIMENSION) {
+    return shrinkInsetsForSmallScreen(screenWidth, screenHeight, topInset, bottomInset, sideInset);
+  }
+
+  return { left: safeLeft, top: safeTop, width: safeWidth, height: safeHeight };
+}
+
+async function getScrollBounds(driver: Browser, locator?: MobileLocator): Promise<ScrollBounds> {
+  const win = await driver.getWindowSize();
+
+  if (locator) {
+    const el = await resolveLocator(driver, locator);
+    const rect = await el.getLocation();
+    const size = await el.getSize();
+    return applySafeInsetsToBounds(rect.x, rect.y, size.width, size.height, win.width, win.height);
+  }
+
+  const { topInset, bottomInset, sideInset } = computeSafeInsets(win.width, win.height);
+  const bounds: ScrollBounds = {
+    left: sideInset,
+    top: topInset,
+    width: win.width - 2 * sideInset,
+    height: win.height - topInset - bottomInset,
+  };
+
+  if (bounds.width < MIN_SCROLL_DIMENSION || bounds.height < MIN_SCROLL_DIMENSION) {
+    return shrinkInsetsForSmallScreen(win.width, win.height, topInset, bottomInset, sideInset);
+  }
+
+  return bounds;
+}
+
 export async function scrollScreen(args: {
   direction: "up" | "down" | "top" | "bottom";
   amount?: number;
@@ -85,26 +163,7 @@ export async function scrollScreen(args: {
   const driver = await getDriver();
   const amount = args.amount ?? 400;
 
-  let left = 0;
-  let top = 0;
-  let width = 0;
-  let height = 0;
-
-  if (args.locator) {
-    const el = await resolveLocator(driver, args.locator);
-    const rect = await el.getLocation();
-    const size = await el.getSize();
-    left = rect.x;
-    top = rect.y;
-    width = size.width;
-    height = size.height;
-  } else {
-    const win = await driver.getWindowSize();
-    left = 0;
-    top = 0;
-    width = win.width;
-    height = win.height;
-  }
+  const { left, top, width, height } = await getScrollBounds(driver, args.locator);
 
   const percent = Math.min(100, Math.max(10, Math.round((amount / height) * 100)));
   let direction: string = args.direction;
