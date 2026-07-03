@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 import type { ChatPromptBase } from "../lib/prompt-compose";
 import type { ChatLine } from "../lib/types";
-import { statusLine } from "../lib/ui";
 import { MarkdownPreview } from "./markdown-preview";
 import { ChatAttachments } from "./prompt-attachment-chip";
 import { PromptShortcutPreviewModal } from "./prompt-shortcut-preview-modal";
-import { Badge, Card, CardTitle } from "./ui";
+import { Badge } from "./ui";
 
 const promptBaseVariantClasses: Record<ChatPromptBase["variant"], string> = {
   blue: "border-blue-500/30 bg-blue-500/10 text-blue-300",
@@ -48,39 +47,33 @@ function ChatPromptBases({
   );
 }
 
-type JobProgressProps = {
-  workerState: "idle" | "busy";
-  lastJobMessage: string;
-  lastJobProgress: number;
-};
-
-export function JobProgress({ workerState, lastJobMessage, lastJobProgress }: JobProgressProps) {
-  return (
-    <Card>
-      <CardTitle compact>Job progress</CardTitle>
-      <p className={statusLine}>
-        Worker:{" "}
-        <Badge variant={workerState === "busy" ? "warning" : "default"}>
-          {workerState === "busy" ? "Busy" : "Idle"}
-        </Badge>
-      </p>
-      {lastJobMessage && (
-        <>
-          <p className="my-2 text-sm text-slate-300">{lastJobMessage}</p>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/6">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-[width] duration-300 ease-out"
-              style={{ width: `${lastJobProgress}%` }}
-            />
-          </div>
-        </>
-      )}
-    </Card>
-  );
-}
-
 function isAgentResult(status: string | undefined): boolean {
   return status === "completed" || status === "error" || status === "cancelled";
+}
+
+function AgentJobInlineProgress({ line }: { line: ChatLine }) {
+  const progress = line.progress ?? (line.status === "queued" ? 0 : 5);
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3">
+      <p className="text-sm text-slate-200">{line.text || "Memproses…"}</p>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/6">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-[width] duration-300 ease-out"
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {line.status && (
+          <Badge variant={line.status === "queued" ? "default" : "warning"}>{line.status}</Badge>
+        )}
+        {line.toolName && (
+          <span className="text-xs text-slate-500">{line.toolName}</span>
+        )}
+        <span className="text-xs text-slate-600">{progress}%</span>
+      </div>
+    </div>
+  );
 }
 
 export function ChatHistory({ lines }: { lines: ChatLine[] }) {
@@ -95,67 +88,59 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
 
   return (
     <>
-      <div
-        ref={scrollRef}
-        className="flex flex-col gap-4  py-4"
-      >
-
-
-      {lines.map((line) =>
-        line.role === "user" ? (
-          <div key={`${line.role}-${line.id}`} className="flex justify-end">
-            <div className="max-w-[85%] rounded-lg bg-[#2f2f2f] px-4 py-3 text-sm leading-relaxed text-slate-100">
-              {line.promptBases?.length ? (
-                <ChatPromptBases
-                  bases={line.promptBases}
-                  onPreview={(base) => setPreviewBaseId(base.id)}
-                />
-              ) : null}
-              {line.attachments?.length && (
-                <div className="mb-2">
-                  <div className="text-xs font-semibold text-slate-500">Attachments</div>
-                  <div className={line.text.trim() || line.promptBases?.length ? "mt-2" : undefined}>
-                    <ChatAttachments attachments={line.attachments} />
-                  </div>
-                </div>
-              )}
-
-              {line.text.trim() && (
-                <div>
-                  {((line?.promptBases?.length && line?.promptBases?.length > 0) || (line?.attachments?.length && line?.attachments?.length > 0)) && <div className="text-xs font-semibold text-slate-500">Prompt</div>}
-                  <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
-                    <MarkdownPreview text={line.text} />
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-        ) : (
-          <div key={`${line.role}-${line.id}`} className="flex w-full justify-start">
-            <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-200">
-              {isAgentResult(line.status) ? (
-                <div className="rounded-xl px-4 pt-3 pb-28">
-                  <MarkdownPreview
-                    text={line.text}
-                    screenshots={line.screenshots}
-                    videoUrl={line.videoUrl}
+      <div ref={scrollRef} className="flex flex-col gap-4 pt-4 pb-[200px]">
+        {lines.map((line) =>
+          line.role === "user" ? (
+            <div key={`${line.role}-${line.id}`} className="flex justify-end">
+              <div className="max-w-[85%] rounded-lg bg-[#2f2f2f] px-4 py-3 text-sm leading-relaxed text-slate-100">
+                {line.promptBases?.length ? (
+                  <ChatPromptBases
+                    bases={line.promptBases}
+                    onPreview={(base) => setPreviewBaseId(base.id)}
                   />
-                </div>
-              ) : (
-                <>
-                  {line.text.trim() && (
-                    <span className="wrap-break-word text-slate-300">{line.text}</span>
-                  )}
-                </>
-              )}
-              {line.status && line.status !== "completed" && (
-                <span className="mt-1.5 block text-xs text-slate-500">{line.status}</span>
-              )}
+                ) : null}
+                {line.attachments?.length && (
+                  <div className="mb-2">
+                    <div className="text-xs font-semibold text-slate-500">Attachments</div>
+                    <div
+                      className={line.text.trim() || line.promptBases?.length ? "mt-2" : undefined}
+                    >
+                      <ChatAttachments attachments={line.attachments} />
+                    </div>
+                  </div>
+                )}
+
+                {line.text.trim() && (
+                  <div>
+                    {((line?.promptBases?.length && line?.promptBases?.length > 0) ||
+                      (line?.attachments?.length && line?.attachments?.length > 0)) && (
+                      <div className="text-xs font-semibold text-slate-500">Prompt</div>
+                    )}
+                    <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
+                      <MarkdownPreview text={line.text} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )
-      )}
+          ) : (
+            <div key={`${line.role}-${line.id}`} className="flex w-full justify-start">
+              <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-200">
+                {isAgentResult(line.status) ? (
+                  <div className="rounded-xl px-4 pt-3 pb-28">
+                    <MarkdownPreview
+                      text={line.text}
+                      screenshots={line.screenshots}
+                      videoUrl={line.videoUrl}
+                    />
+                  </div>
+                ) : (
+                  <AgentJobInlineProgress line={line} />
+                )}
+              </div>
+            </div>
+          )
+        )}
       </div>
 
       <PromptShortcutPreviewModal

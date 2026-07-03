@@ -1,5 +1,6 @@
 import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { resolveWsUrl } from "./api-client";
+import { isTerminalJobStatus } from "./active-jobs";
 import type { AgentJobMessage, BridgeSummary, ConnectionState } from "./types";
 
 export type WsClientCallbacks = {
@@ -22,8 +23,15 @@ export class AutomationWsClient {
   private socket: WebSocket | null = null;
   private channel = "";
   private connectionId = "";
+  private readonly submittedJobIds = new Set<string>();
 
   constructor(private readonly callbacks: WsClientCallbacks) {}
+
+  clearSubmittedJob(jobId: string, status: AgentJobMessage["status"]): void {
+    if (isTerminalJobStatus(status)) {
+      this.submittedJobIds.delete(jobId);
+    }
+  }
 
   connect(host: string, port: string, channel: string, useWss = false): void {
     this.disconnect();
@@ -90,6 +98,7 @@ export class AutomationWsClient {
       kind: "image" | "file";
     }>;
   }): void {
+    this.submittedJobIds.add(payload.id);
     this.send({
       type: "user_prompt",
       id: payload.id,
@@ -170,7 +179,10 @@ export class AutomationWsClient {
         break;
       case "agent_job": {
         const msg = data as unknown as AgentJobMessage;
-        if (msg.connectionId && this.connectionId && msg.connectionId !== this.connectionId) {
+        const ownsJob = this.submittedJobIds.has(msg.id);
+        const sameConnection =
+          !msg.connectionId || !this.connectionId || msg.connectionId === this.connectionId;
+        if (!ownsJob && !sameConnection) {
           break;
         }
         this.callbacks.onAgentJob(msg);

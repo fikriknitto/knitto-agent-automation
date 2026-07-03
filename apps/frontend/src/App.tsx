@@ -11,6 +11,8 @@ import { type PromptAttachment } from "./lib/prompt-attachment";
 import { type AppliedPromptShortcut, promptShortcutPath } from "./lib/prompt-compose";
 import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
 import type { PromptShortcut } from "./lib/prompt-shortcuts";
+import { isActiveJobStatus, syncActiveJobIds } from "./lib/active-jobs";
+import { mergeAgentChatLine } from "./lib/merge-agent-chat-line";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
 import { toMobileConfigPayload } from "./components/platform-selector";
@@ -86,7 +88,8 @@ export function App() {
   const [credStatus, setCredStatus] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const activeJobId = useRef<string | null>(null);
+  const lastSubmittedJobId = useRef<string | null>(null);
+  const activeJobIds = useRef(new Set<string>());
   const wsRef = useRef<AutomationWsClient | null>(null);
 
   useEffect(() => {
@@ -137,25 +140,16 @@ export function App() {
       onBridges: setBridges,
       onBridgeAvailable: setBridgeAvailable,
       onAgentJob: (msg) => {
-        if (msg.status === "queued" || msg.status === "running") {
-          setWorkerState("busy");
-        } else {
-          setWorkerState("idle");
-          activeJobId.current = null;
+        setWorkerState(syncActiveJobIds(msg.id, msg.status, activeJobIds.current));
+        if (!isActiveJobStatus(msg.status) && lastSubmittedJobId.current === msg.id) {
+          lastSubmittedJobId.current = null;
         }
+        wsRef.current?.clearSubmittedJob(msg.id, msg.status);
 
         setChatLines((prev) => {
           const idx = prev.findIndex((l) => l.id === msg.id && l.role === "agent");
           const prevLine = idx >= 0 ? prev[idx] : undefined;
-          const line: ChatLine = {
-            id: msg.id,
-            role: "agent",
-            text: msg.result ?? msg.message,
-            status: msg.status,
-            screenshots: msg.screenshots ?? prevLine?.screenshots,
-            videoUrl: msg.videoUrl ?? prevLine?.videoUrl,
-            toolName: msg.toolName ?? prevLine?.toolName,
-          };
+          const line = mergeAgentChatLine(msg, prevLine);
           if (idx >= 0) {
             const next = [...prev];
             next[idx] = line;
@@ -196,7 +190,8 @@ export function App() {
     const bridge = bridges.find((b) => b.bridgeId === selectedBridgeId);
 
     const id = jobId();
-    activeJobId.current = id;
+    lastSubmittedJobId.current = id;
+    activeJobIds.current.add(id);
 
     const attachments = promptAttachments.length ? [...promptAttachments] : undefined;
     const baseSnapshot = promptBases.map((b) => ({
@@ -215,6 +210,13 @@ export function App() {
         text: main,
         promptBases: baseSnapshot.length ? baseSnapshot : undefined,
         attachments,
+      },
+      {
+        id,
+        role: "agent",
+        text: "Memulai…",
+        status: "running",
+        progress: 0,
       },
     ]);
     setWorkerState("busy");
@@ -264,7 +266,7 @@ export function App() {
   }, []);
 
   const handleCancel = () => {
-    const id = activeJobId.current;
+    const id = lastSubmittedJobId.current;
     if (!id || !selectedBridgeId || workerState !== "busy") return;
     wsRef.current?.cancelJob({ id, bridgeId: selectedBridgeId });
   };
