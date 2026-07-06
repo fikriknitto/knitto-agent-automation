@@ -132,6 +132,33 @@ export async function launchApp(): Promise<{
   };
 }
 
+export async function closeApp(): Promise<{
+  package: string;
+  closed: boolean;
+  udid: string;
+}> {
+  const jobId = getAutomationJobId();
+  if (!jobId) throw new ToolError("Job ID belum diset.");
+
+  const mobileCfg = getMobileJobConfig(jobId);
+  if (!mobileCfg?.appPackage) {
+    throw new ToolError("mobileConfig belum diset — pilih package di UI.");
+  }
+
+  const driver = await getDriver();
+  const udid = getMobileJobUdid(jobId) ?? mobileCfg.udid ?? "";
+  const pkg = mobileCfg.appPackage;
+
+  try {
+    await driver.terminateApp(pkg);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new ToolError(`Failed to close app ${pkg}: ${msg}`);
+  }
+
+  return { package: pkg, closed: true, udid };
+}
+
 export async function closeSession(): Promise<{ closed: boolean }> {
   const jobId = getAutomationJobId();
   if (!jobId) return { closed: false };

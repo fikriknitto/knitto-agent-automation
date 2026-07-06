@@ -15,6 +15,7 @@ import {
   mobile_press_key,
   mobile_assert_visible,
   mobile_wait_for,
+  mobile_close_app,
   mobile_close_session,
 } from "./libs/registry.js";
 
@@ -32,6 +33,7 @@ const ALL_TOOLS = [
   mobile_press_key,
   mobile_assert_visible,
   mobile_wait_for,
+  mobile_close_app,
   mobile_close_session,
 ] as const;
 

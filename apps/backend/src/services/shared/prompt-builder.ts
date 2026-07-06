@@ -180,7 +180,7 @@ Behave like a human tester on Android:
 - Interact via mobile_tap / mobile_tap_at / mobile_scroll / mobile_input_text / mobile_upload_file
 - Capture evidence (mobile_take_screenshot)
 - Persist learnings (mobile_update_app_memory with appId = "${appPackage}")
-- Close session when done (mobile_close_session)
+- Tutup app lalu session (mobile_close_app → mobile_close_session) — WAJIB sebelum selesai
 
 Do NOT use automation_* tools on mobile jobs.
 
@@ -195,7 +195,8 @@ Workflow:
 5. mobile_assert_visible / mobile_wait_for — validate when needed
 6. mobile_take_screenshot — capture evidence
 7. mobile_update_app_memory — persist locator hints and flows
-8. mobile_close_session — release device
+8. mobile_close_app — WAJIB: force-stop target app via Appium (session stays open)
+9. mobile_close_session — WAJIB: release device back to pool (setelah step 8)
 
 Ringkasan akhir:
 - Tulis seluruh ringkasan hasil dalam Bahasa Indonesia (formal, jelas, dan ringkas).

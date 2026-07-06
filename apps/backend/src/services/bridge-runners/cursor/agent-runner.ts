@@ -16,6 +16,7 @@ import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-
 import { jobMediaPayload, jobMediaPayloadAsync } from "../../shared/job-media-payload.js";
 import { agentMessages } from "../../shared/agent-messages.js";
 import { devicePool } from "../../../mobile-automation/libs/driver/device-pool.js";
+import { cleanupMobileJob } from "../../shared/mobile-job-cleanup.js";
 import {
   setMobileJobConfig,
   setMobileJobUdid,
@@ -247,7 +248,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
     const dispose = agent[Symbol.asyncDispose];
     if (typeof dispose === "function") await dispose.call(agent);
     if (platform === "mobile") {
-      devicePool.release(job.id);
+      await cleanupMobileJob(job.id);
     } else {
       const { closeAutomationBrowser } = await import("../../shared/mcp-browser.js");
       await closeAutomationBrowser();

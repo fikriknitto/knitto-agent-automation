@@ -2,6 +2,14 @@ import { readFileSync } from "node:fs";
 
 const INSTANCE_NAME_PATTERN = /bst\.instance\.([^.]+)\.display_name/g;
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function readConfigContents(configPath: string): string {
+  return readFileSync(configPath, "utf8");
+}
+
 export function parseInstanceNames(configContents: string): string[] {
   const names = new Set<string>();
 
@@ -14,7 +22,7 @@ export function parseInstanceNames(configContents: string): string[] {
 }
 
 export function readInstanceNames(configPath: string): string[] {
-  const contents = readFileSync(configPath, "utf8");
+  const contents = readConfigContents(configPath);
   const names = parseInstanceNames(contents);
 
   if (!names.length) {
@@ -36,4 +44,27 @@ export function filterInstances(all: string[], only: string[] | undefined): stri
   }
 
   return only;
+}
+
+export function limitInstances(instances: string[], count: number | undefined): string[] {
+  if (count === undefined) return instances;
+  if (count >= instances.length) return instances;
+  return instances.slice(0, count);
+}
+
+export function parseInstanceAdbPort(
+  configContents: string,
+  instance: string
+): number | undefined {
+  const pattern = new RegExp(
+    `bst\\.instance\\.${escapeRegExp(instance)}\\.adb_port="(\\d+)"`
+  );
+  const match = configContents.match(pattern);
+  if (!match?.[1]) return undefined;
+  const port = Number(match[1]);
+  return Number.isInteger(port) && port > 0 ? port : undefined;
+}
+
+export function readInstanceAdbPort(configPath: string, instance: string): number | undefined {
+  return parseInstanceAdbPort(readConfigContents(configPath), instance);
 }

@@ -32,6 +32,14 @@ export const launchAppOutputShape = {
   udid: z.string(),
 } as const;
 
+export const closeAppInputSchema = {} as const;
+
+export const closeAppOutputShape = {
+  package: z.string(),
+  closed: z.boolean(),
+  udid: z.string(),
+} as const;
+
 export const getScreenSnapshotInputSchema = {
   interactiveOnly: z.boolean().optional().default(true),
   maxElements: z.number().int().min(1).max(500).optional().default(200),

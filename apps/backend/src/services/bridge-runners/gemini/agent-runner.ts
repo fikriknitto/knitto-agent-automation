@@ -185,8 +185,8 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       }
     } finally {
       clearTimeout(timeout);
+      await closeMcpSession(mcpClient, platform, platform === "mobile" ? job.id : undefined);
       setAutomationJobId(null);
-      await closeMcpSession(mcpClient, platform);
       const media = await jobMediaPayloadAsync(job.id);
 
       if (terminal?.kind === "completed") {

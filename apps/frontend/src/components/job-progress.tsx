@@ -57,12 +57,7 @@ function AgentJobInlineProgress({ line }: { line: ChatLine }) {
   return (
     <div className="rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3">
       <p className="text-sm text-slate-200">{line.text || "Memproses…"}</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/6">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-[width] duration-300 ease-out"
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-        />
-      </div>
+
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {line.status && (
           <Badge variant={line.status === "queued" ? "default" : "warning"}>{line.status}</Badge>
@@ -70,7 +65,6 @@ function AgentJobInlineProgress({ line }: { line: ChatLine }) {
         {line.toolName && (
           <span className="text-xs text-slate-500">{line.toolName}</span>
         )}
-        <span className="text-xs text-slate-600">{progress}%</span>
       </div>
     </div>
   );

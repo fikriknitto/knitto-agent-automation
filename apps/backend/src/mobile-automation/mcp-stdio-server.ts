@@ -16,6 +16,7 @@ import {
   mobile_press_key,
   mobile_assert_visible,
   mobile_wait_for,
+  mobile_close_app,
   mobile_close_session,
 } from "./libs/registry.js";
 
@@ -52,6 +53,7 @@ async function main(): Promise<void> {
   server.registerTool(mobile_press_key);
   server.registerTool(mobile_assert_visible);
   server.registerTool(mobile_wait_for);
+  server.registerTool(mobile_close_app);
   server.registerTool(mobile_close_session);
 
   await server.start();
