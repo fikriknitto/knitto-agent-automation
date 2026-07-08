@@ -70,4 +70,26 @@ export default {
     if (storageMax) return Number(storageMax) || 10 * 1024 * 1024;
     return 10 * 1024 * 1024;
   },
+  get recordVideo() {
+    return envBool("MOBILE_RECORD_VIDEO", true);
+  },
+  get recordTimeLimitSec() {
+    return envInt("MOBILE_RECORD_TIME_LIMIT_SEC", 600);
+  },
+  get recordFps() {
+    return envInt("MOBILE_RECORD_FPS", 20);
+  },
+  get recordBitRate() {
+    return envInt("MOBILE_RECORD_BIT_RATE", 4_000_000);
+  },
+  get videoFilename() {
+    const name = process.env.MOBILE_VIDEO_FILENAME?.trim();
+    return name || "recording.mp4";
+  },
+  get devicesPollMs() {
+    return envInt("MOBILE_DEVICES_POLL_MS", 3000);
+  },
+  get packagesCacheTtlMs() {
+    return envInt("MOBILE_PACKAGES_CACHE_TTL_MS", 60_000);
+  },
 };

@@ -1,5 +1,5 @@
-import { HELP_TEXT, parseLaunchOptions } from "./config.js";
-import { startBlueStacksInstances } from "./launcher.js";
+import { HELP_TEXT, parseLaunchOptions } from "./config";
+import { startBlueStacksInstances } from "./launcher";
 
 export async function runStartInstanceCli(argv = process.argv.slice(2)): Promise<void> {
   const args = argv[0] === "--" ? argv.slice(1) : argv;

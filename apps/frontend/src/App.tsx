@@ -16,6 +16,7 @@ import { mergeAgentChatLine } from "./lib/merge-agent-chat-line";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
 import { toMobileConfigPayload } from "./components/platform-selector";
+import { MobileDevicesProvider } from "./contexts/mobile-devices-context";
 
 const STORAGE_KEY = "knitto-automation-web";
 
@@ -296,6 +297,7 @@ export function App() {
   };
 
   return (
+    <MobileDevicesProvider enabled={platform === "mobile"}>
     <div className="flex h-screen flex-col bg-[#0d0d0d]">
       <ChatHeader
         bridges={bridges}
@@ -385,6 +387,7 @@ export function App() {
         memory={<AppMemorySettings />}
       />
     </div>
+    </MobileDevicesProvider>
   );
 }
 export default App;

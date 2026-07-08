@@ -77,6 +77,18 @@ export async function tapAt(x: number, y: number): Promise<{ success: boolean; x
 }
 
 const MIN_SCROLL_DIMENSION = 100;
+/** Default step — small enough to avoid skipping list rows during search. */
+const DEFAULT_SCROLL_AMOUNT_PX = 200;
+const MIN_SCROLL_PERCENT = 8;
+/** Max gesture percent per up/down step (caps large `amount` values). */
+const MAX_STEP_SCROLL_PERCENT = 30;
+/** Max gesture percent for top/bottom jumps (still incremental; call again if needed). */
+const MAX_EDGE_SCROLL_PERCENT = 45;
+
+function scrollGesturePercent(amount: number, scrollHeight: number, maxPercent: number): number {
+  const raw = Math.round((amount / scrollHeight) * 100);
+  return Math.min(maxPercent, Math.max(MIN_SCROLL_PERCENT, raw));
+}
 
 type ScrollBounds = { left: number; top: number; width: number; height: number };
 
@@ -161,11 +173,11 @@ export async function scrollScreen(args: {
 }): Promise<{ success: boolean }> {
   await assertPageOpen();
   const driver = await getDriver();
-  const amount = args.amount ?? 400;
+  const amount = args.amount ?? DEFAULT_SCROLL_AMOUNT_PX;
 
   const { left, top, width, height } = await getScrollBounds(driver, args.locator);
 
-  const percent = Math.min(100, Math.max(10, Math.round((amount / height) * 100)));
+  const stepPercent = scrollGesturePercent(amount, height, MAX_STEP_SCROLL_PERCENT);
   let direction: string = args.direction;
   if (args.direction === "top") direction = "up";
   if (args.direction === "bottom") direction = "down";
@@ -177,7 +189,7 @@ export async function scrollScreen(args: {
       width,
       height,
       direction: "up",
-      percent: 100,
+      percent: scrollGesturePercent(amount, height, MAX_EDGE_SCROLL_PERCENT),
     });
   } else if (args.direction === "bottom") {
     await driver.execute("mobile: scrollGesture", {
@@ -186,7 +198,7 @@ export async function scrollScreen(args: {
       width,
       height,
       direction: "down",
-      percent: 100,
+      percent: scrollGesturePercent(amount, height, MAX_EDGE_SCROLL_PERCENT),
     });
   } else {
     await driver.execute("mobile: scrollGesture", {
@@ -195,7 +207,7 @@ export async function scrollScreen(args: {
       width,
       height,
       direction,
-      percent,
+      percent: stepPercent,
     });
   }
 

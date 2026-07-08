@@ -66,6 +66,11 @@ export function mobileMcpEnv(
     MOBILE_DEVICE_ACQUIRE_TIMEOUT_MS: process.env.MOBILE_DEVICE_ACQUIRE_TIMEOUT_MS ?? "",
     MOBILE_UDID: process.env.MOBILE_UDID ?? "",
     MOBILE_DEVICE_UDIDS: process.env.MOBILE_DEVICE_UDIDS ?? "",
+    MOBILE_RECORD_VIDEO: process.env.MOBILE_RECORD_VIDEO ?? "",
+    MOBILE_RECORD_TIME_LIMIT_SEC: process.env.MOBILE_RECORD_TIME_LIMIT_SEC ?? "",
+    MOBILE_RECORD_FPS: process.env.MOBILE_RECORD_FPS ?? "",
+    MOBILE_RECORD_BIT_RATE: process.env.MOBILE_RECORD_BIT_RATE ?? "",
+    MOBILE_VIDEO_FILENAME: process.env.MOBILE_VIDEO_FILENAME ?? "",
   };
   if (jobId?.trim()) {
     env.AUTOMATION_JOB_ID = jobId.trim();

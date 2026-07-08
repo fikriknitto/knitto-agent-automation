@@ -253,7 +253,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       const { closeAutomationBrowser } = await import("../../shared/mcp-browser.js");
       await closeAutomationBrowser();
     }
-    const media = await jobMediaPayloadAsync(job.id);
+    const media = await jobMediaPayloadAsync(job.id, platform);
 
     if (terminal?.kind === "completed") {
       emit({

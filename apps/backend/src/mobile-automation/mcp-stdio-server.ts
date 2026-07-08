@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { setAutomationJobId } from "../automation/libs/job-context.js";
 import { Server, logger } from "../automation/core/index.js";
+import { createSession, closeSession } from "./libs/driver/session.js";
+import mobileConfig from "./libs/config.js";
 import { setMobileJobConfig } from "./libs/mobile-job-context.js";
 import {
   mobile_launch_app,
@@ -32,8 +34,33 @@ async function main(): Promise<void> {
         udid: process.env.MOBILE_JOB_UDID?.trim() || undefined,
         deepLink: process.env.MOBILE_JOB_DEEP_LINK?.trim() || undefined,
       });
+
+      if (mobileConfig.recordVideo) {
+        try {
+          await createSession();
+          logger.info(`MCP stdio: recording started at job start (job=${jobId})`);
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          logger.warn(`MCP stdio: early createSession failed: ${msg}`);
+        }
+      }
     }
   }
+
+  const shutdown = async (): Promise<void> => {
+    try {
+      await closeSession();
+    } catch {
+      // best-effort — stopRecordingScreen + release device
+    }
+  };
+
+  process.once("SIGINT", () => {
+    void shutdown().finally(() => process.exit(0));
+  });
+  process.once("SIGTERM", () => {
+    void shutdown().finally(() => process.exit(0));
+  });
 
   const server = new Server({
     name: "Knitto Mobile Automation MCP",

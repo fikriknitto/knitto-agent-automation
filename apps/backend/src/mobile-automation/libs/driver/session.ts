@@ -10,8 +10,16 @@ import {
 } from "../mobile-job-context.js";
 import { buildAndroidCapabilities } from "./capabilities.js";
 import { devicePool } from "./device-pool.js";
+import {
+  startMobileJobRecording,
+  stopMobileJobRecording,
+} from "../recording.js";
 
 const sessions = new Map<string, Browser>();
+
+export function hasActiveSession(jobId: string): boolean {
+  return sessions.has(jobId);
+}
 
 function parseAppiumUrl(url: string): {
   hostname: string;
@@ -74,6 +82,7 @@ export async function createSession(): Promise<Browser> {
       logLevel: "warn",
     });
     await driver.setTimeout({ implicit: mobileConfig.implicitWaitMs });
+    await startMobileJobRecording(driver);
     sessions.set(jobId, driver);
     return driver;
   } catch (error) {
@@ -166,6 +175,7 @@ export async function closeSession(): Promise<{ closed: boolean }> {
   const driver = sessions.get(jobId);
   if (driver) {
     try {
+      await stopMobileJobRecording(driver);
       await driver.deleteSession();
     } catch {
       // ignore

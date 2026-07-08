@@ -18,7 +18,7 @@ import type { AppliedPromptShortcut } from "../lib/prompt-compose";
 import type { BridgeSummary, ConnectionState } from "../lib/types";
 import { BridgeAndModel } from "./bridge-and-model";
 import { PlatformSelector } from "./platform-selector";
-import { useMobileDevicesStream } from "@/hooks/mobile/use-mobile-devices-stream";
+import { useMobileDevices } from "@/contexts/mobile-devices-context";
 import { PromptAttachments } from "./prompt-attachment-chip";
 import { PromptTemplateShortcut } from "./prompt-template-shortcut";
 import { StorageMediaModal } from "./storage-media-modal";
@@ -130,7 +130,7 @@ export function PromptEditor({
   const [attachError, setAttachError] = useState<string | null>(null);
   const [storageModalOpen, setStorageModalOpen] = useState(false);
 
-  const { devices: mobileDevices } = useMobileDevicesStream(platform === "mobile");
+  const { devices: mobileDevices } = useMobileDevices();
   const hasText = Boolean(value.trim());
   const hasContent = hasText || attachments.length > 0 || promptBases.length > 0;
   const mobileReady =

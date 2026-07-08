@@ -5,7 +5,7 @@ import { scrollInputSchema, scrollOutputShape } from "../schema.js";
 export const mobile_scroll = defineTool({
   name: "mobile_scroll",
   description:
-    "Scroll the app content area or a scrollable container (up/down/top/bottom). Full-screen scroll avoids the status bar and navigation bar. Prefer passing locator for a specific list or container (e.g. RecyclerView, ScrollView). Use after snapshot when content is below the fold.",
+    "Scroll the screen or a scrollable container (up/down/top/bottom). Use after snapshot when content is below the fold.",
   inputSchema: scrollInputSchema,
   outputSchema: scrollOutputShape,
   handler: async (args) => {

@@ -105,9 +105,11 @@ export const scrollInputSchema = {
     .number()
     .int()
     .min(50)
-    .max(5000)
+    .max(1200)
     .optional()
-    .describe("Approx scroll distance in px; converted to gesture percent for the scroll area."),
+    .describe(
+      "Approx scroll distance in px (default 200). Kept small — each up/down step is capped ~30% of the scroll area so list search does not skip rows."
+    ),
   locator: mobileLocatorObjectSchema.optional(),
 } as const;
 

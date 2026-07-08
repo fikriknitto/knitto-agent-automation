@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { runSerial } from "./adb-queue.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -33,12 +34,14 @@ function parseDevicesOutput(stdout: string): AdbDevice[] {
 }
 
 async function runAdb(args: string[], udid?: string): Promise<string> {
-  const fullArgs = udid ? ["-s", udid, ...args] : args;
-  const { stdout } = await execFileAsync("adb", fullArgs, {
-    timeout: 30_000,
-    maxBuffer: 10 * 1024 * 1024,
+  return runSerial(async () => {
+    const fullArgs = udid ? ["-s", udid, ...args] : args;
+    const { stdout } = await execFileAsync("adb", fullArgs, {
+      timeout: 30_000,
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    return stdout;
   });
-  return stdout;
 }
 
 export async function listDevices(): Promise<AdbDevice[]> {

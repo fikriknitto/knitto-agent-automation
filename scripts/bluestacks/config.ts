@@ -85,8 +85,14 @@ export function parseLaunchOptions(argv: string[]): LaunchOptions {
       continue;
     }
 
-    if (!arg.startsWith("-")) {
-      count = parseCount(arg, "instance count");
+    if (arg === "--emulator") {
+      count = parseCount(args[++i], "--emulator");
+      continue;
+    }
+
+    const emulatorCount = parseEmulatorCountArg(arg);
+    if (emulatorCount !== undefined) {
+      count = emulatorCount;
       continue;
     }
 
@@ -162,6 +168,13 @@ function parseCount(raw: string | undefined, flag: string): number {
   return value;
 }
 
+/** Accepts `emulator=3` or `--emulator=3`. */
+function parseEmulatorCountArg(arg: string): number | undefined {
+  const match = /^(--)?emulator=(\d+)$/.exec(arg);
+  if (!match?.[2]) return undefined;
+  return parseCount(match[2], "emulator");
+}
+
 function parseList(raw: string | undefined, flag: string): string[] {
   const items = raw
     ?.split(",")
@@ -176,16 +189,17 @@ function parseList(raw: string | undefined, flag: string): string[] {
 export const HELP_TEXT = `Start all BlueStacks instances listed in bluestacks.conf
 
 Usage:
-  pnpm start:instances [-- <count>] [options]
+  pnpm start:instances [-- emulator=<n>] [options]
 
 Examples:
-  pnpm start:instances -- 3
-  pnpm start:instances -- --count 2
-  pnpm start:instances -- --only Pie,Donut -n 1
+  pnpm start:instances -- emulator=3
+  pnpm start:instances -- --emulator=3
+  pnpm start:instances -- --only Pie,Donut --emulator 1
 
 Options:
-  <count>            Shorthand: start first N instances from config (same as --count)
-  -n, --count <n>    Start at most N instances (from filtered list, in config order)
+  emulator=<n>       Start first N instances from config (same as --emulator <n>)
+  --emulator <n>     Start at most N instances (from filtered list, in config order)
+  -n, --count <n>    Alias for --emulator <n>
   --only <names>     Comma-separated instance names to start (default: all)
   --delay-ms <n>     Wait n ms between launches (default: 0)
   --config <path>    Path to bluestacks.conf

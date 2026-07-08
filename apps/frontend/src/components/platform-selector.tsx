@@ -1,7 +1,7 @@
 import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { useMemo } from "react";
 import { cn } from "@/lib/cn";
-import { useMobileDevicesStream } from "@/hooks/mobile/use-mobile-devices-stream";
+import { useMobileDevices } from "@/contexts/mobile-devices-context";
 import { useMobilePackages } from "@/hooks/mobile/use-mobile-packages";
 import { Badge } from "./ui/badge";
 import {
@@ -43,7 +43,7 @@ export function PlatformSelector({
   onMobileConfigChange,
 }: PlatformSelectorProps) {
   const isMobile = platform === "mobile";
-  const { devices, connected, error: streamError } = useMobileDevicesStream(isMobile);
+  const { devices, connected, error: streamError } = useMobileDevices();
   const packageUdid = mobileConfig.udid?.trim() || devices.find((d) => d.state === "idle")?.udid;
   const { data: packages = [], isLoading: packagesLoading } = useMobilePackages(packageUdid);
 

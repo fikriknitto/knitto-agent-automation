@@ -98,6 +98,11 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
 
     const mcpClient = await connectAutomationMcp(job.id, platform, job.mobileConfig);
 
+    if (platform === "mobile") {
+      const { prepareMobileJobSession } = await import("../../shared/mobile-job-setup.js");
+      await prepareMobileJobSession(job.id, job.mobileConfig);
+    }
+
     let lastTool = "";
     let lastScreenshot: string | undefined;
     let terminal: TerminalOutcome | null = null;
@@ -187,7 +192,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       clearTimeout(timeout);
       await closeMcpSession(mcpClient, platform, platform === "mobile" ? job.id : undefined);
       setAutomationJobId(null);
-      const media = await jobMediaPayloadAsync(job.id);
+      const media = await jobMediaPayloadAsync(job.id, platform);
 
       if (terminal?.kind === "completed") {
         emit({

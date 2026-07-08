@@ -1,4 +1,4 @@
-import { runStartInstanceCli } from "./bluestacks/cli.js";
+import { runStartInstanceCli } from "./bluestacks/cli";
 
 runStartInstanceCli().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);

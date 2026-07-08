@@ -5,13 +5,12 @@ import {
   listDevicePackages,
   resolvePackageActivity,
 } from "../services/mobile-device-service.js";
+import { deviceSnapshotHub } from "../services/mobile-device-snapshot-hub.js";
 import {
   mobileDeviceParamsSchema,
   mobilePackageParamsSchema,
   mobilePackagesQuerySchema,
 } from "../validators/mobile-device-schemas.js";
-
-const SSE_INTERVAL_MS = 3000;
 
 export class MobileDeviceController {
   async list(_req: Request, res: Response): Promise<void> {
@@ -29,18 +28,13 @@ export class MobileDeviceController {
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
 
-    const send = async (): Promise<void> => {
-      const snapshot = await getDevicesSnapshot();
+    const unsubscribe = deviceSnapshotHub.subscribe((snapshot) => {
+      if (res.writableEnded) return;
       res.write(`data: ${JSON.stringify(snapshot)}\n\n`);
-    };
-
-    await send();
-    const interval = setInterval(() => {
-      void send();
-    }, SSE_INTERVAL_MS);
+    });
 
     req.on("close", () => {
-      clearInterval(interval);
+      unsubscribe();
     });
   }
 

@@ -503,3 +503,153 @@
 
 ### Screenshot
 - `text-input-start-automation-default.png`, `text-input-filled-automation-default.png`
+## Text Input Flow — automation-default (2026-07-06, skenario ini text small/medium)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Field yang diisi: **Small**, **Medium** (Large tidak diisi pada skenario ini).
+- Nilai uji (sesi ini):
+  - Small → `ini text small`
+  - Medium → `ini text medium`
+
+### Verifikasi
+- `mobile_assert_visible` pada kedua nilai di atas — semua berhasil (visible: true).
+
+### Screenshot
+- `text-input-start-automation-default.png`, `text-input-filled-automation-default.png`
+## Text Input Flow — automation-default (2026-07-06, skenario ini text small 1)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Field yang diisi: **Small** saja (Medium dan Large tidak diisi pada skenario ini).
+- Nilai uji (sesi ini):
+  - Small → `ini text small 1`
+
+### Verifikasi
+- `mobile_assert_visible` pada nilai Small — berhasil (visible: true).
+
+### Screenshot
+- `text-input-start-automation-default.png`, `text-input-filled-small-1-automation-default.png`
+## Text Input Flow — automation-default (2026-07-06, skenario ini text small 2)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Field yang diisi: **Small** saja (Medium dan Large tidak diisi pada skenario ini).
+- Nilai uji (sesi ini):
+  - Small → `ini text small 2`
+
+### Verifikasi
+- `mobile_assert_visible` pada nilai Small — berhasil (visible: true).
+
+### Screenshot
+- `text-input-start-automation-default.png`, `text-input-filled-automation-default.png`
+## Text Input Flow — automation-default (2026-07-08, skenario Text Small/Medium/Large Bot 2)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+- Sesi Appium perlu di-reset via `mobile_close_session` + `mobile_launch_app` jika sesi terputus.
+
+### Form Input
+- Tiga field: **Small**, **Medium**, **Large**.
+- Nilai uji (sesi ini):
+  - Small → `Text Small Bot 2`
+  - Medium → `Text Medium Bot 2`
+  - Large → `Text Large Bot 2`
+
+### Verifikasi
+- `mobile_assert_visible` pada ketiga nilai di atas — semua berhasil (visible: true).
+
+### Screenshot
+- `text-input-start-bot2-automation-default.png`, `text-input-filled-bot2-automation-default.png`
+## Text Input Flow — automation-default (2026-07-08, skenario Bot 5)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Tiga field: **Small**, **Medium**, **Large**.
+- Nilai uji (sesi ini):
+  - Small → `Text Small Bot 5`
+  - Medium → `Text Medium Bot 5`
+  - Large → `Text Large Bot 5`
+
+### Verifikasi
+- `mobile_assert_visible` pada ketiga nilai di atas — semua berhasil (visible: true).
+
+### Screenshot
+- `text-input-bot5-start.png`, `text-input-bot5-filled.png`
+## Text Input Flow — automation-default (2026-07-08, skenario Text Small/Medium/Large Bot 1)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Tiga field: **Small**, **Medium**, **Large**.
+- Nilai uji (sesi ini):
+  - Small → `Text Small Bot 1`
+  - Medium → `Text Medium Bot 1`
+  - Large → `Text Large Bot 1`
+
+### Verifikasi
+- `mobile_assert_visible` pada ketiga nilai di atas — semua berhasil (visible: true).
+
+### Screenshot
+- `text-input-bot1-start-automation-default.png`, `text-input-bot1-screen-automation-default.png`, `text-input-bot1-filled-automation-default.png`
+## Modal Flow — automation-default (2026-07-08)
+
+### Navigasi
+- Dari layar utama, tap tombol **Modal** via locator `text: "Modal"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Aksi
+- Tap tombol **Show success modal** via locator `text: "Show success modal"` — berhasil.
+- `mobile_wait_for` type text "Show success modal" dapat timeout; tap langsung tetap berhasil.
+
+### Verifikasi
+- `mobile_assert_visible` pada teks **OK** — berhasil (visible: true), mengindikasikan success modal tampil.
+- `mobile_assert_visible` pada teks "success" / "Success" — gagal (case-sensitive atau teks berbeda).
+
+### Screenshot
+- `modal-test-start-automation-default.png`, `modal-screen-automation-default.png`, `modal-success-automation-default.png`
+
+### Catatan
+- Setelah tap Modal, scroll down dapat diperlukan jika tombol tidak langsung terlihat.
+- Verifikasi success modal paling andal via tombol **OK**.
+## Switch Flow — automation-default (2026-07-08)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Switch** tidak terlihat di awal.
+- `mobile_wait_for` type text "Switch" lalu tap via locator `text: "Switch"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Interaksi Switch
+- Layar Switch memiliki tiga opsi: **Small**, **Medium**, **Large**.
+- Skenario: aktifkan switch **Small** dan **Large** ke true (ON).
+- Tap via locator `text: "Small"` dan `text: "Large"` — berhasil.
+- **Medium** tidak diubah pada skenario ini.
+
+### Verifikasi
+- `mobile_assert_visible` pada label Small, Medium, Large — semua berhasil (visible: true).
+- Screenshot bukti: `switch-start-automation-default.png`, `switch-small-large-true-automation-default.png`, `switch-final-automation-default.png`.
+
+### Catatan
+- Untuk toggle switch, text locator pada label baris (Small/Large) berfungsi meski snapshot kosong.
+- Tombol Switch berada di bawah layar utama; perlu scroll down terlebih dahulu.

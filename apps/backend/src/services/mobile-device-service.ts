@@ -1,9 +1,9 @@
-import { devicePool } from "../mobile-automation/libs/driver/device-pool.js";
 import {
-  listDevices,
   listPackages,
   resolveMainActivity,
 } from "../mobile-automation/libs/adb/adb-client.js";
+import mobileConfig from "../mobile-automation/libs/config.js";
+import { deviceSnapshotHub } from "./mobile-device-snapshot-hub.js";
 
 export type MobileDeviceDto = {
   udid: string;
@@ -22,32 +22,39 @@ export type MobilePackageDto = {
   package: string;
 };
 
+type PackageCacheEntry = {
+  packages: string[];
+  cachedAt: number;
+};
+
+const packageCache = new Map<string, PackageCacheEntry>();
+const packageInflight = new Map<string, Promise<string[]>>();
+
 export async function getDevicesSnapshot(): Promise<MobileDevicesSnapshot> {
-  try {
-    await devicePool.refreshFromAdb();
-    const devices = devicePool.getSnapshot().map((d) => ({
-      udid: d.udid,
-      state: d.state,
-      jobId: d.jobId,
-      model: d.model,
-    }));
-    return { devices, at: new Date().toISOString(), error: null };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return { devices: [], at: new Date().toISOString(), error: msg };
-  }
+  return deviceSnapshotHub.refresh();
 }
 
 export async function listDevicePackages(
   udid: string,
   query?: string
 ): Promise<MobilePackageDto[]> {
-  const online = await listDevices();
-  if (!online.some((d) => d.udid === udid && d.state === "device")) {
-    throw new Error(`Device not found or offline: ${udid}`);
+  const snapshot = deviceSnapshotHub.getSnapshot();
+  const known = snapshot.devices.some((d) => d.udid === udid);
+  if (!known) {
+    await deviceSnapshotHub.refresh();
+    const refreshed = deviceSnapshotHub.getSnapshot();
+    if (!refreshed.devices.some((d) => d.udid === udid)) {
+      throw new Error(`Device not found or offline: ${udid}`);
+    }
   }
-  const packages = await listPackages(udid, query);
-  return packages.map((pkg) => ({ package: pkg }));
+
+  const packages = await getCachedPackages(udid);
+  const q = query?.trim().toLowerCase();
+  const filtered = q
+    ? packages.filter((pkg) => pkg.toLowerCase().includes(q))
+    : packages;
+
+  return filtered.map((pkg) => ({ package: pkg }));
 }
 
 export async function resolvePackageActivity(
@@ -56,4 +63,27 @@ export async function resolvePackageActivity(
 ): Promise<{ package: string; activity: string }> {
   const activity = await resolveMainActivity(udid, pkg);
   return { package: pkg, activity };
+}
+
+async function getCachedPackages(udid: string): Promise<string[]> {
+  const ttl = mobileConfig.packagesCacheTtlMs;
+  const cached = packageCache.get(udid);
+  if (cached && Date.now() - cached.cachedAt < ttl) {
+    return cached.packages;
+  }
+
+  const inflight = packageInflight.get(udid);
+  if (inflight) return inflight;
+
+  const promise = listPackages(udid)
+    .then((packages) => {
+      packageCache.set(udid, { packages, cachedAt: Date.now() });
+      return packages;
+    })
+    .finally(() => {
+      packageInflight.delete(udid);
+    });
+
+  packageInflight.set(udid, promise);
+  return promise;
 }
