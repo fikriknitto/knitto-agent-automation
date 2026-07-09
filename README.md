@@ -1,6 +1,6 @@
 # Knitto Browser Agent
 
-Aplikasi otomatisasi browser untuk menjelajahi dan menguji sistem internal Knitto (`knitto.co.id`, CMS lokal, dll.) menggunakan AI agent + Puppeteer.
+Aplikasi otomatisasi **browser** dan **Android (mobile)** untuk menjelajahi dan menguji sistem internal Knitto (`knitto.co.id`, CMS lokal, dll.) menggunakan AI agent + Puppeteer / Appium.
 
 Arsitektur **monorepo** (pnpm 11.5.2): React frontend dan Express backend terpisah, berkomunikasi lewat REST + WebSocket. Protokol & tipe dibagi lewat package `@knitto/shared`.
 
@@ -13,11 +13,11 @@ Arsitektur **monorepo** (pnpm 11.5.2): React frontend dan Express backend terpis
          │  /api/*  +  /ws (proxy Vite / nginx)
          ▼
 [ Backend — Express + WebSocket :3080 ]
-    ├── Bridge Gemini   (in-process Puppeteer + MCP)
+    ├── Bridge Gemini   (browser: Puppeteer MCP | mobile: Appium MCP)
     ├── Bridge Cursor   (Cursor SDK + MCP stdio)
-    └── Bridge 9Router  (in-process Puppeteer + MCP)
+    └── Bridge 9Router  (browser: Puppeteer MCP | mobile: Appium MCP)
          ▼
-[ Chrome / Chromium ]
+[ Chrome / Chromium ]     [ Android emulator / device via Appium + ADB ]
 ```
 
 **1 proses backend** menjalankan HTTP API, WebSocket hub, dan semua bridge. Gemini dan 9Router memanggil Puppeteer in-process; Cursor SDK men-spawn subprocess MCP (`mcp-stdio-server.ts`) yang memakai modul browser yang sama.
@@ -38,6 +38,7 @@ knitto-browser-agent/
 │   └── backend/               # @knitto/backend — Express + Puppeteer
 │       └── src/
 │           ├── automation/    # Browser tools, MCP, recording
+│           ├── mobile-automation/  # Appium tools, MCP, recording
 │           ├── controllers/   # REST controllers
 │           ├── services/      # Bridge runners, storage, queue
 │           ├── websocket/     # WS hub
@@ -47,6 +48,8 @@ knitto-browser-agent/
 ├── docker/
 │   └── nginx.conf             # Reverse proxy /api + /ws untuk image frontend
 ├── prompt-shortcuts/          # Template prompt Knitto (.md)
+├── scripts/                   # BlueStacks launcher + adb connect (Windows)
+│   └── bluestacks/
 ├── memory/                    # Memori otomatisasi per app (agent)
 ├── storage/                   # File manager — lampiran prompt (local)
 ├── screenshoot/               # Bukti agent per job
@@ -67,7 +70,7 @@ knitto-browser-agent/
 
 - Node.js **24.16.0** (lihat `.nvmrc` / `.node-version`; `corepack enable` disarankan)
 - pnpm **11.5.2** (`corepack prepare pnpm@11.5.2 --activate` — juga diatur di `packageManager` root)
-- **ffmpeg** di PATH (`ffmpeg -version`) — wajib untuk rekaman video agent; opsional `AUTOMATION_FFMPEG_PATH`
+- **ffmpeg** di PATH (`ffmpeg -version`) — wajib untuk rekaman video **browser**; opsional `AUTOMATION_FFMPEG_PATH` (mobile tidak memakai ffmpeg)
 - API key: Gemini dan/atau Cursor (Web UI atau `.env`)
 - 9Router opsional (`NINEROUTER_BASE_URL`)
 
@@ -82,20 +85,41 @@ knitto-browser-agent/
 
 Prasyarat:
 
-1. **Appium** — jalankan `appium` (default `http://127.0.0.1:4723`)
+1. **Appium** — jalankan `appium` (default `http://127.0.0.1:4723`, atur `APPIUM_SERVER_URL` jika beda)
 2. **ADB** di PATH — emulator/device terhubung (`adb devices`)
 3. UiAutomator2 driver terkonfigurasi di Appium
 
-Di Web UI:
+### BlueStacks multi-instance (Windows, opsional)
+
+Launch dan ADB connect dipisah agar instance sempat boot sebelum `adb connect`:
+
+```bash
+# Launch N instance pertama dari bluestacks.conf
+pnpm start:instances -- emulator=3
+
+# ADB connect ke instance yang baru dilaunch (baca .bluestacks/last-launched.json)
+pnpm connect:instances
+
+# Atau sekaligus (default 3 instance):
+pnpm instances:up
+```
+
+Opsi lain: `pnpm connect:instances -- --all` (semua instance di config), `--only Pie64,Pie64_15`, `--dry-run`.
+
+Env script BlueStacks (opsional): `BLUESTACKS_DATA_DIR`, `BLUESTACKS_INSTALL_DIR`, `BLUESTACKS_CONF_PATH`, `BLUESTACKS_PLAYER_PATH`, `BLUESTACKS_ADB_HOST`, `BLUESTACKS_ADB_CONNECT_DELAY_MS`.
+
+### Di Web UI
 
 1. Toggle **Platform → Mobile** di composer
-2. Pilih **Device** (Auto pool atau UDID spesifik) — daftar live via SSE
-3. Pilih **Package** (wajib) dari app terinstall di device
+2. **Device** — daftar live via SSE (`/api/mobile/devices/stream`); pilih Auto (pool) atau UDID. Jika tidak ada device, combobox dan tombol **Send** dinonaktifkan
+3. **Package** (wajib) — daftar app terinstall di device yang dipilih
 4. Kirim prompt — agent memakai tool `mobile_*` (tap, scroll, snapshot, upload, dll.)
 
 Memory mobile terpisah di `memory/mobile/` (tab Mobile di Settings → Memory).
 
-Env terkait: lihat bagian Mobile di `apps/backend/.env.example`.
+Rekaman video mobile: Appium `startRecordingScreen` / `stopRecordingScreen` → `screenshoot/agents/{jobId}/recording.mp4` (bukan ffmpeg).
+
+Env terkait: bagian Mobile di `apps/backend/.env.example` dan tabel env di bawah.
 
 ---
 
@@ -234,6 +258,28 @@ Path otomatis (tanpa env): `memory/`, `screenshoot/`, entry MCP stdio di `apps/b
 
 Override lanjutan (jarang dipakai): `KNITTO_BRIDGE_CWD`, `AUTOMATION_MCP_COMMAND`, `AUTOMATION_MCP_PATH`, `AUTOMATION_MEMORY_DIR`, `AUTOMATION_SCREENSHOT_DIR`, `AUTOMATION_SLOW_MO_MS`, `AUTOMATION_BROWSER_TIMEOUT_MS`, `AUTOMATION_UPLOAD_DIR`, `AUTOMATION_UPLOAD_MAX_BYTES`, `AUTOMATION_VIDEO_FILENAME`.
 
+#### Mobile / Appium
+
+| Variabel | Deskripsi | Default |
+|----------|-----------|---------|
+| `APPIUM_SERVER_URL` | URL server Appium | `http://127.0.0.1:4723` |
+| `MOBILE_UDID` | UDID default (opsional) | — |
+| `MOBILE_DEVICE_UDIDS` | Daftar UDID pool (koma) | semua dari `adb devices` |
+| `MOBILE_DEVICE_POOL_ENABLED` | Pool device idle/busy | `true` |
+| `MOBILE_DEVICE_ACQUIRE_TIMEOUT_MS` | Timeout acquire device | `60000` |
+| `MOBILE_IMPLICIT_WAIT_MS` | Implicit wait Appium | `5000` |
+| `MOBILE_SNAPSHOT_MAX_ELEMENTS` | Maks elemen di snapshot UI | `200` |
+| `MOBILE_RECORD_VIDEO` | Rekam layar per job (Appium) | `true` |
+| `MOBILE_RECORD_TIME_LIMIT_SEC` | Batas durasi rekaman (detik) | `600` |
+| `MOBILE_RECORD_FPS` | FPS rekaman mobile | `20` |
+| `MOBILE_RECORD_BIT_RATE` | Bitrate rekaman (bps) | `4000000` |
+| `MOBILE_VIDEO_FILENAME` | Nama file video | `recording.mp4` |
+| `MOBILE_DEVICES_POLL_MS` | Interval polling `adb devices` untuk SSE | `3000` |
+| `MOBILE_PACKAGES_CACHE_TTL_MS` | TTL cache `pm list packages` | `60000` |
+| `MOBILE_MEMORY_DIR` | Memori mobile per app | `memory/mobile` |
+| `MOBILE_UPLOAD_DIR` | Upload file ke device | `storage/mobile-uploads` |
+| `MOBILE_UPLOAD_MAX_BYTES` | Batas ukuran upload mobile | `52428800` |
+
 **Khusus Docker** (`docker.env`): `AUTOMATION_MCP_COMMAND=node`, `AUTOMATION_MCP_PATH=apps/backend/dist/automation/mcp-stdio-server.js`, `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`.
 
 ### Frontend (`apps/frontend/.env`)
@@ -268,6 +314,10 @@ Override lanjutan (jarang dipakai): `KNITTO_BRIDGE_CWD`, `AUTOMATION_MCP_COMMAND
 | `DELETE` | `/api/file-manager/entries` | Hapus file/folder (`{ path }`) |
 | `GET` | `/api/agent-screenshots/:jobId/:filename` | Screenshot bukti agent |
 | `GET` | `/api/agent-videos/:jobId/:filename` | Rekaman video sesi agent (MP4) |
+| `GET` | `/api/mobile/devices` | Daftar device Android (snapshot) |
+| `GET` | `/api/mobile/devices/stream` | SSE update daftar device |
+| `GET` | `/api/mobile/devices/:udid/packages` | Daftar package terinstall |
+| `GET` | `/api/mobile/devices/:udid/packages/:pkg/activity` | Resolve launcher activity |
 
 WebSocket: `ws://<host>:<port>/ws` — job progress (`agent_job` dengan `screenshots`, `videoUrl`), bridge status, credentials request.
 
@@ -278,7 +328,7 @@ WebSocket: `ws://<host>:<port>/ws` — job progress (`agent_job` dengan `screens
 1. Buka http://localhost:3000
 2. Panel kiri: set **host / port / channel**, klik **Connect**
 3. Isi **Bridge credentials** (Gemini / Cursor / 9Router) dan simpan
-4. Pilih **bridge + model**, tulis prompt di editor TipTap atau pakai **Knitto Shortcuts**
+4. Pilih **bridge + model**, platform **Browser** atau **Mobile**, tulis prompt di editor TipTap atau pakai **Knitto Shortcuts**
 5. Lampirkan file: upload, paste gambar, atau modal **Storage** (`storage/`)
 6. Kirim prompt — pantau chat, progress, screenshot, dan **video** di hasil job
 7. Ringkasan agent dalam **Bahasa Indonesia**; respons agent mendukung **Markdown** (termasuk tabel GFM)
@@ -289,13 +339,15 @@ Layout: sidebar koneksi + credentials; area utama chat + shortcuts.
 
 ## Bukti agent (screenshot & video)
 
-| Aspek | Detail |
-|-------|--------|
-| Screenshot | PNG per tool / akhir job di `screenshoot/agents/{jobId}/` |
-| Video | `recording.mp4` — `puppeteer-screen-recorder` + ffmpeg, **aktif default** |
-| WS payload | `screenshots[]`, `videoUrl` pada status `completed` / `error` / `cancelled` |
-| UI | `<video controls>` di chat; retry otomatis jika file belum siap |
-| Matikan video | `AUTOMATION_RECORD_VIDEO=false` |
+| Aspek | Browser | Mobile |
+|-------|---------|--------|
+| Screenshot | PNG per tool / akhir job | PNG via tool mobile |
+| Video | `puppeteer-screen-recorder` + **ffmpeg** | Appium `startRecordingScreen` (tanpa ffmpeg) |
+| Path | `screenshoot/agents/{jobId}/recording.mp4` | sama |
+| WS payload | `screenshots[]`, `videoUrl` pada `completed` / `error` / `cancelled` | sama |
+| Matikan video | `AUTOMATION_RECORD_VIDEO=false` | `MOBILE_RECORD_VIDEO=false` |
+
+UI menampilkan `<video controls>` di chat; retry otomatis jika file belum siap.
 
 Job panjang (timeout default 10 menit) dapat menghasilkan file video besar.
 
@@ -326,6 +378,9 @@ Job panjang (timeout default 10 menit) dapat menghasilkan file video besar.
 | `pnpm start` | Backend production |
 | `pnpm preview` | Preview build frontend (Vite) |
 | `pnpm clean` | Hapus folder `dist/` di workspace |
+| `pnpm start:instances` | Launch BlueStacks instances (tanpa adb connect) |
+| `pnpm connect:instances` | `adb connect` ke instance yang dilaunch / `--all` |
+| `pnpm instances:up` | `start:instances --emulator=3` lalu `connect:instances` |
 
 ---
 
@@ -353,3 +408,7 @@ Lihat `memory/` untuk pola navigasi CMS Knitto dan `prompt-shortcuts/` untuk tem
 | Docker: Chromium tidak terlihat | Container tanpa display GUI | Normal — pantau lewat screenshot/video di UI |
 | Docker: 9Router tidak terjangkau | URL salah dari dalam container | Pakai `host.docker.internal` (sudah di `docker.env`) atau sesuaikan `NINEROUTER_BASE_URL` |
 | `docker compose` gagal build pnpm | Node/pnpm tidak selaras | Pakai Node **24.16.0** + pnpm **11.5.2** (sama dengan image Docker & `package.json` engines) |
+| Mobile: tidak ada device di UI | ADB kosong / belum connect | `adb devices`; untuk BlueStacks: `pnpm connect:instances` setelah launch |
+| Mobile: Send disabled | Package belum dipilih atau device kosong | Pilih package; hubungkan emulator/USB |
+| Mobile: Appium error | Server tidak jalan | `appium` di host; cek `APPIUM_SERVER_URL` |
+| Mobile: request lambat (banyak tab) | Polling ADB berlebihan | Naikkan `MOBILE_DEVICES_POLL_MS`; pastikan satu SSE per tab (sudah dioptimasi) |
