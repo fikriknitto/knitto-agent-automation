@@ -21,6 +21,10 @@ export function hasActiveSession(jobId: string): boolean {
   return sessions.has(jobId);
 }
 
+function getActiveDriver(jobId: string): Browser | undefined {
+  return sessions.get(jobId);
+}
+
 function parseAppiumUrl(url: string): {
   hostname: string;
   port: number;
@@ -154,7 +158,12 @@ export async function closeApp(): Promise<{
     throw new ToolError("mobileConfig belum diset — pilih package di UI.");
   }
 
-  const driver = await getDriver();
+  const driver = getActiveDriver(jobId);
+  if (!driver) {
+    throw new ToolError(
+      "Tidak ada sesi Appium aktif — panggil mobile_close_app sebelum mobile_close_session."
+    );
+  }
   const udid = getMobileJobUdid(jobId) ?? mobileCfg.udid ?? "";
   const pkg = mobileCfg.appPackage;
 

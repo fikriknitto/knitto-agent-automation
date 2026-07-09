@@ -1,13 +1,13 @@
 import { spawn } from "node:child_process";
 import type { LaunchOptions } from "./config.js";
 import { assertBlueStacksPaths } from "./config.js";
-import { writeLaunchState } from "./launch-state.js";
 import {
   filterInstances,
   limitInstances,
   parseInstanceNames,
   readConfigContents,
 } from "./instances.js";
+import { writeLaunchState } from "./launch-state.js";
 
 export type LaunchSummary = {
   launched: string[];

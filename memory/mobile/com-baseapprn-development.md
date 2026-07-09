@@ -691,3 +691,41 @@
 
 ### Screenshot
 - `switch-start-automation-default.png`, `switch-screen-automation-default.png`, `switch-small-large-true-automation-default.png`
+## Switch Flow — automation-default (2026-07-09, sesi terbaru)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Switch** tidak terlihat di awal.
+- `mobile_wait_for` type text "Switch" lalu tap via locator `text: "Switch"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+- Sesi Appium sempat terputus di awal; di-reset via `mobile_close_session` + `mobile_launch_app`.
+
+### Interaksi Switch
+- Layar Switch memiliki tiga opsi: **Small**, **Medium**, **Large**.
+- Skenario: aktifkan switch **Small** dan **Large** ke true (ON).
+- Tap via locator `text: "Small"` dan `text: "Large"` — berhasil.
+- **Medium** tidak diubah pada skenario ini.
+
+### Verifikasi
+- `mobile_assert_visible` pada label Small, Medium, dan Large — semua berhasil (visible: true).
+
+### Screenshot
+- `switch-start-automation-default.png`, `switch-screen-automation-default.png`, `switch-small-large-true-automation-default.png`
+## Modal Flow — automation-default (2026-07-09, sesi terbaru)
+
+### Navigasi
+- Dari layar utama, tap tombol **Modal** via locator `text: "Modal"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+- Tombol Modal langsung terlihat tanpa scroll pada sesi ini.
+
+### Aksi
+- Tap tombol **Show success modal** via locator `text: "Show success modal"` — berhasil.
+
+### Verifikasi
+- `mobile_assert_visible` pada teks **OK** — berhasil (visible: true), mengindikasikan success modal tampil.
+
+### Screenshot
+- `modal-test-start-automation-default.png`, `modal-screen-automation-default.png`, `modal-success-automation-default.png`
+
+### Catatan
+- Verifikasi success modal paling andal via tombol **OK**.
+- Skenario: pilih Modal → klik Show success modal.

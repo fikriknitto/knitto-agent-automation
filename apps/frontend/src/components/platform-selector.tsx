@@ -70,6 +70,9 @@ export function PlatformSelector({
   const selectedPackage =
     packageItems.find((item) => item.value === mobileConfig.appPackage) ?? null;
 
+  const noDevices = devices.length === 0;
+  const deviceDisabled = disabled || noDevices;
+
   return (
     <div className="space-y-2 border-b border-white/8 pb-2">
       <div className="flex items-center gap-2">
@@ -106,7 +109,7 @@ export function PlatformSelector({
             <Combobox
               items={deviceItems}
               value={selectedDevice}
-              disabled={disabled}
+              disabled={deviceDisabled}
               isItemEqualToValue={(a, b) => a.value === b.value}
               onValueChange={(item) => {
                 onMobileConfigChange({
@@ -117,8 +120,8 @@ export function PlatformSelector({
             >
               <ComboboxInput
                 aria-label="Pilih device"
-                placeholder="Auto (pool)"
-                disabled={disabled}
+                placeholder={noDevices ? "Tidak ada device" : "Auto (pool)"}
+                disabled={deviceDisabled}
                 showClear={false}
                 className="h-8 rounded-lg border-white/10 bg-white/5 text-xs"
               />
