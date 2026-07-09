@@ -19,8 +19,16 @@ export type LaunchOptions = {
   only: string[] | undefined;
   count: number | undefined;
   adbHost: string;
+};
+
+export type ConnectOptions = {
+  paths: { configPath: string };
+  dryRun: boolean;
+  only: string[] | undefined;
+  adbHost: string;
   adbConnectDelayMs: number;
-  skipAdb: boolean;
+  delayMs: number;
+  connectAll: boolean;
 };
 
 export function resolveBlueStacksPaths(overrides?: Partial<BlueStacksPaths>): BlueStacksPaths {
@@ -40,11 +48,15 @@ export function resolveBlueStacksPaths(overrides?: Partial<BlueStacksPaths>): Bl
 }
 
 export function assertBlueStacksPaths(paths: BlueStacksPaths): void {
-  if (!existsSync(paths.configPath)) {
-    throw new Error(`BlueStacks config not found: ${paths.configPath}`);
-  }
+  assertBlueStacksConfig(paths);
   if (!existsSync(paths.playerPath)) {
     throw new Error(`BlueStacks player not found: ${paths.playerPath}`);
+  }
+}
+
+export function assertBlueStacksConfig(paths: { configPath: string }): void {
+  if (!existsSync(paths.configPath)) {
+    throw new Error(`BlueStacks config not found: ${paths.configPath}`);
   }
 }
 
@@ -58,8 +70,6 @@ export function parseLaunchOptions(argv: string[]): LaunchOptions {
   let configPath = paths.configPath;
   let playerPath = paths.playerPath;
   let adbHost = process.env.BLUESTACKS_ADB_HOST?.trim() || DEFAULT_ADB_HOST;
-  let adbConnectDelayMs = envInt("BLUESTACKS_ADB_CONNECT_DELAY_MS", DEFAULT_ADB_CONNECT_DELAY_MS);
-  let skipAdb = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -108,16 +118,6 @@ export function parseLaunchOptions(argv: string[]): LaunchOptions {
       continue;
     }
 
-    if (arg === "--skip-adb") {
-      skipAdb = true;
-      continue;
-    }
-
-    if (arg === "--adb-delay-ms") {
-      adbConnectDelayMs = parsePositiveInt(args[++i], "--adb-delay-ms");
-      continue;
-    }
-
     if (arg === "--adb-host") {
       adbHost = args[++i]?.trim() ?? "";
       if (!adbHost) throw new Error("--adb-host requires a host");
@@ -140,8 +140,72 @@ export function parseLaunchOptions(argv: string[]): LaunchOptions {
     only,
     count,
     adbHost,
+  };
+}
+
+export function parseConnectOptions(argv: string[]): ConnectOptions {
+  const args = argv[0] === "--" ? argv.slice(1) : argv;
+  const paths = resolveBlueStacksPaths();
+  let dryRun = false;
+  let only: string[] | undefined;
+  let configPath = paths.configPath;
+  let adbHost = process.env.BLUESTACKS_ADB_HOST?.trim() || DEFAULT_ADB_HOST;
+  let adbConnectDelayMs = envInt("BLUESTACKS_ADB_CONNECT_DELAY_MS", DEFAULT_ADB_CONNECT_DELAY_MS);
+  let delayMs = 0;
+  let connectAll = false;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--help" || arg === "-h") continue;
+
+    if (arg === "--dry-run") {
+      dryRun = true;
+      continue;
+    }
+
+    if (arg === "--all") {
+      connectAll = true;
+      continue;
+    }
+
+    if (arg === "--delay-ms") {
+      delayMs = parsePositiveInt(args[++i], "--delay-ms");
+      continue;
+    }
+
+    if (arg === "--only") {
+      only = parseList(args[++i], "--only");
+      continue;
+    }
+
+    if (arg === "--config") {
+      configPath = args[++i]?.trim() ?? "";
+      if (!configPath) throw new Error("--config requires a file path");
+      continue;
+    }
+
+    if (arg === "--adb-delay-ms") {
+      adbConnectDelayMs = parsePositiveInt(args[++i], "--adb-delay-ms");
+      continue;
+    }
+
+    if (arg === "--adb-host") {
+      adbHost = args[++i]?.trim() ?? "";
+      if (!adbHost) throw new Error("--adb-host requires a host");
+      continue;
+    }
+
+    throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  return {
+    paths: { configPath },
+    dryRun,
+    only,
+    adbHost,
     adbConnectDelayMs,
-    skipAdb,
+    delayMs,
+    connectAll,
   };
 }
 
@@ -186,15 +250,15 @@ function parseList(raw: string | undefined, flag: string): string[] {
   return items;
 }
 
-export const HELP_TEXT = `Start all BlueStacks instances listed in bluestacks.conf
+export const HELP_TEXT = `Launch BlueStacks instances from bluestacks.conf (no adb connect — run connect:instances after)
 
 Usage:
   pnpm start:instances [-- emulator=<n>] [options]
+  pnpm start:instances -- emulator=3 && pnpm connect:instances
 
 Examples:
   pnpm start:instances -- emulator=3
-  pnpm start:instances -- --emulator=3
-  pnpm start:instances -- --only Pie,Donut --emulator 1
+  pnpm start:instances -- --only Pie64,Pie64_15
 
 Options:
   emulator=<n>       Start first N instances from config (same as --emulator <n>)
@@ -205,16 +269,44 @@ Options:
   --config <path>    Path to bluestacks.conf
   --player <path>    Path to HD-Player.exe
   --dry-run          Print instances without launching
-  --skip-adb         Launch instances only, skip adb connect
-  --adb-delay-ms <n> Wait n ms after launch before adb connect (default: ${DEFAULT_ADB_CONNECT_DELAY_MS})
+  --adb-host <host>  ADB host stored for connect step (default: ${DEFAULT_ADB_HOST})
+  -h, --help         Show this help
+
+Next step:
+  pnpm connect:instances
+
+Environment:
+  BLUESTACKS_DATA_DIR      Default: ${DEFAULT_DATA_DIR}
+  BLUESTACKS_INSTALL_DIR   Default: ${DEFAULT_INSTALL_DIR}
+  BLUESTACKS_CONF_PATH     Override config file path
+  BLUESTACKS_PLAYER_PATH   Override HD-Player.exe path
+  BLUESTACKS_ADB_HOST      Default: ${DEFAULT_ADB_HOST}
+`;
+
+export const CONNECT_HELP_TEXT = `ADB connect to launched BlueStacks instances (reads adb devices first)
+
+Usage:
+  pnpm connect:instances [options]
+
+Examples:
+  pnpm start:instances -- emulator=3 && pnpm connect:instances
+  pnpm connect:instances -- --all
+  pnpm connect:instances -- --only Pie64,Pie64_15
+
+Options:
+  (default)          Connect instances from last start:instances (.bluestacks/last-launched.json)
+  --all              Connect all instances in bluestacks.conf (manual BlueStacks start)
+  --only <names>     Filter instance names
+  --config <path>    Path to bluestacks.conf
+  --dry-run          Show targets vs adb devices without connecting
+  --adb-delay-ms <n> Wait n ms before connect (default: ${DEFAULT_ADB_CONNECT_DELAY_MS})
   --adb-host <host>  ADB host (default: ${DEFAULT_ADB_HOST})
+  --delay-ms <n>     Wait n ms between each adb connect (default: 0)
   -h, --help         Show this help
 
 Environment:
   BLUESTACKS_DATA_DIR              Default: ${DEFAULT_DATA_DIR}
-  BLUESTACKS_INSTALL_DIR           Default: ${DEFAULT_INSTALL_DIR}
   BLUESTACKS_CONF_PATH             Override config file path
-  BLUESTACKS_PLAYER_PATH           Override HD-Player.exe path
   BLUESTACKS_ADB_HOST              Default: ${DEFAULT_ADB_HOST}
   BLUESTACKS_ADB_CONNECT_DELAY_MS  Default: ${DEFAULT_ADB_CONNECT_DELAY_MS}
 `;
