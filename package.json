@@ -24,7 +24,10 @@
     "clean": "pnpm -r exec node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\"",
     "start:instances": "tsx --env-file=apps/backend/.env scripts/start-instance.ts",
     "connect:instances": "tsx --env-file=apps/backend/.env scripts/connect-instance.ts",
-    "instances:up": "pnpm start:instances --emulator=3 && pnpm connect:instances"
+    "close:instances": "tsx --env-file=apps/backend/.env scripts/close-instance.ts",
+    "disconnect:instances": "tsx --env-file=apps/backend/.env scripts/disconnect-instance.ts",
+    "instances:up": "pnpm start:instances --emulator=3 && pnpm connect:instances",
+    "instances:down": "pnpm close:instances && pnpm disconnect:instances"
   },
   "keywords": [
     "knitto",

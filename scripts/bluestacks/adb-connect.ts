@@ -19,3 +19,16 @@ export async function adbConnect(host: string, port: number): Promise<string> {
     throw new Error(`adb connect ${target} failed: ${msg}`);
   }
 }
+
+export async function adbDisconnect(host: string, port: number): Promise<string> {
+  const target = formatAdbTarget(host, port);
+  try {
+    const { stdout } = await execFileAsync("adb", ["disconnect", target], {
+      timeout: 15_000,
+    });
+    return stdout.trim();
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new Error(`adb disconnect ${target} failed: ${msg}`);
+  }
+}

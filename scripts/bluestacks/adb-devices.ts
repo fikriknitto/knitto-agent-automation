@@ -25,6 +25,15 @@ function parseDevicesOutput(stdout: string): AdbDevice[] {
   return devices;
 }
 
+export async function adbKillServer(): Promise<void> {
+  try {
+    await execFileAsync("adb", ["kill-server"], { timeout: 15_000 });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new Error(`adb kill-server failed: ${msg}`);
+  }
+}
+
 export async function listAdbDevices(): Promise<AdbDevice[]> {
   try {
     const { stdout } = await execFileAsync("adb", ["devices", "-l"], { timeout: 15_000 });

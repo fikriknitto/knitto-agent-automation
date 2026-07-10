@@ -32,7 +32,15 @@ export function readLaunchState(): LaunchState {
     return parsed;
   } catch {
     throw new Error(
-      "Launch state not found. Jalankan `pnpm start:instances` dulu, atau gunakan `pnpm connect:instances -- --all`."
+      "Launch state not found. Jalankan `pnpm start:instances` dulu, atau gunakan `--all`."
     );
+  }
+}
+
+export function clearLaunchState(): void {
+  try {
+    writeFileSync(stateFile, "", "utf8");
+  } catch {
+    // ignore — state file may not exist
   }
 }

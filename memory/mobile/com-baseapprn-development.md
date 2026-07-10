@@ -729,3 +729,23 @@
 ### Catatan
 - Verifikasi success modal paling andal via tombol **OK**.
 - Skenario: pilih Modal → klik Show success modal.
+## Modal Flow — automation-default (2026-07-10)
+
+### Navigasi
+- Dari layar utama, tap tombol **Modal** via locator `text: "Modal"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+- Tombol Modal langsung terlihat tanpa scroll pada sesi ini.
+- Catatan: Appium perlu dijalankan dengan `ANDROID_HOME`/`ANDROID_SDK_ROOT` agar sesi dapat dibuat.
+
+### Aksi
+- Tap tombol **Show success modal** via locator `text: "Show success modal"` — berhasil.
+
+### Verifikasi
+- `mobile_assert_visible` pada teks **OK** — berhasil (visible: true), mengindikasikan success modal tampil.
+
+### Screenshot
+- `modal-test-start-automation-default.png`, `modal-screen-automation-default.png`, `modal-success-automation-default.png`
+
+### Catatan
+- Verifikasi success modal paling andal via tombol **OK**.
+- Skenario: pilih Modal → klik Show success modal.

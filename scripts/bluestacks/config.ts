@@ -31,6 +31,14 @@ export type ConnectOptions = {
   connectAll: boolean;
 };
 
+export type CloseOptions = {
+  paths: BlueStacksPaths;
+  delayMs: number;
+  dryRun: boolean;
+  only: string[] | undefined;
+  closeAll: boolean;
+};
+
 export function resolveBlueStacksPaths(overrides?: Partial<BlueStacksPaths>): BlueStacksPaths {
   const installDir = process.env.BLUESTACKS_INSTALL_DIR?.trim() || DEFAULT_INSTALL_DIR;
   const dataDir = process.env.BLUESTACKS_DATA_DIR?.trim() || DEFAULT_DATA_DIR;
@@ -209,6 +217,64 @@ export function parseConnectOptions(argv: string[]): ConnectOptions {
   };
 }
 
+export function parseCloseOptions(argv: string[]): CloseOptions {
+  const args = argv[0] === "--" ? argv.slice(1) : argv;
+  const paths = resolveBlueStacksPaths();
+  let delayMs = 0;
+  let dryRun = false;
+  let only: string[] | undefined;
+  let configPath = paths.configPath;
+  let playerPath = paths.playerPath;
+  let closeAll = false;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--help" || arg === "-h") continue;
+
+    if (arg === "--dry-run") {
+      dryRun = true;
+      continue;
+    }
+
+    if (arg === "--all") {
+      closeAll = true;
+      continue;
+    }
+
+    if (arg === "--delay-ms") {
+      delayMs = parsePositiveInt(args[++i], "--delay-ms");
+      continue;
+    }
+
+    if (arg === "--only") {
+      only = parseList(args[++i], "--only");
+      continue;
+    }
+
+    if (arg === "--config") {
+      configPath = args[++i]?.trim() ?? "";
+      if (!configPath) throw new Error("--config requires a file path");
+      continue;
+    }
+
+    if (arg === "--player") {
+      playerPath = args[++i]?.trim() ?? "";
+      if (!playerPath) throw new Error("--player requires an executable path");
+      continue;
+    }
+
+    throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  return {
+    paths: { configPath, playerPath },
+    delayMs,
+    dryRun,
+    only,
+    closeAll,
+  };
+}
+
 function envInt(key: string, fallback: number): number {
   const raw = process.env[key]?.trim();
   if (!raw) return fallback;
@@ -283,7 +349,7 @@ Environment:
   BLUESTACKS_ADB_HOST      Default: ${DEFAULT_ADB_HOST}
 `;
 
-export const CONNECT_HELP_TEXT = `ADB connect to launched BlueStacks instances (reads adb devices first)
+export const CONNECT_HELP_TEXT = `ADB connect to launched BlueStacks instances (adb kill-server, then adb devices)
 
 Usage:
   pnpm connect:instances [options]
@@ -309,4 +375,60 @@ Environment:
   BLUESTACKS_CONF_PATH             Override config file path
   BLUESTACKS_ADB_HOST              Default: ${DEFAULT_ADB_HOST}
   BLUESTACKS_ADB_CONNECT_DELAY_MS  Default: ${DEFAULT_ADB_CONNECT_DELAY_MS}
+`;
+
+export const CLOSE_HELP_TEXT = `Close BlueStacks instances (taskkill /F /IM HD-Player.exe)
+
+Usage:
+  pnpm close:instances [options]
+
+Examples:
+  pnpm close:instances
+  pnpm close:instances -- --all
+  pnpm close:instances -- --only Pie64,Pie64_15
+
+Options:
+  (default)          Close instances from last start:instances (.bluestacks/last-launched.json)
+  --all              Close all running instances listed in bluestacks.conf
+  --only <names>     Filter instance names
+  --config <path>    Path to bluestacks.conf
+  --player <path>    Path to HD-Player.exe
+  --delay-ms <n>     Wait n ms between each close (default: 0)
+  --dry-run          Show targets without closing
+  -h, --help         Show this help
+
+Next step:
+  pnpm disconnect:instances
+
+Environment:
+  BLUESTACKS_DATA_DIR      Default: ${DEFAULT_DATA_DIR}
+  BLUESTACKS_INSTALL_DIR   Default: ${DEFAULT_INSTALL_DIR}
+  BLUESTACKS_CONF_PATH     Override config file path
+  BLUESTACKS_PLAYER_PATH   Override HD-Player.exe path
+`;
+
+export const DISCONNECT_HELP_TEXT = `ADB disconnect from BlueStacks instances
+
+Usage:
+  pnpm disconnect:instances [options]
+
+Examples:
+  pnpm close:instances && pnpm disconnect:instances
+  pnpm disconnect:instances -- --all
+  pnpm disconnect:instances -- --only Pie64,Pie64_15
+
+Options:
+  (default)          Disconnect instances from last start:instances (.bluestacks/last-launched.json)
+  --all              Disconnect all instances in bluestacks.conf
+  --only <names>     Filter instance names
+  --config <path>    Path to bluestacks.conf
+  --dry-run          Show targets vs adb devices without disconnecting
+  --adb-host <host>  ADB host (default: ${DEFAULT_ADB_HOST})
+  --delay-ms <n>     Wait n ms between each adb disconnect (default: 0)
+  -h, --help         Show this help
+
+Environment:
+  BLUESTACKS_DATA_DIR      Default: ${DEFAULT_DATA_DIR}
+  BLUESTACKS_CONF_PATH     Override config file path
+  BLUESTACKS_ADB_HOST      Default: ${DEFAULT_ADB_HOST}
 `;

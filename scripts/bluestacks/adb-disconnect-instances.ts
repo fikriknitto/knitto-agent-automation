@@ -1,6 +1,5 @@
-import { adbConnect, formatAdbTarget } from "./adb-connect.js";
+import { adbDisconnect, formatAdbTarget } from "./adb-connect.js";
 import {
-  adbKillServer,
   formatAdbDevicesSummary,
   isAdbTargetOnline,
   listAdbDevices,
@@ -10,8 +9,8 @@ import { assertBlueStacksConfig } from "./config.js";
 import { parseInstanceAdbPort, readConfigContents } from "./instances.js";
 import { resolveAdbInstanceTargets } from "./resolve-targets.js";
 
-export type ConnectSummary = {
-  connected: Array<{ instance: string; target: string }>;
+export type DisconnectSummary = {
+  disconnected: Array<{ instance: string; target: string }>;
   skipped: Array<{ instance: string; target: string; reason: string }>;
   failed: Array<{ instance: string; reason: string }>;
 };
@@ -20,19 +19,16 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function connectBlueStacksAdb(options: ConnectOptions): Promise<ConnectSummary> {
+export async function disconnectBlueStacksAdb(
+  options: ConnectOptions
+): Promise<DisconnectSummary> {
   assertBlueStacksConfig(options.paths);
 
   const configContents = readConfigContents(options.paths.configPath);
   const targets = resolveAdbInstanceTargets(options);
 
   if (!targets.length) {
-    throw new Error("No instances to connect.");
-  }
-
-  if (!options.dryRun) {
-    console.log("Restarting ADB server (adb kill-server)…");
-    await adbKillServer();
+    throw new Error("No instances to disconnect.");
   }
 
   let adbBefore = await listAdbDevices();
@@ -40,7 +36,7 @@ export async function connectBlueStacksAdb(options: ConnectOptions): Promise<Con
   console.log(formatAdbDevicesSummary(adbBefore));
 
   if (options.dryRun) {
-    console.log(`[dry-run] Would adb connect ${targets.length} instance(s):`);
+    console.log(`[dry-run] Would adb disconnect ${targets.length} instance(s):`);
     for (const instance of targets) {
       const port = parseInstanceAdbPort(configContents, instance);
       if (!port) {
@@ -48,20 +44,15 @@ export async function connectBlueStacksAdb(options: ConnectOptions): Promise<Con
         continue;
       }
       const target = formatAdbTarget(options.adbHost, port);
-      const status = isAdbTargetOnline(adbBefore, target) ? "already device" : "would connect";
+      const status = isAdbTargetOnline(adbBefore, target) ? "would disconnect" : "not connected";
       console.log(`  - ${instance} → ${target} (${status})`);
     }
-    return { connected: [], skipped: [], failed: [] };
+    return { disconnected: [], skipped: [], failed: [] };
   }
 
-  if (options.adbConnectDelayMs > 0) {
-    console.log(`Waiting ${options.adbConnectDelayMs}ms for emulators to boot…`);
-    await sleep(options.adbConnectDelayMs);
-  }
-
-  const connected: ConnectSummary["connected"] = [];
-  const skipped: ConnectSummary["skipped"] = [];
-  const failed: ConnectSummary["failed"] = [];
+  const disconnected: DisconnectSummary["disconnected"] = [];
+  const skipped: DisconnectSummary["skipped"] = [];
+  const failed: DisconnectSummary["failed"] = [];
 
   for (const [index, instance] of targets.entries()) {
     if (index > 0 && options.delayMs > 0) {
@@ -77,20 +68,22 @@ export async function connectBlueStacksAdb(options: ConnectOptions): Promise<Con
 
     const target = formatAdbTarget(options.adbHost, port);
     adbBefore = await listAdbDevices();
-    if (isAdbTargetOnline(adbBefore, target)) {
-      skipped.push({ instance, target, reason: "already device" });
-      console.log(`Already connected: ${instance} → ${target}`);
+    if (!isAdbTargetOnline(adbBefore, target)) {
+      skipped.push({ instance, target, reason: "not connected" });
+      console.log(`Not connected: ${instance} → ${target}`);
       continue;
     }
 
     try {
-      const output = await adbConnect(options.adbHost, port);
-      connected.push({ instance, target });
-      console.log(`ADB connected: ${instance} → ${target}${output ? ` (${output})` : ""}`);
+      const output = await adbDisconnect(options.adbHost, port);
+      disconnected.push({ instance, target });
+      console.log(
+        `ADB disconnected: ${instance} → ${target}${output ? ` (${output})` : ""}`
+      );
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       failed.push({ instance, reason });
-      console.error(`ADB connect failed for ${instance}: ${reason}`);
+      console.error(`ADB disconnect failed for ${instance}: ${reason}`);
     }
   }
 
@@ -98,8 +91,8 @@ export async function connectBlueStacksAdb(options: ConnectOptions): Promise<Con
   console.log("adb devices (after):");
   console.log(formatAdbDevicesSummary(adbAfter));
   console.log(
-    `Done. Connected ${connected.length}, skipped ${skipped.length}, failed ${failed.length}.`
+    `Done. Disconnected ${disconnected.length}, skipped ${skipped.length}, failed ${failed.length}.`
   );
 
-  return { connected, skipped, failed };
+  return { disconnected, skipped, failed };
 }

@@ -104,6 +104,18 @@ pnpm connect:instances
 pnpm instances:up
 ```
 
+**Windows (.bat)** — double-click atau dari CMD di folder repo:
+
+```bat
+scripts\bluestacks\start-bluestacks.bat emulator=3
+scripts\bluestacks\connect-adb.bat
+scripts\bluestacks\instances-up.bat
+
+scripts\bluestacks\close-bluestacks.bat
+scripts\bluestacks\disconnect-adb.bat
+scripts\bluestacks\stop-emulator.bat
+```
+
 Opsi lain: `pnpm connect:instances -- --all` (semua instance di config), `--only Pie64,Pie64_15`, `--dry-run`.
 
 Env script BlueStacks (opsional): `BLUESTACKS_DATA_DIR`, `BLUESTACKS_INSTALL_DIR`, `BLUESTACKS_CONF_PATH`, `BLUESTACKS_PLAYER_PATH`, `BLUESTACKS_ADB_HOST`, `BLUESTACKS_ADB_CONNECT_DELAY_MS`.
@@ -380,7 +392,10 @@ Job panjang (timeout default 10 menit) dapat menghasilkan file video besar.
 | `pnpm clean` | Hapus folder `dist/` di workspace |
 | `pnpm start:instances` | Launch BlueStacks instances (tanpa adb connect) |
 | `pnpm connect:instances` | `adb connect` ke instance yang dilaunch / `--all` |
+| `pnpm close:instances` | Tutup instance BlueStacks (quit / taskkill) |
+| `pnpm disconnect:instances` | `adb disconnect` dari instance |
 | `pnpm instances:up` | `start:instances --emulator=3` lalu `connect:instances` |
+| `pnpm instances:down` | `close:instances` lalu `disconnect:instances` |
 
 ---
 
