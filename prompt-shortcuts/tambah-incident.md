@@ -1,6 +1,7 @@
 ---
 label: Tambah Incident
 variant: amber
+platform: browser
 defaults:
   url: ""
   judul: ""

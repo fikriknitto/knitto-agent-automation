@@ -3,16 +3,30 @@ import { basename, dirname, join } from "node:path";
 import { randomBytes } from "node:crypto";
 import config from "../config.js";
 import { resolveAgentScreenshotDir } from "../job-context.js";
+import {
+  getActiveTestCaseId,
+  isJobSegmentManaged,
+} from "../../../services/shared/segment-context.js";
+import { getAutomationJobId } from "../job-context.js";
 import { getPage } from "./session.js";
 
 function resolveScreenshotFileName(customPath?: string): string {
+  const jobId = getAutomationJobId();
+  const testCaseId = getActiveTestCaseId();
+  const usePrefix = jobId && testCaseId && isJobSegmentManaged(jobId);
+
   if (!customPath?.trim()) {
-    return `shot-${Date.now()}-${randomBytes(3).toString("hex")}.png`;
+    const base = `shot-${Date.now()}-${randomBytes(3).toString("hex")}.png`;
+    return usePrefix ? `${testCaseId}-${base}` : base;
   }
 
   const raw = customPath.trim().replace(/[/\\:\0]/g, "_").replace(/\.\./g, "_");
   const base = basename(raw) || "screenshot.png";
-  return base.toLowerCase().endsWith(".png") ? base : `${base}.png`;
+  const withExt = base.toLowerCase().endsWith(".png") ? base : `${base}.png`;
+  if (usePrefix && !withExt.startsWith(`${testCaseId}-`)) {
+    return `${testCaseId}-${withExt}`;
+  }
+  return withExt;
 }
 
 function resolveScreenshotPath(customPath?: string): string {

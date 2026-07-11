@@ -749,3 +749,84 @@
 ### Catatan
 - Verifikasi success modal paling andal via tombol **OK**.
 - Skenario: pilih Modal → klik Show success modal.
+
+## [tc-02-test-case-2]
+
+## TC-02 Test Case 2 — automation-default (2026-07-10)
+
+### Navigasi
+- `mobile_launch_app` untuk package `com.baseapprn.development` (emulator-5554).
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Tiga field: **Small**, **Medium**, **Large**.
+- Nilai uji (sesi ini):
+  - Small → `ini text small`
+  - Medium → `ini text medium`
+  - Large → `ini text large`
+
+### Verifikasi
+- `mobile_assert_visible` pada ketiga nilai di atas — semua berhasil (visible: true).
+
+### Screenshot
+- `tc02-text-input-start.png`, `tc02-text-input-screen.png`, `tc02-text-input-filled.png`
+
+### Catatan
+- Appium perlu dijalankan dengan `ANDROID_HOME`/`ANDROID_SDK_ROOT` agar sesi dapat dibuat.
+- Sesi mobile tidak ditutup (multi-TC job — orchestrator cleanup di akhir).
+
+
+## [text-input-automation-default-2026-07-10]
+
+## Text Input Flow — automation-default (2026-07-10, skenario ini text small/medium)
+
+### Navigasi
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+- Appium perlu dijalankan dengan `ANDROID_HOME`/`ANDROID_SDK_ROOT` agar sesi dapat dibuat.
+
+### Form Input
+- Field yang diisi: **Small**, **Medium** (Large tidak diisi pada skenario ini).
+- Nilai uji (sesi ini):
+  - Small → `ini text small`
+  - Medium → `ini text medium`
+
+### Verifikasi
+- `mobile_assert_visible` pada kedua nilai di atas — semua berhasil (visible: true).
+
+### Screenshot
+- `text-input-screen-automation-default.png`, `text-input-filled-automation-default.png`
+
+
+## [tc-03-test-case-3]
+
+## TC-03 Test Case 3 — automation-default (2026-07-11)
+
+### Konteks
+- Multi-TC job 3/3; handoff dari TC-01/TC-02: USERNAME=main, CABANG=holis, DASHBOARD_URL=http://192.168.20.27:5367/home (tidak digunakan di skenario mobile ini).
+- Package: `com.baseapprn.development`, device: 127.0.0.1:5555.
+
+### Navigasi
+- `mobile_launch_app` — berhasil.
+- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
+- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
+- UI snapshot kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Tiga field: **Small**, **Medium**, **Large**.
+- Nilai uji (sesi ini):
+  - Small → `ini text small broo`
+  - Medium → `ini text medium bro`
+  - Large → `ini text large broo`
+
+### Verifikasi
+- `mobile_assert_visible` pada ketiga nilai di atas — semua berhasil (visible: true).
+
+### Screenshot
+- `tc03-text-input-start.png`, `tc03-text-input-screen.png`, `tc03-text-input-filled.png`
+
+### Status: PASS
+- Sesi mobile tidak ditutup (orchestrator cleanup di akhir multi-TC job).

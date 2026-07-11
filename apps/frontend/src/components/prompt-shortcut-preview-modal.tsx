@@ -90,6 +90,10 @@ export function PromptShortcutPreviewModal({
         input: {
           label: shortcut.label,
           variant: shortcut.variant,
+          platform: shortcut.platform ?? "browser",
+          appPackage: shortcut.appPackage,
+          url: shortcut.url,
+          deepLink: shortcut.deepLink,
           template: draftTemplate,
           defaults: shortcut.defaults,
         },

@@ -17,7 +17,10 @@ export function resolveMobileMcpPath(): string {
   return resolveMobileMcpStdioEntry();
 }
 
-export function automationMcpEnv(jobId?: string): Record<string, string> {
+export function automationMcpEnv(
+  jobId?: string,
+  opts?: { segmentManaged?: boolean }
+): Record<string, string> {
   const root = resolveMonorepoRoot();
   const env: Record<string, string> = {
     AUTOMATION_HEADLESS: process.env.AUTOMATION_HEADLESS ?? "false",
@@ -39,6 +42,9 @@ export function automationMcpEnv(jobId?: string): Record<string, string> {
   if (jobId?.trim()) {
     env.AUTOMATION_JOB_ID = jobId.trim();
   }
+  if (opts?.segmentManaged) {
+    env.AUTOMATION_MULTI_TC = "1";
+  }
   return env;
 }
 
@@ -49,7 +55,8 @@ export function mobileMcpEnv(
     appActivity?: string;
     udid?: string;
     deepLink?: string;
-  }
+  },
+  opts?: { segmentManaged?: boolean }
 ): Record<string, string> {
   const root = resolveMonorepoRoot();
   const env: Record<string, string> = {
@@ -88,6 +95,9 @@ export function mobileMcpEnv(
   if (mobileConfig?.deepLink?.trim()) {
     env.MOBILE_JOB_DEEP_LINK = mobileConfig.deepLink.trim();
   }
+  if (opts?.segmentManaged) {
+    env.MOBILE_MULTI_TC = "1";
+  }
   return env;
 }
 
@@ -111,10 +121,25 @@ export function cursorMcpServerConfig(opts: {
   jobId?: string;
   platform?: AutomationPlatform;
   mobileConfig?: BridgeJob["mobileConfig"];
+  segmentManaged?: boolean;
 }): Record<string, { command: string; args: string[]; env: Record<string, string>; cwd?: string }> {
   const platform = opts.platform ?? "browser";
+  if (platform === "hybrid") {
+    return cursorHybridMcpServerConfig({
+      browserCommand: opts.command,
+      browserArgs: opts.args,
+      mobileCommand: opts.command,
+      mobileArgs: opts.args,
+      cwd: opts.cwd,
+      jobId: opts.jobId,
+      mobileConfig: opts.mobileConfig,
+      segmentManaged: opts.segmentManaged,
+    });
+  }
   if (platform === "mobile") {
-    const env = mobileMcpEnv(opts.jobId, opts.mobileConfig);
+    const env = mobileMcpEnv(opts.jobId, opts.mobileConfig, {
+      segmentManaged: opts.segmentManaged,
+    });
     const filtered = Object.fromEntries(Object.entries(env).filter(([, v]) => v));
     return {
       mobile: {
@@ -126,7 +151,7 @@ export function cursorMcpServerConfig(opts: {
     };
   }
 
-  const env = automationMcpEnv(opts.jobId);
+  const env = automationMcpEnv(opts.jobId, { segmentManaged: opts.segmentManaged });
   const filtered = Object.fromEntries(Object.entries(env).filter(([, v]) => v));
   return {
     automation: {
@@ -139,7 +164,44 @@ export function cursorMcpServerConfig(opts: {
 }
 
 export function resolveMcpPathForJob(job: BridgeJob): string {
-  return job.platform === "mobile" ? resolveMobileMcpPath() : resolveAutomationMcpPath();
+  if (job.platform === "mobile") return resolveMobileMcpPath();
+  return resolveAutomationMcpPath();
+}
+
+export function cursorHybridMcpServerConfig(opts: {
+  browserCommand: string;
+  browserArgs: string[];
+  mobileCommand: string;
+  mobileArgs: string[];
+  cwd: string;
+  jobId?: string;
+  mobileConfig?: BridgeJob["mobileConfig"];
+  segmentManaged?: boolean;
+}): Record<string, { command: string; args: string[]; env: Record<string, string>; cwd?: string }> {
+  const browserEnv = Object.fromEntries(
+    Object.entries(automationMcpEnv(opts.jobId, { segmentManaged: opts.segmentManaged })).filter(
+      ([, v]) => v
+    )
+  );
+  const mobileEnv = Object.fromEntries(
+    Object.entries(
+      mobileMcpEnv(opts.jobId, opts.mobileConfig, { segmentManaged: opts.segmentManaged })
+    ).filter(([, v]) => v)
+  );
+  return {
+    automation: {
+      command: opts.browserCommand,
+      args: opts.browserArgs,
+      env: browserEnv,
+      cwd: opts.cwd,
+    },
+    mobile: {
+      command: opts.mobileCommand,
+      args: opts.mobileArgs,
+      env: mobileEnv,
+      cwd: opts.cwd,
+    },
+  };
 }
 
 export function resolveMcpServerKey(job: BridgeJob): "mobile" | "automation" {

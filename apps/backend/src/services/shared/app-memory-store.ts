@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { upsertMemorySection } from "./app-memory-sections.js";
 import { ToolError } from "../../automation/core/index.js";
 
 export type AppMemoryListItem = {
@@ -75,10 +76,32 @@ export function createAppMemoryStore(memoryDir: string) {
   function writeAppMemory(
     appId: string,
     content: string,
-    mode: "append" | "replace"
-  ): { appId: string; path: string; mode: "append" | "replace"; bytesWritten: number } {
+    mode: "append" | "replace" | "upsert_section",
+    sectionKey?: string
+  ): {
+    appId: string;
+    path: string;
+    mode: "append" | "replace" | "upsert_section";
+    bytesWritten: number;
+  } {
     const path = memoryPath(appId);
     const safeId = sanitizeAppId(appId);
+
+    if (mode === "upsert_section") {
+      if (!sectionKey?.trim()) {
+        throw new ToolError("sectionKey wajib untuk mode upsert_section");
+      }
+      const existing = existsSync(path) ? readFileSync(path, "utf8") : "";
+      const merged = upsertMemorySection(existing, sectionKey, content);
+      writeFileSync(path, merged, "utf8");
+      return {
+        appId: safeId,
+        path,
+        mode,
+        bytesWritten: Buffer.byteLength(merged, "utf8"),
+      };
+    }
+
     const body = content.endsWith("\n") ? content : `${content}\n`;
 
     if (mode === "replace" || !existsSync(path)) {

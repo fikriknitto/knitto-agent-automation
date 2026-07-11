@@ -16,6 +16,8 @@ import { mergeAgentChatLine } from "./lib/merge-agent-chat-line";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
 import { toMobileConfigPayload } from "./components/platform-selector";
+import { parseTestCasesFromPrompt, shortcutToRegistryEntry } from "./lib/parse-test-cases";
+import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
 import { MobileDevicesProvider } from "./contexts/mobile-devices-context";
 
 const STORAGE_KEY = "knitto-automation-web";
@@ -92,6 +94,11 @@ export function App() {
   const lastSubmittedJobId = useRef<string | null>(null);
   const activeJobIds = useRef(new Set<string>());
   const wsRef = useRef<AutomationWsClient | null>(null);
+  const { data: promptShortcuts = [] } = usePromptShortcuts();
+  const shortcutRegistry = useMemo(
+    () => promptShortcuts.map((shortcut) => shortcutToRegistryEntry(shortcut)),
+    [promptShortcuts]
+  );
 
   useEffect(() => {
     saveState({
@@ -203,12 +210,19 @@ export function App() {
       path: promptShortcutPath(b.id),
     }));
 
+    const parsedTc =
+      platform === "hybrid"
+        ? parseTestCasesFromPrompt(main, mobileConfig, shortcutRegistry)
+        : null;
+
     setChatLines((prev) => [
       ...prev,
       {
         id: `u-${id}`,
         role: "user",
         text: main,
+        jobPlatform: platform,
+        testCaseCount: parsedTc?.testCases.length,
         promptBases: baseSnapshot.length ? baseSnapshot : undefined,
         attachments,
       },
@@ -239,7 +253,10 @@ export function App() {
         "",
       attachments,
       platform,
-      mobileConfig: platform === "mobile" ? toMobileConfigPayload(mobileConfig) : undefined,
+      mobileConfig:
+        platform === "mobile" || platform === "hybrid"
+          ? toMobileConfigPayload(mobileConfig)
+          : undefined,
     });
   };
 
@@ -297,7 +314,7 @@ export function App() {
   };
 
   return (
-    <MobileDevicesProvider enabled={platform === "mobile"}>
+    <MobileDevicesProvider enabled={platform === "mobile" || platform === "hybrid"}>
     <div className="flex h-screen flex-col bg-[#0d0d0d]">
       <ChatHeader
         bridges={bridges}

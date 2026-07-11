@@ -6,11 +6,16 @@ const logger = createLogger("bridge-mcp-browser");
 
 export const AUTOMATION_CLOSE_BROWSER_TOOL = "automation_close_browser";
 
-export async function closeAutomationBrowser(client?: Client | null): Promise<void> {
+export async function closeAutomationBrowser(
+  client?: Client | null,
+  options?: { alwaysUseStateFile?: boolean }
+): Promise<void> {
   if (client) {
     try {
       await client.callTool({ name: AUTOMATION_CLOSE_BROWSER_TOOL, arguments: {} });
-      return;
+      if (!options?.alwaysUseStateFile) {
+        return;
+      }
     } catch (error) {
       logger.warn(
         `MCP close browser tool failed: ${error instanceof Error ? error.message : String(error)}`
@@ -19,7 +24,9 @@ export async function closeAutomationBrowser(client?: Client | null): Promise<vo
   }
 
   const closed = await closeBrowserFromStateFile();
-  if (!closed) {
+  if (closed) {
+    logger.info("Browser closed via state file");
+  } else if (!options?.alwaysUseStateFile) {
     logger.warn("No automation browser session found to close");
   }
 }

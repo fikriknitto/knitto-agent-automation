@@ -1,8 +1,8 @@
-import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
-import { useMemo } from "react";
-import { cn } from "@/lib/cn";
 import { useMobileDevices } from "@/contexts/mobile-devices-context";
 import { useMobilePackages } from "@/hooks/mobile/use-mobile-packages";
+import { cn } from "@/lib/cn";
+import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
+import { useMemo } from "react";
 import { Badge } from "./ui/badge";
 import {
   Combobox,
@@ -43,6 +43,8 @@ export function PlatformSelector({
   onMobileConfigChange,
 }: PlatformSelectorProps) {
   const isMobile = platform === "mobile";
+  const isHybrid = platform === "hybrid";
+  const showMobileFields = isMobile || isHybrid;
   const { devices, connected, error: streamError } = useMobileDevices();
   const packageUdid = mobileConfig.udid?.trim() || devices.find((d) => d.state === "idle")?.udid;
   const { data: packages = [], isLoading: packagesLoading } = useMobilePackages(packageUdid);
@@ -78,7 +80,7 @@ export function PlatformSelector({
       <div className="flex items-center gap-2">
         <span className="text-xs text-slate-500">Platform</span>
         <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-0.5">
-          {(["browser", "mobile"] as const).map((value) => (
+          {(["browser", "mobile", "hybrid"] as const).map((value) => (
             <button
               key={value}
               type="button"
@@ -95,14 +97,16 @@ export function PlatformSelector({
             </button>
           ))}
         </div>
-        {isMobile && (
+        {showMobileFields && connected && (
           <Badge variant="info" className="text-[10px]">
             {connected ? "SSE live" : "SSE offline"}
           </Badge>
         )}
       </div>
 
-      {isMobile && (
+
+
+      {showMobileFields && (
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="space-y-1">
             <Label className="text-xs text-slate-500">Device</Label>
@@ -139,7 +143,9 @@ export function PlatformSelector({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">Package (wajib)</Label>
+            <Label className="text-xs text-slate-500">
+              Package {isHybrid ? "(fallback)" : "(wajib)"}
+            </Label>
             <Combobox
               items={packageItems}
               value={selectedPackage}

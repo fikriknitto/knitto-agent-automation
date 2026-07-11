@@ -2,6 +2,7 @@
 label: CMS - Update Detail Warna Kain
 icon: "✏️"
 variant: green
+platform: browser
 ---
 
 - Pilih menu "Warna Kain (Detail Kain)"

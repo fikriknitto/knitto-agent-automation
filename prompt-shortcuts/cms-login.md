@@ -2,6 +2,8 @@
 label: CMS - Login
 icon: "🔑"
 variant: amber
+platform: browser
+url: http://192.168.20.27:5420/
 defaults:
   password: "11221122"
 ---

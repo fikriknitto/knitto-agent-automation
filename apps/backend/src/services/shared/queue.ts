@@ -1,5 +1,6 @@
 import type { AgentJobMessage, BridgeJob, UserPromptMessage } from "@knitto/shared";
 import { agentMessages } from "./agent-messages.js";
+import { resolveJobTestCasesAsync } from "./test-case-parser.js";
 import {
   PromptBaseInvalidPathError,
   PromptBaseNotFoundError,
@@ -100,6 +101,50 @@ export class JobQueue {
       return;
     }
 
+    let resolvedTestCases = msg.testCases;
+    if (msg.platform === "hybrid" && !resolvedTestCases?.length) {
+      const resolved = await resolveJobTestCasesAsync({
+        id: msg.id,
+        channel: msg.channel,
+        text: main,
+        platform: msg.platform,
+        mobileConfig: msg.mobileConfig,
+      });
+      if (resolved.errors.length) {
+        this.emit(
+          withConnectionId(
+            {
+              type: "agent_job",
+              id: msg.id,
+              channel: msg.channel,
+              status: "error",
+              message: resolved.errors.join(" "),
+              progress: 100,
+            },
+            connectionId
+          )
+        );
+        return;
+      }
+      if (!resolved.testCases.length) {
+        this.emit(
+          withConnectionId(
+            {
+              type: "agent_job",
+              id: msg.id,
+              channel: msg.channel,
+              status: "error",
+              message: "Prompt hybrid membutuhkan minimal satu heading ## Test Case.",
+              progress: 100,
+            },
+            connectionId
+          )
+        );
+        return;
+      }
+      resolvedTestCases = resolved.testCases;
+    }
+
     this.enqueue({
       id: msg.id,
       channel: msg.channel,
@@ -112,6 +157,7 @@ export class JobQueue {
       mainPrompt: main || undefined,
       platform: msg.platform,
       mobileConfig: msg.mobileConfig,
+      testCases: resolvedTestCases,
     });
   }
 

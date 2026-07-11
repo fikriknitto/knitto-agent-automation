@@ -21,6 +21,15 @@ import {
   setMobileJobConfig,
   setMobileJobUdid,
 } from "../../../mobile-automation/libs/mobile-job-context.js";
+import {
+  resolveJobTestCasesAsync,
+  shouldUseOrchestrator,
+} from "../../shared/test-case-parser.js";
+import { executeMultiTestBridgeJob } from "../../shared/multi-test-bridge.js";
+import {
+  acquireCursorHybridDevice,
+  createCursorTestCaseRunner,
+} from "../../shared/multi-test-cursor.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
 
@@ -41,10 +50,10 @@ type TerminalOutcome =
 function mcpServerConfig(job: BridgeJob, acquiredUdid?: string) {
   const platform = job.platform ?? "browser";
   const mobileConfig =
-    platform === "mobile" && job.mobileConfig
+    (platform === "mobile" || platform === "hybrid") && job.mobileConfig
       ? { ...job.mobileConfig, udid: acquiredUdid ?? job.mobileConfig.udid }
       : job.mobileConfig;
-  if (platform === "mobile" && mobileConfig) {
+  if ((platform === "mobile" || platform === "hybrid") && mobileConfig) {
     setMobileJobConfig(job.id, mobileConfig);
   }
   const mcpPath = resolveMcpPathForJob(job);
@@ -82,6 +91,48 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
 
     const savedAttachments = await resolveJobAttachments(job.attachments);
     const visionAttachments = await loadVisionAttachments(job.attachments);
+    const platform = job.platform ?? "browser";
+    const { testCases, errors } = await resolveJobTestCasesAsync(job);
+
+    if (errors.length) {
+      emit({
+        type: "agent_job",
+        id: job.id,
+        channel: job.channel,
+        status: "error",
+        message: errors.join(" "),
+        progress: 100,
+      });
+      return;
+    }
+
+    const modelId = job.model ?? config.modelId;
+
+    if (shouldUseOrchestrator(platform, testCases)) {
+      const hasMobileTc = testCases.some((tc) => tc.platform === "mobile");
+      let acquiredUdid: string | undefined;
+      if (hasMobileTc) {
+        acquiredUdid = await acquireCursorHybridDevice(job.id, job.mobileConfig);
+      }
+
+      await executeMultiTestBridgeJob({
+        job: { ...job, testCases, platform: "hybrid" },
+        testCases,
+        emit,
+        isCancelled: () => cancelled,
+        startingMessage: agentMessages.startingCursor,
+        cleanupMode: "cursor-subprocess",
+        createRunner: () =>
+          createCursorTestCaseRunner(
+            job.id,
+            modelId,
+            acquiredUdid,
+            job.mobileConfig
+          ),
+      });
+      return;
+    }
+
     const promptInput = buildPromptForJob({
       platform: job.platform,
       mobileConfig: job.mobileConfig,
@@ -94,7 +145,6 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       promptBasePaths: job.promptBasePaths,
     });
 
-    const modelId = job.model ?? config.modelId;
     const sendMessage = buildCursorSdkMessage(promptInput);
 
     emit({
@@ -106,9 +156,8 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       progress: 5,
     });
 
-    const platform = job.platform ?? "browser";
     let acquiredUdid: string | undefined;
-    if (platform === "mobile" && job.mobileConfig) {
+    if ((platform === "mobile" || platform === "hybrid") && job.mobileConfig) {
       setMobileJobConfig(job.id, job.mobileConfig);
       acquiredUdid = await devicePool.acquire(job.id, job.mobileConfig.udid);
       setMobileJobUdid(job.id, acquiredUdid);

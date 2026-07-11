@@ -13,7 +13,14 @@ import { devicePool } from "./device-pool.js";
 import {
   startMobileJobRecording,
   stopMobileJobRecording,
+  isSegmentRecordingManaged,
 } from "../recording.js";
+import { ensureSegmentRecordingStarted } from "../../../services/shared/segment-recording.js";
+import { writeMobileSessionState, clearMobileSessionState } from "../mobile-session-state.js";
+import {
+  closeMobileSessionFromState,
+  terminateMobileAppFromState,
+} from "../mobile-session-cleanup.js";
 
 const sessions = new Map<string, Browser>();
 
@@ -86,8 +93,16 @@ export async function createSession(): Promise<Browser> {
       logLevel: "warn",
     });
     await driver.setTimeout({ implicit: mobileConfig.implicitWaitMs });
-    await startMobileJobRecording(driver);
+    if (!isSegmentRecordingManaged(jobId)) {
+      await startMobileJobRecording(driver);
+    }
     sessions.set(jobId, driver);
+    writeMobileSessionState(jobId, {
+      jobId,
+      sessionId: driver.sessionId,
+      udid,
+      appPackage: mobileCfg.appPackage,
+    });
     return driver;
   } catch (error) {
     devicePool.release(jobId);
@@ -138,6 +153,8 @@ export async function launchApp(): Promise<{
     // ignore
   }
 
+  await ensureSegmentRecordingStarted(jobId);
+
   return {
     package: mobileCfg.appPackage,
     activity,
@@ -159,13 +176,18 @@ export async function closeApp(): Promise<{
   }
 
   const driver = getActiveDriver(jobId);
-  if (!driver) {
-    throw new ToolError(
-      "Tidak ada sesi Appium aktif — panggil mobile_close_app sebelum mobile_close_session."
-    );
-  }
   const udid = getMobileJobUdid(jobId) ?? mobileCfg.udid ?? "";
   const pkg = mobileCfg.appPackage;
+
+  if (!driver) {
+    const closed = await terminateMobileAppFromState(jobId);
+    if (!closed) {
+      throw new ToolError(
+        "Tidak ada sesi Appium aktif — panggil mobile_close_app sebelum mobile_close_session."
+      );
+    }
+    return { package: pkg, closed: true, udid };
+  }
 
   try {
     await driver.terminateApp(pkg);
@@ -184,12 +206,18 @@ export async function closeSession(): Promise<{ closed: boolean }> {
   const driver = sessions.get(jobId);
   if (driver) {
     try {
-      await stopMobileJobRecording(driver);
+      if (!isSegmentRecordingManaged(jobId)) {
+        await stopMobileJobRecording(driver);
+      }
       await driver.deleteSession();
     } catch {
       // ignore
     }
     sessions.delete(jobId);
+    clearMobileSessionState(jobId);
+  } else {
+    await closeMobileSessionFromState(jobId);
+    return { closed: true };
   }
 
   devicePool.release(jobId);

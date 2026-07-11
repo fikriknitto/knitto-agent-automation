@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  testCaseSpecSchema,
+  testCaseStatusSchema,
+  videoRecordingMetaSchema,
+  type TestCaseSpec,
+} from "./test-case.js";
 
 export const bridgeKindSchema = z.enum(["cursor", "gemini", "openrouter", "ninerouter"]);
 export type BridgeKind = z.infer<typeof bridgeKindSchema>;
@@ -27,7 +33,7 @@ export const promptAttachmentSchema = z.object({
 
 export type PromptAttachment = z.infer<typeof promptAttachmentSchema>;
 
-export const automationPlatformSchema = z.enum(["browser", "mobile"]);
+export const automationPlatformSchema = z.enum(["browser", "mobile", "hybrid"]);
 export type AutomationPlatform = z.infer<typeof automationPlatformSchema>;
 
 export const mobileConfigSchema = z.object({
@@ -52,6 +58,7 @@ export const userPromptMessageSchema = z.object({
   mainPrompt: z.string().optional(),
   platform: automationPlatformSchema.optional(),
   mobileConfig: mobileConfigSchema.optional(),
+  testCases: z.array(testCaseSpecSchema).optional(),
 });
 
 export const agentJobCancelMessageSchema = z.object({
@@ -61,6 +68,20 @@ export const agentJobCancelMessageSchema = z.object({
   connectionId: z.string().optional(),
   bridgeId: z.string(),
 });
+
+export { videoRecordingMetaSchema, type VideoRecordingMeta } from "./test-case.js";
+
+export const testCaseResultSchema = z.object({
+  testCaseId: z.string(),
+  title: z.string(),
+  platform: z.enum(["browser", "mobile"]),
+  status: testCaseStatusSchema,
+  summary: z.string(),
+  screenshots: z.array(z.string()).optional(),
+  videoUrl: z.string().optional(),
+  label: z.string().optional(),
+});
+export type TestCaseResult = z.infer<typeof testCaseResultSchema>;
 
 export const agentJobMessageSchema = z.object({
   type: z.literal("agent_job"),
@@ -75,6 +96,17 @@ export const agentJobMessageSchema = z.object({
   screenshotBase64: z.string().optional(),
   screenshots: z.array(z.string()).optional(),
   videoUrl: z.string().optional(),
+  videoUrls: z.array(z.string()).optional(),
+  videoRecordingMeta: z.array(videoRecordingMetaSchema).optional(),
+  testCaseResults: z.array(testCaseResultSchema).optional(),
+  testCaseIndex: z.number().optional(),
+  testCaseTotal: z.number().optional(),
+  testCaseId: z.string().optional(),
+  testCasePlatform: z.enum(["browser", "mobile"]).optional(),
+  testCaseStatus: z
+    .enum(["pending", "running", "completed", "error", "skipped"])
+    .optional(),
+  testCases: z.array(testCaseSpecSchema).optional(),
   toolName: z.string().optional(),
   deviceUdid: z.string().optional(),
 });
@@ -96,6 +128,7 @@ export interface BridgeJob {
   mainPrompt?: string;
   platform?: AutomationPlatform;
   mobileConfig?: MobileConfig;
+  testCases?: TestCaseSpec[];
 }
 
 export interface BridgeInfo {

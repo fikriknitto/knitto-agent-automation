@@ -12,6 +12,10 @@ export type PromptShortcutDto = {
   label: string;
   icon: string;
   variant: string;
+  platform: string;
+  appPackage?: string;
+  url?: string;
+  deepLink?: string;
   template: string;
   defaults: Record<string, string>;
 };
@@ -20,6 +24,10 @@ type Frontmatter = {
   label?: string;
   icon?: string;
   variant?: string;
+  platform?: string;
+  appPackage?: string;
+  url?: string;
+  deepLink?: string;
   defaults?: Record<string, string>;
 };
 
@@ -82,7 +90,15 @@ function parseFrontmatter(raw: string): { meta: Frontmatter; body: string } {
     if (top) {
       const key = top[1]!;
       const value = stripQuotes(top[2]!.trim());
-      if (key === "label" || key === "icon" || key === "variant") {
+      if (
+        key === "label" ||
+        key === "icon" ||
+        key === "variant" ||
+        key === "platform" ||
+        key === "appPackage" ||
+        key === "url" ||
+        key === "deepLink"
+      ) {
         meta[key] = value;
       }
     }
@@ -123,6 +139,16 @@ export function serializePromptShortcutMarkdown(
     lines.push(`icon: ${JSON.stringify(dto.icon)}`);
   }
   lines.push(`variant: ${dto.variant}`);
+  lines.push(`platform: ${dto.platform || "browser"}`);
+  if (dto.appPackage?.trim()) {
+    lines.push(`appPackage: ${yamlScalar(dto.appPackage.trim())}`);
+  }
+  if (dto.url?.trim()) {
+    lines.push(`url: ${yamlScalar(dto.url.trim())}`);
+  }
+  if (dto.deepLink?.trim()) {
+    lines.push(`deepLink: ${yamlScalar(dto.deepLink.trim())}`);
+  }
   if (Object.keys(dto.defaults).length > 0) {
     lines.push("defaults:");
     for (const [key, value] of Object.entries(dto.defaults)) {
@@ -142,6 +168,10 @@ function dtoFromFile(id: string, raw: string): PromptShortcutDto {
     label: meta.label ?? titleFromFilename(`${id}.md`),
     icon: meta.icon ?? "",
     variant: meta.variant ?? "neutral",
+    platform: meta.platform === "mobile" ? "mobile" : "browser",
+    appPackage: meta.appPackage,
+    url: meta.url,
+    deepLink: meta.deepLink,
     template: body,
     defaults: meta.defaults ?? {},
   };
@@ -210,7 +240,7 @@ export async function createPromptShortcut(body: CreatePromptShortcutBody): Prom
 
   await writeFile(
     filePath,
-    serializePromptShortcutMarkdown({ ...body, icon: "" }),
+    serializePromptShortcutMarkdown({ ...body, icon: "", platform: body.platform ?? "browser" }),
     "utf8"
   );
   return getPromptShortcut(id);
@@ -229,7 +259,11 @@ export async function updatePromptShortcut(
 
   await writeFile(
     filePath,
-    serializePromptShortcutMarkdown({ ...body, icon: existing.icon }),
+    serializePromptShortcutMarkdown({
+      ...body,
+      icon: existing.icon,
+      platform: body.platform ?? existing.platform,
+    }),
     "utf8"
   );
   return getPromptShortcut(id);

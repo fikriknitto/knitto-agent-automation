@@ -7,8 +7,15 @@ export async function closeMcpSession(
   platform: AutomationPlatform = "browser",
   jobId?: string
 ): Promise<void> {
-  if (platform === "mobile" && jobId) {
+  if ((platform === "mobile" || platform === "hybrid") && jobId) {
     await cleanupMobileJob(jobId);
+    if (platform === "hybrid") {
+      try {
+        await client.callTool({ name: "automation_close_browser", arguments: {} });
+      } catch {
+        // best-effort
+      }
+    }
     return;
   }
 

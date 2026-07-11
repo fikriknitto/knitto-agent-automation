@@ -53,7 +53,7 @@ knitto-browser-agent/
 ├── memory/                    # Memori otomatisasi per app (agent)
 ├── storage/                   # File manager — lampiran prompt (local)
 ├── screenshoot/               # Bukti agent per job
-│   └── agents/{jobId}/        # *.png + recording.mp4
+│   └── agents/{jobId}/        # *.png + recording.mp4 (atau tc-01.mp4, tc-02.mp4, …)
 ├── Dockerfile                 # Multi-stage build (build / backend / frontend)
 ├── docker-compose.yml
 ├── docker.env                 # Env default container backend
@@ -132,6 +132,46 @@ Memory mobile terpisah di `memory/mobile/` (tab Mobile di Settings → Memory).
 Rekaman video mobile: Appium `startRecordingScreen` / `stopRecordingScreen` → `screenshoot/agents/{jobId}/recording.mp4` (bukan ffmpeg).
 
 Env terkait: bagian Mobile di `apps/backend/.env.example` dan tabel env di bawah.
+
+---
+
+## Hybrid multi test case (Browser + Mobile)
+
+Satu prompt dapat menjalankan beberapa **test case** lintas browser dan/atau mobile.
+
+### Aturan
+
+- **1 test case = 1 video** → `screenshoot/agents/{jobId}/tc-01.mp4`, `tc-02.mp4`, …
+- **1 test case = 1 blok RESULT** di UI — ringkasan, screenshot, dan video dikelompokkan per TC (`testCaseResults[]`)
+- Browser/app/session tetap hidup selama job; orchestrator **menutup semua platform sekali** setelah semua TC selesai (success, error, atau cancel)
+- Screenshot multi-TC memakai prefix `tc-01-*.png` agar mudah dipetakan ke TC
+- Platform composer: **Hybrid**
+- Format prompt naratif (disarankan):
+
+```markdown
+## Test Case 1
+Ikuti system prompt "Take Order - Login".
+
+## Test Case 2
+Ikuti system prompt "Order pesanan".
+produk=produk A
+qty=1
+Wajib: [HANDOFF] NO_ORDER=<nomor>
+
+## Test Case 3
+Buka https://portal.example.com/status dan cari NO_ORDER dari handoff.
+```
+
+- **System prompt** = file di `prompt-shortcuts/` (metadata: `platform`, `url`, `appPackage`)
+- Referensi TC: `system prompt "Label"` atau `shortcut:kebab-id`
+- Variabel: `{nama}` di template shortcut; inisialisasi di TC dengan `key=value`
+- Platform resolve: `Platform:` eksplisit → metadata shortcut → infer URL → default `browser`
+- TC mobile wajib punya `appPackage` (dari shortcut, `App:` di TC, atau fallback composer)
+- Override eksplisit (opsional): `Platform:`, `App:`, `Url:`
+- Handoff antar TC: `[HANDOFF] KEY=value` di output agent
+- Memory: `upsert_section` + `sectionKey` (bukan blind append)
+
+Detail arsitektur: `docs/CHECKPOINT-hybrid-multi-platform.md`
 
 ---
 
@@ -418,6 +458,10 @@ Lihat `memory/` untuk pola navigasi CMS Knitto dan `prompt-shortcuts/` untuk tem
 | `ECONNREFUSED` pada `/api/*` saat `pnpm dev` | Backend belum listen atau port salah | Pastikan log `Backend listening on…`; samakan port di kedua `.env` |
 | `PATCH`/`DELETE` file-manager **404** | Proses backend lama tanpa route baru | Hentikan proses di `BACKEND_PORT`, restart `pnpm dev`; atau `pnpm build:backend` untuk production |
 | Video tidak muncul, refresh baru ada | ffmpeg masih menulis MP4 | Sudah ditangani retry UI + tunggu file di backend; restart backend jika versi lama |
+| Video browser **hitam penuh** (Windows) | `AUTOMATION_HEADLESS=true` + `puppeteer-screen-recorder` sering menghasilkan frame hitam | Set `AUTOMATION_HEADLESS=false` untuk rekaman yang terlihat; pastikan browser sudah navigasi sebelum segment start |
+| Video TC kosong / tidak ada file | Segment recording gagal start (browser/app belum siap) | Cek log backend `segment-recording` / `browser-recording`; pastikan `mobile_launch_app` sukses untuk TC mobile |
+| Video corrupt / tidak bisa diputar | `AUTOMATION_FFMPEG_PATH` salah atau ffmpeg tidak di PATH | `ffmpeg -version`; set `AUTOMATION_FFMPEG_PATH` ke binary yang benar |
+| File MP4 sangat kecil (<10 KB) | Rekaman gagal atau hanya frame hitam | Lihat warning di log backend; ulangi dengan headless=false (browser) atau pastikan activity app sudah visible (mobile) |
 | `EADDRINUSE` | Port backend sudah dipakai | `netstat` / `taskkill` proses di port tersebut |
 | Docker: `backend unhealthy` | Build lama / env salah | `docker compose up -d --build`; cek `docker compose logs backend` |
 | Docker: Chromium tidak terlihat | Container tanpa display GUI | Normal — pantau lewat screenshot/video di UI |

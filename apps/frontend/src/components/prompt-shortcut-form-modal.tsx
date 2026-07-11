@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import {
   extractTemplatePlaceholders,
   type PromptShortcut,
+  type PromptShortcutPlatform,
   type PromptShortcutVariant,
 } from "../lib/prompt-shortcuts";
 import {
@@ -25,6 +26,7 @@ type PromptShortcutFormModalProps = {
   onSaved: (shortcut: PromptShortcut) => void;
 };
 const VARIANTS: PromptShortcutVariant[] = ["blue", "green", "amber", "neutral"];
+const PLATFORMS: PromptShortcutPlatform[] = ["browser", "mobile"];
 
 type DefaultsRow = { key: string; value: string };
 
@@ -58,6 +60,10 @@ export function PromptShortcutFormModal({
 
   const [label, setLabel] = useState("");
   const [variant, setVariant] = useState<PromptShortcutVariant>("neutral");
+  const [platform, setPlatform] = useState<PromptShortcutPlatform>("browser");
+  const [appPackage, setAppPackage] = useState("");
+  const [url, setUrl] = useState("");
+  const [deepLink, setDeepLink] = useState("");
   const [template, setTemplate] = useState("");
   const [defaultsRows, setDefaultsRows] = useState<DefaultsRow[]>([{ key: "", value: "" }]);
   const [brief, setBrief] = useState("");
@@ -72,11 +78,19 @@ export function PromptShortcutFormModal({
     if (mode === "edit" && shortcut) {
       setLabel(shortcut.label);
       setVariant(shortcut.variant);
+      setPlatform(shortcut.platform ?? "browser");
+      setAppPackage(shortcut.appPackage ?? "");
+      setUrl(shortcut.url ?? "");
+      setDeepLink(shortcut.deepLink ?? "");
       setTemplate(shortcut.template);
       setDefaultsRows(defaultsToRows(shortcut.defaults));
     } else {
       setLabel("");
       setVariant("neutral");
+      setPlatform("browser");
+      setAppPackage("");
+      setUrl("");
+      setDeepLink("");
       setTemplate("");
       setDefaultsRows([{ key: "", value: "" }]);
     }
@@ -127,12 +141,20 @@ export function PromptShortcutFormModal({
       setError("Label dan template wajib diisi");
       return;
     }
+    if (platform === "mobile" && !appPackage.trim()) {
+      setError("App package wajib untuk shortcut mobile");
+      return;
+    }
 
     setError("");
     try {
       const payload = {
         label: label.trim(),
         variant,
+        platform,
+        appPackage: platform === "mobile" ? appPackage.trim() : undefined,
+        url: url.trim() || undefined,
+        deepLink: deepLink.trim() || undefined,
         template: template.trim(),
         defaults: rowsToDefaults(defaultsRows),
       };
@@ -223,6 +245,53 @@ export function PromptShortcutFormModal({
                 ))}
               </Select>
             </Label>
+            <Label>
+              Platform
+              <Select
+                value={platform}
+                disabled={isBusy}
+                onChange={(e) => setPlatform(e.target.value as PromptShortcutPlatform)}
+              >
+                {PLATFORMS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </Select>
+            </Label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Label>
+              URL (opsional)
+              <Input
+                value={url}
+                disabled={isBusy}
+                placeholder="https://portal.example.com"
+                onChange={(e) => setUrl(e.target.value)}
+              />
+            </Label>
+            {platform === "mobile" ? (
+              <Label>
+                App package
+                <Input
+                  value={appPackage}
+                  disabled={isBusy}
+                  placeholder="com.example.app"
+                  onChange={(e) => setAppPackage(e.target.value)}
+                />
+              </Label>
+            ) : (
+              <Label>
+                Deep link (opsional)
+                <Input
+                  value={deepLink}
+                  disabled={isBusy}
+                  placeholder="myapp://path"
+                  onChange={(e) => setDeepLink(e.target.value)}
+                />
+              </Label>
+            )}
           </div>
 
           {mode === "create" && (

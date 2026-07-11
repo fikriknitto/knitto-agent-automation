@@ -17,6 +17,12 @@ import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-
 import { jobMediaPayload, jobMediaPayloadAsync } from "../../shared/job-media-payload.js";
 import { agentMessages } from "../../shared/agent-messages.js";
 import { closeMcpSession } from "../../shared/mcp-session-cleanup.js";
+import {
+  resolveJobTestCasesAsync,
+  shouldUseOrchestrator,
+} from "../../shared/test-case-parser.js";
+import { executeMultiTestBridgeJob } from "../../shared/multi-test-bridge.js";
+import { createGeminiTestCaseRunner } from "../../shared/multi-test-gemini.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
 
@@ -72,6 +78,33 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
     const savedAttachments = await resolveJobAttachments(job.attachments);
     const visionAttachments = await loadVisionAttachments(job.attachments);
     const platform = job.platform ?? "browser";
+    const { testCases, errors } = await resolveJobTestCasesAsync(job);
+
+    if (errors.length) {
+      emit({
+        type: "agent_job",
+        id: job.id,
+        channel: job.channel,
+        status: "error",
+        message: errors.join(" "),
+        progress: 100,
+      });
+      return;
+    }
+
+    if (shouldUseOrchestrator(platform, testCases)) {
+      await executeMultiTestBridgeJob({
+        job: { ...job, testCases },
+        testCases,
+        emit,
+        isCancelled: () => cancelled,
+        startingMessage: agentMessages.startingGemini,
+        createRunner: (mcpClient) =>
+          createGeminiTestCaseRunner(mcpClient, job.model ?? config.modelId, abortController.signal),
+      });
+      return;
+    }
+
     const promptInput = buildPromptForJob({
       platform,
       mobileConfig: job.mobileConfig,

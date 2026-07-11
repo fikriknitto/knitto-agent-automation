@@ -1,9 +1,18 @@
 import type { AutomationPlatform, MobileConfig, StorageEntry } from "@knitto/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import { SendIcon, StopCircleIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/cn";
+import {
+  countTestCasesByPlatform,
+  formatTestCaseShortcutSummary,
+  parseTestCasesFromPrompt,
+  shortcutToRegistryEntry,
+  validateHybridPrompt,
+  type ShortcutRegistryEntry,
+} from "../lib/parse-test-cases";
+import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
 import {
   ACCEPTED_FILE_INPUT,
   filesToPromptAttachments,
@@ -28,9 +37,10 @@ import { createPromptEditorExtensions } from "@/lib/tiptap/prompt-editor-extensi
 import {
   applyEditorMarkdown,
   autosizeEditor,
-  markdownMatches,
   releaseSkipEmit,
+  shouldSkipExternalMarkdownSync,
 } from "@/lib/tiptap/editor-markdown";
+import { createMarkdownClipboardEditorProps } from "@/lib/tiptap/editor-clipboard";
 
 const MIN_HEIGHT_PX = 96;
 const MAX_HEIGHT_PX = 256;
@@ -66,9 +76,11 @@ function resolveValidationMessage(
   connectionState: ConnectionState,
   selectedBridgeId: string,
   hasContent: boolean,
+  promptText: string,
   platform: AutomationPlatform,
   mobileConfig: MobileConfig,
-  mobileDeviceCount: number
+  mobileDeviceCount: number,
+  shortcutRegistry: ShortcutRegistryEntry[]
 ): string | null {
   if (connectionState !== "connected") {
     if (connectionState === "connecting") {
@@ -91,6 +103,16 @@ function resolveValidationMessage(
     }
     if (mobileDeviceCount === 0) {
       return "Tidak ada device Android terhubung.";
+    }
+  }
+  if (platform === "hybrid") {
+    const result = validateHybridPrompt(promptText, mobileConfig, shortcutRegistry);
+    if (result.errors.length) {
+      return result.errors[0] ?? "Prompt hybrid tidak valid.";
+    }
+    const hasMobileTc = result.testCases.some((tc) => tc.platform === "mobile");
+    if (hasMobileTc && mobileDeviceCount === 0) {
+      return "Tidak ada device Android terhubung untuk TC mobile.";
     }
   }
   return null;
@@ -124,6 +146,12 @@ export function PromptEditor({
   const maxHeight = isComposer ? COMPOSER_MAX_HEIGHT_PX : MAX_HEIGHT_PX;
 
   const skipEmit = useRef(false);
+  const editorRef = useRef<Editor | null>(null);
+  const lastEmittedMarkdownRef = useRef(value);
+  const markdownClipboardProps = useMemo(
+    () => createMarkdownClipboardEditorProps(() => editorRef.current),
+    []
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const [dragOver, setDragOver] = useState(false);
@@ -131,11 +159,25 @@ export function PromptEditor({
   const [storageModalOpen, setStorageModalOpen] = useState(false);
 
   const { devices: mobileDevices } = useMobileDevices();
+  const { data: promptShortcuts = [] } = usePromptShortcuts();
+  const shortcutRegistry = useMemo(
+    () => promptShortcuts.map((shortcut) => shortcutToRegistryEntry(shortcut)),
+    [promptShortcuts]
+  );
   const hasText = Boolean(value.trim());
   const hasContent = hasText || attachments.length > 0 || promptBases.length > 0;
   const mobileReady =
-    platform !== "mobile" ||
-    (Boolean(mobileConfig.appPackage?.trim()) && mobileDevices.length > 0);
+    platform === "browser" ||
+    (platform === "mobile" &&
+      Boolean(mobileConfig.appPackage?.trim()) &&
+      mobileDevices.length > 0) ||
+    (platform === "hybrid" &&
+      (() => {
+        const result = validateHybridPrompt(value, mobileConfig, shortcutRegistry);
+        if (result.errors.length) return false;
+        const hasMobileTc = result.testCases.some((tc) => tc.platform === "mobile");
+        return !hasMobileTc || mobileDevices.length > 0;
+      })());
   const canSend =
     connectionState === "connected" &&
     Boolean(selectedBridgeId) &&
@@ -149,9 +191,11 @@ export function PromptEditor({
             connectionState,
             selectedBridgeId,
             hasContent,
+            value,
             platform,
             mobileConfig,
-            mobileDevices.length
+            mobileDevices.length,
+            shortcutRegistry
           ),
     [
       connectionState,
@@ -161,8 +205,28 @@ export function PromptEditor({
       platform,
       mobileConfig,
       mobileDevices.length,
+      value,
+      shortcutRegistry,
     ]
   );
+
+  const hybridPreview = useMemo(() => {
+    if (platform !== "hybrid") return null;
+    const result = parseTestCasesFromPrompt(value, mobileConfig, shortcutRegistry);
+    if (result.errors.length) {
+      return result.errors[0] ?? "Prompt hybrid tidak valid.";
+    }
+    if (!result.testCases.length) return null;
+    const counts = countTestCasesByPlatform(result.testCases);
+    const lines = result.testCases.map((tc) => {
+      const shortcutSummary = formatTestCaseShortcutSummary(tc);
+      const shortcutPart = shortcutSummary ? ` ← ${shortcutSummary}` : "";
+      const varKeys = tc.variables ? Object.keys(tc.variables) : [];
+      const vars = varKeys.length ? ` (${varKeys.join(", ")})` : "";
+      return `· ${tc.id} ${tc.platform}${shortcutPart}${vars}`;
+    });
+    return `Detected: ${counts.total} test cases · ${counts.browser} browser · ${counts.mobile} mobile\n${lines.join("\n")}`;
+  }, [platform, value, mobileConfig, shortcutRegistry]);
 
   const appendAttachments = useCallback(
     async (files: FileList | File[]) => {
@@ -270,6 +334,7 @@ export function PromptEditor({
     immediatelyRender: false,
     editable: workerState !== "busy",
     editorProps: {
+      ...markdownClipboardProps,
       attributes: {
         class: isComposer ? "prompt-editor-content prompt-editor-content--composer" : "prompt-editor-content",
       },
@@ -280,9 +345,15 @@ export function PromptEditor({
     onUpdate: ({ editor: ed }) => {
       autosizeEditor(ed.view.dom as HTMLElement, minHeight, maxHeight);
       if (skipEmit.current) return;
-      onChange(ed.getMarkdown());
+      const markdown = ed.getMarkdown();
+      lastEmittedMarkdownRef.current = markdown;
+      onChange(markdown);
     },
   });
+
+  useEffect(() => {
+    editorRef.current = editor ?? null;
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -291,11 +362,13 @@ export function PromptEditor({
 
   useEffect(() => {
     if (!editor) return;
-    const current = editor.getMarkdown();
-    if (markdownMatches(value, current)) return;
+    if (shouldSkipExternalMarkdownSync(editor, value, lastEmittedMarkdownRef.current)) {
+      return;
+    }
 
     skipEmit.current = true;
     applyEditorMarkdown(editor, value, minHeight, maxHeight);
+    lastEmittedMarkdownRef.current = value;
     releaseSkipEmit(skipEmit);
   }, [editor, value, minHeight, maxHeight]);
 
@@ -434,6 +507,14 @@ export function PromptEditor({
                 onPlatformChange={onPlatformChange}
                 onMobileConfigChange={onMobileConfigChange}
               />
+              {validationMessage && !isBusy && (
+                <p className="px-1 text-xs leading-snug text-amber-400/90" role="status">
+                  {validationMessage}
+                </p>
+              )}
+              {hybridPreview && !validationMessage && (
+                <p className="whitespace-pre-line px-1 text-xs text-slate-500">{hybridPreview}</p>
+              )}
               <div className="flex items-center justify-between gap-2">
               <BridgeAndModel
                 bridges={bridges}

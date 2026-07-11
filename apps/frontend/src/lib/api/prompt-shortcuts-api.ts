@@ -21,6 +21,7 @@ function normalizePromptShortcut(item: PromptShortcut): PromptShortcut {
   return {
     ...item,
     variant: resolveVariant(item.variant),
+    platform: item.platform === "mobile" ? "mobile" : "browser",
   };
 }
 

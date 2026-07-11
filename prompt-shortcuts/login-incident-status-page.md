@@ -1,6 +1,8 @@
 ---
 label: 🔑 Login Incident status page
 variant: green
+platform: browser
+url: http://192.168.20.27:11011/login
 defaults:
   username: ""
   password: ""
