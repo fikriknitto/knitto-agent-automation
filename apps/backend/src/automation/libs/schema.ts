@@ -234,6 +234,16 @@ export const closeBrowserOutputShape = {
   closed: z.boolean(),
 } as const;
 
+export const stopTestCaseSegmentInputSchema = {
+  testCaseId: z.string().optional(),
+} as const;
+
+export const stopTestCaseSegmentOutputShape = {
+  stopped: z.boolean(),
+  path: z.string().optional(),
+  warning: z.string().optional(),
+} as const;
+
 export type SemanticLocator = {
   ref?: string;
   role?: string;

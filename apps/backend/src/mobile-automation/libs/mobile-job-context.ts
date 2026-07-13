@@ -1,4 +1,5 @@
 import type { MobileConfig } from "@knitto/shared";
+import { readSegmentStateFile } from "../../services/shared/segment-state-file.js";
 
 const configByJob = new Map<string, MobileConfig>();
 const udidByJob = new Map<string, string>();
@@ -30,10 +31,22 @@ export function setMobileJobConfig(jobId: string, config: MobileConfig | undefin
 }
 
 export function getMobileJobConfig(jobId: string): MobileConfig | undefined {
-  const fromMap = configByJob.get(jobId.trim());
+  const id = jobId.trim();
+  const fromMap = configByJob.get(id);
   if (fromMap) return fromMap;
+
+  const fromSegment = readSegmentStateFile(id)?.pending?.mobileConfig;
+  if (fromSegment?.appPackage?.trim()) {
+    return {
+      appPackage: fromSegment.appPackage.trim(),
+      appActivity: fromSegment.appActivity?.trim() || undefined,
+      udid: fromSegment.udid?.trim() || undefined,
+      deepLink: fromSegment.deepLink?.trim() || undefined,
+    };
+  }
+
   const envJobId = process.env.MOBILE_JOB_ID?.trim() ?? process.env.AUTOMATION_JOB_ID?.trim();
-  if (envJobId === jobId.trim()) {
+  if (envJobId === id) {
     return mobileConfigFromEnv();
   }
   return undefined;

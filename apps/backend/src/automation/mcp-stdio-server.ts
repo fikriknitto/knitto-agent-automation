@@ -20,7 +20,9 @@ import {
   automation_go_forward,
   automation_upload_file,
   automation_close_browser,
+  automation_stop_test_case_segment,
 } from "./libs/registry.js";
+import { startSegmentStopPoller } from "../services/shared/segment-stop-poller.js";
 
 async function main(): Promise<void> {
   const server = new Server({
@@ -47,6 +49,9 @@ async function main(): Promise<void> {
   server.registerTool(automation_go_forward);
   server.registerTool(automation_upload_file);
   server.registerTool(automation_close_browser);
+  server.registerTool(automation_stop_test_case_segment);
+
+  startSegmentStopPoller("browser");
 
   await server.start();
 }

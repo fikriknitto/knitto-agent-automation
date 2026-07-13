@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import {
+  clearJobSegmentManaged,
   getPendingSegment,
   isSegmentStarted,
 } from "./segment-context.js";
 import { startSegmentRecording, stopSegmentRecording } from "./segment-recording.js";
 
 describe("segment-recording deferred start", () => {
+  afterEach(() => {
+    clearJobSegmentManaged("job-defer-1");
+  });
+
   it("startSegmentRecording sets pending without marking segment started", async () => {
     const jobId = "job-defer-1";
     await startSegmentRecording(jobId, "tc-01", "browser");

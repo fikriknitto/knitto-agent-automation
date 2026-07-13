@@ -20,7 +20,9 @@ import {
   mobile_wait_for,
   mobile_close_app,
   mobile_close_session,
+  mobile_stop_test_case_segment,
 } from "./libs/registry.js";
+import { startSegmentStopPoller } from "../services/shared/segment-stop-poller.js";
 
 async function main(): Promise<void> {
   const jobId = process.env.MOBILE_JOB_ID?.trim() ?? process.env.AUTOMATION_JOB_ID?.trim();
@@ -35,7 +37,7 @@ async function main(): Promise<void> {
         deepLink: process.env.MOBILE_JOB_DEEP_LINK?.trim() || undefined,
       });
 
-      if (mobileConfig.recordVideo) {
+      if (mobileConfig.recordVideo && process.env.MOBILE_MULTI_TC !== "1") {
         try {
           await createSession();
           logger.info(`MCP stdio: recording started at job start (job=${jobId})`);
@@ -82,6 +84,9 @@ async function main(): Promise<void> {
   server.registerTool(mobile_wait_for);
   server.registerTool(mobile_close_app);
   server.registerTool(mobile_close_session);
+  server.registerTool(mobile_stop_test_case_segment);
+
+  startSegmentStopPoller("mobile");
 
   await server.start();
 }

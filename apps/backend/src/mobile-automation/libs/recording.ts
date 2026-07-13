@@ -7,9 +7,11 @@ import { getAutomationJobId, resolveAgentScreenshotDirForJob } from "./job-conte
 import mobileConfig from "./config.js";
 import {
   getPendingSegment,
+  isJobSegmentManaged,
   isSegmentStarted,
   markSegmentStarted,
 } from "../../services/shared/segment-context.js";
+import { setActiveSegment, clearActiveSegment } from "../../services/shared/segment-state-file.js";
 
 const logger = createLogger("mobile-recording");
 
@@ -17,7 +19,15 @@ const recordingJobs = new Set<string>();
 const segmentRecordingJobs = new Set<string>();
 
 export function isSegmentRecordingManaged(jobId: string): boolean {
-  return segmentRecordingJobs.has(jobId);
+  return segmentRecordingJobs.has(jobId) || isJobSegmentManaged(jobId);
+}
+
+export function isMobileSegmentRecording(jobId: string): boolean {
+  return recordingJobs.has(jobId) && segmentRecordingJobs.has(jobId);
+}
+
+export function isMobileJobRecording(jobId: string): boolean {
+  return recordingJobs.has(jobId) && !segmentRecordingJobs.has(jobId);
 }
 
 export function setSegmentRecordingManaged(jobId: string, managed: boolean): void {
@@ -72,12 +82,22 @@ export async function ensureMobileSegmentRecording(
 ): Promise<boolean> {
   const pending = getPendingSegment(jobId);
   if (!pending || pending.platform !== "mobile") return false;
-  if (isSegmentStarted(jobId, pending.testCaseId) || recordingJobs.has(jobId)) {
-    return isSegmentStarted(jobId, pending.testCaseId);
+
+  if (isSegmentStarted(jobId, pending.testCaseId)) {
+    return true;
+  }
+
+  if (isMobileSegmentRecording(jobId)) {
+    markSegmentStarted(jobId, pending.testCaseId);
+    return true;
+  }
+
+  if (isMobileJobRecording(jobId)) {
+    await stopMobileJobRecording(driver);
   }
 
   await startMobileSegment(driver, jobId, pending.filename);
-  if (recordingJobs.has(jobId)) {
+  if (recordingJobs.has(jobId) && segmentRecordingJobs.has(jobId)) {
     markSegmentStarted(jobId, pending.testCaseId);
     return true;
   }
@@ -89,7 +109,7 @@ export async function startMobileJobRecording(driver: Browser): Promise<void> {
 
   const jobId = getAutomationJobId();
   if (!jobId || recordingJobs.has(jobId)) return;
-  if (segmentRecordingJobs.has(jobId)) return;
+  if (isSegmentRecordingManaged(jobId)) return;
 
   try {
     await driver.startRecordingScreen({
@@ -163,9 +183,20 @@ export async function startMobileSegment(
       timeLimit: mobileConfig.recordTimeLimitSec,
       bitRate: mobileConfig.recordBitRate,
     });
+    const pending = getPendingSegment(jobId);
+    if (pending) {
+      setActiveSegment(jobId, {
+        testCaseId: pending.testCaseId,
+        filename,
+        outputPath: resolveMobileVideoPath(jobId, filename),
+        platform: "mobile",
+        startedAt: new Date().toISOString(),
+      });
+    }
     logger.info(`Mobile segment recording started: job=${jobId} file=${filename}`);
   } catch (error) {
     recordingJobs.delete(jobId);
+    segmentRecordingJobs.delete(jobId);
     const msg = error instanceof Error ? error.message : String(error);
     logger.warn(`startMobileSegment failed: ${msg}`);
   }
@@ -178,7 +209,9 @@ export async function stopMobileSegment(
 ): Promise<string | undefined> {
   if (!recordingJobs.has(jobId)) return undefined;
 
+  const wasSegment = segmentRecordingJobs.has(jobId);
   recordingJobs.delete(jobId);
+  segmentRecordingJobs.delete(jobId);
 
   try {
     const payload = await driver.stopRecordingScreen();
@@ -200,6 +233,7 @@ export async function stopMobileSegment(
     } catch {
       logger.info(`Mobile segment saved: ${outPath}`);
     }
+    if (wasSegment) clearActiveSegment(jobId);
     return outPath;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

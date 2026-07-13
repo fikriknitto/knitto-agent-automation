@@ -5,6 +5,10 @@ type MarkdownManager = {
   serialize?: (content: unknown) => string;
 };
 
+type InlinePasteNode =
+  | { type: "text"; text: string }
+  | { type: "hardBreak" };
+
 function getMarkdownManager(editor: Editor): MarkdownManager | undefined {
   const storage = editor.storage as { markdown?: MarkdownManager };
   if (storage.markdown?.serialize) return storage.markdown;
@@ -43,6 +47,35 @@ function clipboardHasImage(event: ClipboardEvent): boolean {
   return false;
 }
 
+/** Normalize clipboard text and drop trailing newlines that force empty paragraphs. */
+export function preparePasteText(text: string): string {
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n+$/g, "");
+}
+
+/**
+ * True when paste should be parsed as markdown blocks (headings, lists, fences, etc.).
+ * Plain single/multi-line text stays inline to avoid unwanted new paragraphs.
+ */
+export function isBlockMarkdown(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  if (/\n\s*\n/.test(trimmed)) return true;
+  return /^(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|~~~|\|.+\|)/m.test(trimmed);
+}
+
+function toInlinePasteContent(text: string): string | InlinePasteNode[] {
+  if (!text.includes("\n")) return text;
+
+  const nodes: InlinePasteNode[] = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line) nodes.push({ type: "text", text: line });
+    if (i < lines.length - 1) nodes.push({ type: "hardBreak" });
+  }
+  return nodes;
+}
+
 export function createMarkdownClipboardEditorProps(
   getEditor: () => Editor | null
 ): Pick<EditorProps, "handleDOMEvents" | "handlePaste"> {
@@ -66,11 +99,19 @@ export function createMarkdownClipboardEditorProps(
       if (!editor || !event.clipboardData) return false;
       if (clipboardHasImage(event)) return false;
 
-      const text = event.clipboardData.getData("text/plain");
+      const raw = event.clipboardData.getData("text/plain");
+      if (!raw) return false;
+
+      const text = preparePasteText(raw);
       if (!text) return false;
 
       event.preventDefault();
-      editor.commands.insertContent(text, { contentType: "markdown" });
+
+      if (isBlockMarkdown(text)) {
+        editor.commands.insertContent(text, { contentType: "markdown" });
+      } else {
+        editor.commands.insertContent(toInlinePasteContent(text));
+      }
       return true;
     },
   };

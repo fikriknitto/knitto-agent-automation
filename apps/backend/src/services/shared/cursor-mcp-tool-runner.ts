@@ -17,6 +17,12 @@ const logger = createLogger("cursor-mcp-tool-runner");
 
 export type CursorMcpServerKind = "browser" | "mobile";
 
+export type CursorMcpToolResult = {
+  stopped?: boolean;
+  path?: string;
+  warning?: string;
+};
+
 async function connectStdioMcp(args: {
   jobId: string;
   server: CursorMcpServerKind;
@@ -35,7 +41,9 @@ async function connectStdioMcp(args: {
     command = spawn.command;
     spawnArgs = spawn.args;
     env = Object.fromEntries(
-      Object.entries(mobileMcpEnv(args.jobId, args.mobileConfig)).filter(([, v]) => v)
+      Object.entries(mobileMcpEnv(args.jobId, args.mobileConfig, { segmentManaged: true })).filter(
+        ([, v]) => v
+      )
     );
   } else {
     const browserPath = resolveAutomationMcpPath();
@@ -43,7 +51,7 @@ async function connectStdioMcp(args: {
     command = spawn.command;
     spawnArgs = spawn.args;
     env = Object.fromEntries(
-      Object.entries(automationMcpEnv(args.jobId)).filter(([, v]) => v)
+      Object.entries(automationMcpEnv(args.jobId, { segmentManaged: true })).filter(([, v]) => v)
     );
   }
 
@@ -60,22 +68,69 @@ async function connectStdioMcp(args: {
   return client;
 }
 
+function parseToolResult(result: Awaited<ReturnType<Client["callTool"]>>): CursorMcpToolResult {
+  const structured = result.structuredContent;
+  if (structured && typeof structured === "object") {
+    const obj = structured as Record<string, unknown>;
+    return {
+      stopped: typeof obj.stopped === "boolean" ? obj.stopped : undefined,
+      path: typeof obj.path === "string" ? obj.path : undefined,
+      warning: typeof obj.warning === "string" ? obj.warning : undefined,
+    };
+  }
+
+  const content = Array.isArray(result.content) ? result.content : [];
+  const text = content.find((part): part is { type: "text"; text: string } =>
+    typeof part === "object" && part !== null && "type" in part && part.type === "text"
+  )?.text;
+  if (text) {
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>;
+      return {
+        stopped: typeof parsed.stopped === "boolean" ? parsed.stopped : undefined,
+        path: typeof parsed.path === "string" ? parsed.path : undefined,
+        warning: typeof parsed.warning === "string" ? parsed.warning : undefined,
+      };
+    } catch {
+      // ignore non-JSON tool output
+    }
+  }
+
+  return {};
+}
+
 export async function callCursorSubprocessTool(args: {
   jobId: string;
   server: CursorMcpServerKind;
   toolName: string;
+  arguments?: Record<string, unknown>;
   mobileConfig?: MobileConfig;
-}): Promise<void> {
+}): Promise<CursorMcpToolResult> {
   setAutomationJobId(args.jobId);
   let client: Client | undefined;
 
   try {
     client = await connectStdioMcp(args);
-    await client.callTool({ name: args.toolName, arguments: {} });
+    const result = await client.callTool({
+      name: args.toolName,
+      arguments: args.arguments ?? {},
+    });
+    if (result.isError) {
+      const content = Array.isArray(result.content) ? result.content : [];
+      const msg =
+        content.find((part): part is { type: "text"; text: string } =>
+          typeof part === "object" && part !== null && "type" in part && part.type === "text"
+        )?.text ?? "Tool error";
+      logger.warn(`Cursor MCP tool error: ${args.toolName} job=${args.jobId}: ${msg}`);
+      return { warning: msg };
+    }
+    const parsed = parseToolResult(result);
     logger.info(`Cursor MCP tool ok: ${args.toolName} job=${args.jobId}`);
+    return parsed;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     logger.warn(`Cursor MCP tool failed: ${args.toolName} job=${args.jobId}: ${msg}`);
+    return { warning: msg };
   } finally {
     await client?.close().catch(() => undefined);
   }

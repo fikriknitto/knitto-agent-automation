@@ -12,9 +12,11 @@ import {
 } from "../job-context.js";
 import {
   getPendingSegment,
+  isJobSegmentManaged,
   isSegmentStarted,
   markSegmentStarted,
 } from "../../../services/shared/segment-context.js";
+import { setActiveSegment, clearActiveSegment } from "../../../services/shared/segment-state-file.js";
 import config from "../config.js";
 
 const logger = createLogger("browser-recording");
@@ -121,6 +123,10 @@ export async function startJobRecording(page: Page): Promise<void> {
   const jobId = getAutomationJobId();
   if (!jobId) return;
 
+  if (isJobSegmentManaged(jobId) && getPendingSegment(jobId)) {
+    return;
+  }
+
   logHeadlessBlackScreenRisk();
   logFfmpegPathWarning();
 
@@ -171,6 +177,7 @@ async function finalizeStop(): Promise<string | undefined> {
   activeRecorder = null;
   activeOutputPath = null;
 
+  const jobId = getAutomationJobId();
   try {
     await recorder.stop();
     if (outputPath) {
@@ -187,6 +194,7 @@ async function finalizeStop(): Promise<string | undefined> {
         } catch {
           logger.info(`Recording saved: ${outputPath}`);
         }
+        if (jobId) clearActiveSegment(jobId);
         return outputPath;
       }
     }
@@ -244,6 +252,16 @@ export async function startBrowserSegment(
     await recorder.start(savePath);
     activeRecorder = recorder;
     activeOutputPath = savePath;
+    const pending = getPendingSegment(jobId);
+    if (pending) {
+      setActiveSegment(jobId, {
+        testCaseId: pending.testCaseId,
+        filename: pending.filename,
+        outputPath: savePath,
+        platform: "browser",
+        startedAt: new Date().toISOString(),
+      });
+    }
     logger.info(`Segment recording started: ${savePath}`);
   } catch (error) {
     segmentMode = false;

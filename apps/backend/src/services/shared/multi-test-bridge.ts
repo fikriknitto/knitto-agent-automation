@@ -118,6 +118,8 @@ export async function executeMultiTestBridgeJob(ctx: {
 
       runAgentForTestCase: runner.runAgentForTestCase,
 
+      stopMode: cleanupMode,
+
     });
 
 

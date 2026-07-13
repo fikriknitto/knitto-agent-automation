@@ -6,6 +6,7 @@ import {
   clearMobileJobContext,
   getMobileJobConfig,
   getMobileJobUdid,
+  setMobileJobConfig,
   setMobileJobUdid,
 } from "../mobile-job-context.js";
 import { buildAndroidCapabilities } from "./capabilities.js";
@@ -16,6 +17,7 @@ import {
   isSegmentRecordingManaged,
 } from "../recording.js";
 import { ensureSegmentRecordingStarted } from "../../../services/shared/segment-recording.js";
+import { getPendingSegment, isJobSegmentManaged } from "../../../services/shared/segment-context.js";
 import { writeMobileSessionState, clearMobileSessionState } from "../mobile-session-state.js";
 import {
   closeMobileSessionFromState,
@@ -113,12 +115,36 @@ export async function createSession(): Promise<Browser> {
   }
 }
 
-export async function getDriver(): Promise<Browser> {
+export async function openDriver(): Promise<Browser> {
   const jobId = getAutomationJobId();
   if (jobId && sessions.has(jobId)) {
     return sessions.get(jobId)!;
   }
   return createSession();
+}
+
+async function syncMobileContextForSegment(jobId: string): Promise<void> {
+  const pending = getPendingSegment(jobId);
+  if (pending?.mobileConfig?.appPackage) {
+    setMobileJobConfig(jobId, pending.mobileConfig);
+  }
+}
+
+async function ensureMobileSegmentIfManaged(jobId: string): Promise<void> {
+  if (!isJobSegmentManaged(jobId)) return;
+  await ensureSegmentRecordingStarted(jobId);
+}
+
+export async function getDriver(): Promise<Browser> {
+  const jobId = getAutomationJobId();
+  if (jobId) {
+    await syncMobileContextForSegment(jobId);
+  }
+  const driver = await openDriver();
+  if (jobId) {
+    await ensureMobileSegmentIfManaged(jobId);
+  }
+  return driver;
 }
 
 export async function launchApp(): Promise<{

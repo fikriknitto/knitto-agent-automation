@@ -20,6 +20,7 @@ import {
   type HandoffState,
 } from "./handoff.js";
 import { mobileConfigForTestCase } from "./test-case-parser.js";
+import type { TestCaseCleanupMode } from "./test-case-cleanup.js";
 import {
   buildHybridOverviewPrompt,
   buildTestCasePrompt,
@@ -139,6 +140,8 @@ async function finishTestCase(args: {
   videoRecordingMeta: VideoRecordingMeta[];
   testCaseResults: TestCaseResult[];
   testCases: TestCaseSpec[];
+  stopMode?: TestCaseCleanupMode;
+  mobileConfig?: BridgeJob["mobileConfig"];
 }): Promise<{ videoMeta?: VideoRecordingMeta; testCaseResult: TestCaseResult }> {
   const {
     job,
@@ -153,9 +156,15 @@ async function finishTestCase(args: {
     videoRecordingMeta,
     testCaseResults,
     testCases,
+    stopMode,
+    mobileConfig,
   } = args;
 
-  const stopResult = await stopSegmentRecording(job.id, tc.id, tc.platform);
+  const tcMobileConfig = mobileConfigForTestCase(tc, mobileConfig);
+  const stopResult = await stopSegmentRecording(job.id, tc.id, tc.platform, {
+    stopMode,
+    mobileConfig: tcMobileConfig ?? mobileConfig,
+  });
 
   emitTestCaseProgress(emit, job, {
     testCaseIndex: tcIndex,
@@ -205,8 +214,9 @@ export async function runMultiTestCaseJob(ctx: {
   emit: (msg: AgentJobMessage) => void;
   isCancelled: () => boolean;
   mcpClient?: Client;
+  stopMode?: TestCaseCleanupMode;
 }): Promise<OrchestratorResult> {
-  const { job, testCases, runAgentForTestCase, emit, isCancelled } = ctx;
+  const { job, testCases, runAgentForTestCase, emit, isCancelled, stopMode } = ctx;
   const tcTotal = testCases.length;
   let handoff: HandoffState = {};
   const videoUrls: string[] = [];
@@ -316,6 +326,8 @@ export async function runMultiTestCaseJob(ctx: {
           videoRecordingMeta,
           testCaseResults,
           testCases,
+          stopMode,
+          mobileConfig: job.mobileConfig,
         });
         testCaseResults.push(finished.testCaseResult);
         if (finished.videoMeta) {
@@ -340,6 +352,8 @@ export async function runMultiTestCaseJob(ctx: {
           videoRecordingMeta,
           testCaseResults,
           testCases,
+          stopMode,
+          mobileConfig: job.mobileConfig,
         });
         testCaseResults.push(finished.testCaseResult);
         if (finished.videoMeta) {
@@ -401,6 +415,8 @@ export async function runMultiTestCaseJob(ctx: {
         videoRecordingMeta,
         testCaseResults,
         testCases,
+        stopMode,
+        mobileConfig: job.mobileConfig,
       });
       testCaseResults.push(finished.testCaseResult);
       if (finished.videoMeta) {

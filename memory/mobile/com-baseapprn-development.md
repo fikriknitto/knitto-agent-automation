@@ -752,30 +752,36 @@
 
 ## [tc-02-test-case-2]
 
-## TC-02 Test Case 2 — automation-default (2026-07-10)
+## TC-02 Test Case 2 — automation-default (2026-07-13, multi-TC job 2/2)
+
+### Status: PASS
+
+### Konteks
+- Handoff dari TC-01: ORDER_NO=OH110726016, CUSTOMER_ID=065195, CUSTOMER_NAME=FIKRI, USERNAME=main, CABANG=holis (tidak dipakai di skenario mobile Text Input).
+- Package: `com.baseapprn.development`, device: 127.0.0.1:5555.
 
 ### Navigasi
-- `mobile_launch_app` untuk package `com.baseapprn.development` (emulator-5554).
-- Dari layar utama, scroll down karena tombol **Text Input** tidak terlihat di awal.
-- `mobile_wait_for` type text "Text Input" lalu tap via locator `text: "Text Input"` — berhasil.
-- UI snapshot kosong (React Native); text locator tetap berfungsi.
+- `mobile_launch_app` — sesi aktif; jika masih di BlueStacks home, tap ikon app / relaunch.
+- Dashboard terbuka; scroll down karena **Text Input** tidak di viewport awal.
+- `mobile_wait_for` type text "Text Input" lalu tap `text: "Text Input"` — berhasil.
+- UI snapshot sering kosong (React Native); text locator tetap berfungsi.
 
 ### Form Input
 - Tiga field: **Small**, **Medium**, **Large**.
 - Nilai uji (sesi ini):
-  - Small → `ini text small`
-  - Medium → `ini text medium`
-  - Large → `ini text large`
+  - Small → `ini text small broo`
+  - Medium → `ini text medium bro`
+  - Large → `ini text large broo`
+- Isi via `mobile_input_text` dengan locator `text: "Small"|"Medium"|"Large"`, clear=true, hideKeyboard=true.
 
 ### Verifikasi
-- `mobile_assert_visible` pada ketiga nilai di atas — semua berhasil (visible: true).
+- `mobile_assert_visible` pada ketiga nilai — semua berhasil (visible: true).
 
 ### Screenshot
 - `tc02-text-input-start.png`, `tc02-text-input-screen.png`, `tc02-text-input-filled.png`
 
 ### Catatan
-- Appium perlu dijalankan dengan `ANDROID_HOME`/`ANDROID_SDK_ROOT` agar sesi dapat dibuat.
-- Sesi mobile tidak ditutup (multi-TC job — orchestrator cleanup di akhir).
+- App/session tidak ditutup (orchestrator cleanup di akhir multi-TC job).
 
 
 ## [text-input-automation-default-2026-07-10]

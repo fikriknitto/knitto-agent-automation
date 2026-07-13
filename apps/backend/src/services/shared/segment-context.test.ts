@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import {
   clearJobSegmentManaged,
   clearPendingSegment,
@@ -13,6 +13,10 @@ import {
 } from "./segment-context.js";
 
 describe("segment-context", () => {
+  afterEach(() => {
+    clearJobSegmentManaged("job-test-1");
+  });
+
   it("tracks pending segment until started and cleared", () => {
     const jobId = "job-test-1";
     markJobSegmentManaged(jobId);

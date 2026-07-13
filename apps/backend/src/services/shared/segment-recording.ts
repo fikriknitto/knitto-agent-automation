@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import type { MobileConfig, TestCasePlatform } from "@knitto/shared";
 import { testCaseVideoFilenameForId } from "@knitto/shared";
 import type { Browser } from "webdriverio";
@@ -8,6 +9,7 @@ import {
 } from "../../automation/libs/browser/session.js";
 import {
   ensureBrowserSegmentRecording,
+  resolveAgentVideoPath,
   stopBrowserSegment,
 } from "../../automation/libs/browser/recording.js";
 import config from "../../automation/libs/config.js";
@@ -15,6 +17,7 @@ import mobileConfig from "../../mobile-automation/libs/config.js";
 import {
   getDriver,
   hasActiveSession,
+  openDriver,
 } from "../../mobile-automation/libs/driver/session.js";
 import { getMobileJobConfig } from "../../mobile-automation/libs/mobile-job-context.js";
 import {
@@ -35,6 +38,18 @@ import {
   setActiveTestCaseId,
   setPendingSegment,
 } from "./segment-context.js";
+import {
+  clearActiveSegment,
+  clearSegmentStopRequest,
+  readSegmentStateFile,
+  requestSegmentStop,
+  waitForSegmentInactive,
+} from "./segment-state-file.js";
+import {
+  callCursorSubprocessTool,
+  type CursorMcpToolResult,
+} from "./cursor-mcp-tool-runner.js";
+import type { TestCaseCleanupMode } from "./test-case-cleanup.js";
 
 const logger = createLogger("segment-recording");
 
@@ -121,7 +136,7 @@ async function tryStartMobileSegment(jobId: string, testCaseId: string): Promise
   }
 
   try {
-    const driver = await getDriver();
+    const driver = await openDriver();
     const visible = await waitForAppVisible(driver, mobileCfg.appPackage);
     if (!visible) {
       logger.warn(
@@ -162,7 +177,7 @@ export async function startSegmentRecording(
   jobId: string,
   testCaseId: string,
   platform: TestCasePlatform,
-  _mobileConfig?: MobileConfig
+  mobileConfig?: MobileConfig
 ): Promise<void> {
   if (!isRecordingEnabled()) return;
 
@@ -170,14 +185,78 @@ export async function startSegmentRecording(
   setActiveTestCaseId(testCaseId);
   const filename = testCaseVideoFilenameForId(testCaseId);
 
-  setPendingSegment(jobId, { testCaseId, filename, platform });
+  setPendingSegment(jobId, {
+    testCaseId,
+    filename,
+    platform,
+    mobileConfig: platform === "mobile" ? mobileConfig : undefined,
+  });
   logger.info(`Segment deferred: job=${jobId} tc=${testCaseId} platform=${platform}`);
+}
+
+async function stopSegmentInProcess(
+  jobId: string,
+  testCaseId: string,
+  platform: TestCasePlatform
+): Promise<string | undefined> {
+  if (platform === "browser") {
+    const path = await stopBrowserSegment();
+    if (path) clearActiveSegment(jobId);
+    return path;
+  }
+
+  if (!hasActiveSession(jobId)) return undefined;
+
+  const driver = await getDriver();
+  const filename = testCaseVideoFilenameForId(testCaseId);
+  const path = await stopMobileSegment(driver, jobId, filename);
+  if (path) clearActiveSegment(jobId);
+  return path;
+}
+
+async function stopSegmentViaCursorSubprocess(
+  jobId: string,
+  testCaseId: string,
+  platform: TestCasePlatform,
+  mobileConfig?: MobileConfig
+): Promise<CursorMcpToolResult> {
+  requestSegmentStop(jobId, testCaseId);
+
+  const toolName =
+    platform === "mobile"
+      ? "mobile_stop_test_case_segment"
+      : "automation_stop_test_case_segment";
+
+  const result = await callCursorSubprocessTool({
+    jobId,
+    server: platform === "mobile" ? "mobile" : "browser",
+    toolName,
+    arguments: { testCaseId },
+    mobileConfig,
+  });
+
+  const inactive = await waitForSegmentInactive(jobId, testCaseId);
+  if (!inactive) {
+    logger.warn(`Segment stop timed out for ${testCaseId} — video may be incomplete`);
+  }
+
+  clearSegmentStopRequest(jobId);
+
+  const filename = testCaseVideoFilenameForId(testCaseId);
+  const expectedPath = resolveAgentVideoPath(jobId, filename);
+
+  if (!result.path && existsSync(expectedPath)) {
+    return { ...result, path: expectedPath, stopped: true };
+  }
+
+  return result;
 }
 
 export async function stopSegmentRecording(
   jobId: string,
   testCaseId: string,
-  platform: TestCasePlatform
+  platform: TestCasePlatform,
+  opts?: { stopMode?: TestCaseCleanupMode; mobileConfig?: MobileConfig }
 ): Promise<StopSegmentResult> {
   if (!isRecordingEnabled()) return {};
 
@@ -190,18 +269,30 @@ export async function stopSegmentRecording(
   }
 
   let path: string | undefined;
+  const stopMode = opts?.stopMode ?? "in-process";
 
-  if (platform === "browser") {
-    path = await stopBrowserSegment();
-  } else if (hasActiveSession(jobId)) {
-    const driver = await getDriver();
-    const filename = testCaseVideoFilenameForId(testCaseId);
-    path = await stopMobileSegment(driver, jobId, filename);
+  if (stopMode === "cursor-subprocess") {
+    const remote = await stopSegmentViaCursorSubprocess(
+      jobId,
+      testCaseId,
+      platform,
+      opts?.mobileConfig
+    );
+    path = remote.path;
+    if (remote.warning) warning = warning ? `${warning}; ${remote.warning}` : remote.warning;
+  } else {
+    path = await stopSegmentInProcess(jobId, testCaseId, platform);
+  }
+
+  const state = readSegmentStateFile(jobId);
+  if (!path && state?.active?.testCaseId === testCaseId && state.active.outputPath) {
+    path = existsSync(state.active.outputPath) ? state.active.outputPath : undefined;
   }
 
   clearPendingSegment(jobId);
   clearSegmentStarted(jobId, testCaseId);
   setActiveTestCaseId(null);
+  clearActiveSegment(jobId);
 
   return { path, warning };
 }

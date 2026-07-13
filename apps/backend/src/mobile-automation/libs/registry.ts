@@ -13,3 +13,4 @@ export { mobile_assert_visible } from "./tools/assert-visible.js";
 export { mobile_wait_for } from "./tools/wait-for.js";
 export { mobile_close_app } from "./tools/close-app.js";
 export { mobile_close_session } from "./tools/close-session.js";
+export { mobile_stop_test_case_segment } from "./tools/stop-test-case-segment.js";
