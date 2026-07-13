@@ -26,6 +26,8 @@ describe("isMultiTcCloseBlocked", () => {
     else process.env.AUTOMATION_MULTI_TC = prevAutomation;
     if (prevMobile === undefined) delete process.env.MOBILE_MULTI_TC;
     else process.env.MOBILE_MULTI_TC = prevMobile;
+    delete process.env.AUTOMATION_FORCE_CLOSE;
+    delete process.env.MOBILE_FORCE_CLOSE;
     clearJobSegmentManaged("job-env-guard");
   });
 
@@ -46,6 +48,13 @@ describe("isMultiTcCloseBlocked", () => {
     delete process.env.AUTOMATION_MULTI_TC;
     delete process.env.MOBILE_MULTI_TC;
     assert.equal(isMultiTcCloseBlocked("job-env-guard"), false);
+  });
+
+  it("allows close when FORCE_CLOSE is set even if MULTI_TC env is set", () => {
+    process.env.AUTOMATION_MULTI_TC = "1";
+    process.env.AUTOMATION_FORCE_CLOSE = "1";
+    assert.equal(isMultiTcCloseBlocked("job-env-guard"), false);
+    delete process.env.AUTOMATION_FORCE_CLOSE;
   });
 
   it("blocks when in-memory segment managed flag is set", () => {

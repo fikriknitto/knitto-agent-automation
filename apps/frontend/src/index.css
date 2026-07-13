@@ -194,3 +194,16 @@
     @apply text-sm font-medium;
   }
 }
+
+.prompt-editor-content{ 
+  h2:not(:first-child){
+    @apply border-t border-white/30 pt-2;
+  }
+}
+
+.prompt-user{
+  h2:not(:first-child){
+    @apply border-t border-white/30 pt-2;
+  }
+
+}

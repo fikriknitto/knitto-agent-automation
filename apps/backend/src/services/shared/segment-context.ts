@@ -57,6 +57,10 @@ export function isJobSegmentManaged(jobId: string): boolean {
 }
 
 export function isMultiTcCloseBlocked(jobId?: string | null): boolean {
+  // End-of-job cleanup MCP sets FORCE_CLOSE so close tools can run despite MULTI_TC env.
+  if (process.env.AUTOMATION_FORCE_CLOSE === "1" || process.env.MOBILE_FORCE_CLOSE === "1") {
+    return false;
+  }
   if (process.env.AUTOMATION_MULTI_TC === "1" || process.env.MOBILE_MULTI_TC === "1") {
     return true;
   }

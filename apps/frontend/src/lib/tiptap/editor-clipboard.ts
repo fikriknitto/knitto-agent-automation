@@ -47,9 +47,14 @@ function clipboardHasImage(event: ClipboardEvent): boolean {
   return false;
 }
 
+/** Normalize line endings only (keep trailing newlines for code blocks). */
+export function normalizePasteLineEndings(text: string): string {
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
 /** Normalize clipboard text and drop trailing newlines that force empty paragraphs. */
 export function preparePasteText(text: string): string {
-  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n+$/g, "");
+  return normalizePasteLineEndings(text).replace(/\n+$/g, "");
 }
 
 /**
@@ -74,6 +79,12 @@ function toInlinePasteContent(text: string): string | InlinePasteNode[] {
     if (i < lines.length - 1) nodes.push({ type: "hardBreak" });
   }
   return nodes;
+}
+
+/** codeBlock only allows text (+ literal \\n), not hardBreak / paragraph nodes. */
+function insertPlainTextInCodeBlock(editor: Editor, text: string): void {
+  const { state, view } = editor;
+  view.dispatch(state.tr.insertText(text));
 }
 
 export function createMarkdownClipboardEditorProps(
@@ -102,10 +113,17 @@ export function createMarkdownClipboardEditorProps(
       const raw = event.clipboardData.getData("text/plain");
       if (!raw) return false;
 
-      const text = preparePasteText(raw);
-      if (!text) return false;
-
       event.preventDefault();
+
+      // Inside ``` / <pre>: keep paste as raw text so it cannot escape the fence.
+      if (editor.isActive("codeBlock")) {
+        const codeText = normalizePasteLineEndings(raw);
+        if (codeText) insertPlainTextInCodeBlock(editor, codeText);
+        return true;
+      }
+
+      const text = preparePasteText(raw);
+      if (!text) return true;
 
       if (isBlockMarkdown(text)) {
         editor.commands.insertContent(text, { contentType: "markdown" });

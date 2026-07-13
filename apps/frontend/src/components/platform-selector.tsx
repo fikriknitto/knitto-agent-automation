@@ -44,7 +44,7 @@ export function PlatformSelector({
 }: PlatformSelectorProps) {
   const isMobile = platform === "mobile";
   const isHybrid = platform === "hybrid";
-  const showMobileFields = isMobile || isHybrid;
+  const showMobileFields = isMobile;
   const { devices, connected, error: streamError } = useMobileDevices();
   const packageUdid = mobileConfig.udid?.trim() || devices.find((d) => d.state === "idle")?.udid;
   const { data: packages = [], isLoading: packagesLoading } = useMobilePackages(packageUdid);
@@ -91,20 +91,42 @@ export function PlatformSelector({
                   ? "bg-white/15 text-slate-100"
                   : "text-slate-500 hover:text-slate-300"
               )}
-              onClick={() => onPlatformChange(value)}
+              onClick={() => {
+                onPlatformChange(value);
+                if (value === "hybrid") {
+                  onMobileConfigChange({
+                    appPackage: "",
+                    udid: undefined,
+                    deepLink: undefined,
+                  });
+                }
+              }}
             >
               {value}
             </button>
           ))}
         </div>
-        {showMobileFields && connected && (
+        {(showMobileFields || isHybrid) && connected && (
           <Badge variant="info" className="text-[10px]">
             {connected ? "SSE live" : "SSE offline"}
           </Badge>
         )}
       </div>
 
-
+      {isHybrid && (
+        <div className="space-y-1">
+          <p className="text-xs text-slate-500">
+            Device: Auto (pool) · Package: dari{" "}
+            <span className="font-mono text-slate-400">App:</span> / shortcut di TC mobile
+          </p>
+          {devices.length === 0 && connected && (
+            <p className="text-xs text-amber-400">
+              Tidak ada device Android — hubungkan emulator atau device USB untuk TC mobile.
+            </p>
+          )}
+          {streamError && <p className="text-xs text-amber-400">{streamError}</p>}
+        </div>
+      )}
 
       {showMobileFields && (
         <div className="grid gap-2 sm:grid-cols-2">
@@ -143,9 +165,7 @@ export function PlatformSelector({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">
-              Package {isHybrid ? "(fallback)" : "(wajib)"}
-            </Label>
+            <Label className="text-xs text-slate-500">Package (wajib)</Label>
             <Combobox
               items={packageItems}
               value={selectedPackage}

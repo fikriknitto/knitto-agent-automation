@@ -17,7 +17,7 @@ defaults:
   catatan: ini catatan automation
 ---
 1. Pada header klik Button "Take Order" setelah muncul dropdown lalu klik "Take Order" 
-2. Pilih Order Dari lalu cari {order_dari} dan tekan "Enter"
+2. Click Dropdown "Order Dari", snapshot daftar opsi, lalu pilih opsi yang teksnya **exact** `{order_dari}` (bukan partial/contains). Contoh: target `TOKO` → klik opsi `TOKO`, **jangan** pilih `TOKOPEDIA` meskipun mengandung "TOKO". Jangan hanya fill + Enter/ArrowDown tanpa verifikasi; setelah dipilih pastikan field menampilkan exact `{order_dari}`.
 3. Jangan Klik Button "+" tapi Klik Input Customer dan setelah muncul modal/popup, klik  input Pencarian dan cari {cari_customer} dan tekan "Enter" setelah itu klik row pada tabel dan tunggu 500ms lalu klik button "Pilih"
 4. Jika muncul popup konfirmasi Gabung order, maka klik icon "X"
 5. Click Dropdown "Jenis Pengiriman" lalu cari atau pilih {jenis_pengiriman} dan tekan "Enter" 
@@ -32,6 +32,7 @@ defaults:
 14. isi catatan dengan {catatan}
 15. Klik Button "Simpan", tunggu beberapa saat dan akan muncul pesan toast success
 16. Jika muncul popup/modal maka klik icon "X" 
+17. ambil No Order dari inputan Nomor Order dan simpan ke [HANDOFF] no_order=<nomor_order>
 17. Klik Button "Selesai Order"
 18. Kalau muncul popup dengan pesan "Apakah ingin menambah aksesoris untuk kain tersebut" maka klik button "Tidak"
     dan kalau muncul popup/modal dengan title "Pilih estimasi order selesai" maka klik button "Cek Estimasi"

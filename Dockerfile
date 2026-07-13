@@ -8,10 +8,12 @@ RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY apps/backend/package.json apps/backend/
 COPY apps/frontend/package.json apps/frontend/
 COPY packages/shared/package.json packages/shared/
 
+ENV CI=true
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts
 
@@ -19,6 +21,9 @@ COPY packages/shared packages/shared
 COPY apps/backend apps/backend
 COPY apps/frontend apps/frontend
 COPY prompt-shortcuts prompt-shortcuts
+
+# Production frontend: same-origin /api + /ws via nginx (ignore apps/frontend/.env*)
+ENV VITE_BASE_URL_BACKEND=
 
 RUN pnpm build:shared && pnpm build:backend && pnpm build:frontend
 
@@ -30,6 +35,7 @@ RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY packages/shared/package.json packages/shared/
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY apps/backend/package.json apps/backend/
@@ -40,11 +46,13 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --prod --filter @knitto/backend... --ignore-scripts \
     && pnpm prune --prod
 
-# ── 3. Browser OS packages (Chromium + ffmpeg) ────────────────────────────────
+# ── 3. Browser OS packages (Chromium + ffmpeg + adb) ───────────────────────────
 FROM node:24.16.0-bookworm-slim AS browser-base
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
+    android-tools-adb \
+    ca-certificates \
     chromium \
     ffmpeg \
     fonts-liberation \
@@ -87,21 +95,21 @@ COPY --from=build /app/prompt-shortcuts ./prompt-shortcuts
 RUN rm -rf /app/node_modules/.pnpm/@ffmpeg-installer+linux-x64@* \
     && rm -rf /app/node_modules/.pnpm/typescript@*
 
-RUN mkdir -p storage screenshoot/agents memory
+RUN mkdir -p storage screenshoot/agents memory/mobile
 
 WORKDIR /app/apps/backend
 
 EXPOSE 3080
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD node -e "fetch('http://127.0.0.1:3080/api/prompt-shortcuts').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:3080/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "dist/server.js"]
 
 # ── 5. Frontend runtime (static assets + nginx) ───────────────────────────────
 FROM nginx:1.27-alpine AS frontend
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/frontend/dist /usr/share/nginx/html
 
 EXPOSE 80

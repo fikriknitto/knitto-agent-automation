@@ -752,18 +752,17 @@
 
 ## [tc-02-test-case-2]
 
-## TC-02 Test Case 2 — automation-default (2026-07-13, multi-TC job 2/2)
+## TC-02 Test Case 2 — automation-default (2026-07-13, multi-TC job 2/3)
 
 ### Status: PASS
 
 ### Konteks
-- Handoff dari TC-01: ORDER_NO=OH110726016, CUSTOMER_ID=065195, CUSTOMER_NAME=FIKRI, USERNAME=main, CABANG=holis (tidak dipakai di skenario mobile Text Input).
+- Handoff dari TC-01: no_order=OH130726020, ORDER_NO=OH130726020, CUSTOMER_ID=065195, CUSTOMER_NAME=FIKRI, USERNAME=main, CABANG=holis (diteruskan ke TC-03; tidak dipakai di skenario mobile Text Input).
 - Package: `com.baseapprn.development`, device: 127.0.0.1:5555.
 
 ### Navigasi
-- `mobile_launch_app` — sesi aktif; jika masih di BlueStacks home, tap ikon app / relaunch.
-- Dashboard terbuka; scroll down karena **Text Input** tidak di viewport awal.
-- `mobile_wait_for` type text "Text Input" lalu tap `text: "Text Input"` — berhasil.
+- `mobile_launch_app` — berhasil (activity com.baseapprn.MainActivity).
+- Dashboard: Text Input tidak terlihat di awal → scroll down → `mobile_wait_for` text "Text Input" → tap `text: "Text Input"`.
 - UI snapshot sering kosong (React Native); text locator tetap berfungsi.
 
 ### Form Input
@@ -778,7 +777,15 @@
 - `mobile_assert_visible` pada ketiga nilai — semua berhasil (visible: true).
 
 ### Screenshot
-- `tc02-text-input-start.png`, `tc02-text-input-screen.png`, `tc02-text-input-filled.png`
+- `tc02-text-input-start.png`, `tc02-after-scroll.png`, `tc02-text-input-screen.png`, `tc02-text-input-filled.png`
+
+### Handoff (diteruskan ke TC-03)
+- no_order=OH130726020
+- ORDER_NO=OH130726020
+- CUSTOMER_ID=065195
+- CUSTOMER_NAME=FIKRI
+- USERNAME=main
+- CABANG=holis
 
 ### Catatan
 - App/session tidak ditutup (orchestrator cleanup di akhir multi-TC job).

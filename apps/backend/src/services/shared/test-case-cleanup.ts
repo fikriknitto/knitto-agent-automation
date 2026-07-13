@@ -44,6 +44,8 @@ export async function cleanupJobPlatforms(args: {
         jobId,
         server: "browser",
         toolName: "automation_close_browser",
+        segmentManaged: false,
+        forceClose: true,
       });
     }
     if (usedMobile) {
@@ -52,12 +54,16 @@ export async function cleanupJobPlatforms(args: {
         server: "mobile",
         toolName: "mobile_close_app",
         mobileConfig,
+        segmentManaged: false,
+        forceClose: true,
       });
       await callCursorSubprocessTool({
         jobId,
         server: "mobile",
         toolName: "mobile_close_session",
         mobileConfig,
+        segmentManaged: false,
+        forceClose: true,
       });
     }
     logger.info(`Job platforms closed via Cursor MCP tools: job=${jobId}`);

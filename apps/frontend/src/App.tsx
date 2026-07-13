@@ -1,24 +1,24 @@
+import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
 import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppMemorySettings } from "./components/app-memory-settings";
 import { BridgeCredentials } from "./components/bridge-credentials";
 import { ChatHeader } from "./components/chat-header";
 import { ChatMain } from "./components/chat-main";
 import { ConnectionPanel } from "./components/connection-panel";
+import { toMobileConfigPayload } from "./components/platform-selector";
 import { PromptShortcutsSettings } from "./components/prompt-shortcuts-settings";
-import { AppMemorySettings } from "./components/app-memory-settings";
 import { SettingsModal } from "./components/settings-modal";
-import { type PromptAttachment } from "./lib/prompt-attachment";
-import { type AppliedPromptShortcut, promptShortcutPath } from "./lib/prompt-compose";
-import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
-import type { PromptShortcut } from "./lib/prompt-shortcuts";
+import { MobileDevicesProvider } from "./contexts/mobile-devices-context";
 import { isActiveJobStatus, syncActiveJobIds } from "./lib/active-jobs";
 import { mergeAgentChatLine } from "./lib/merge-agent-chat-line";
+import { parseTestCasesFromPrompt, shortcutToRegistryEntry } from "./lib/parse-test-cases";
+import { type PromptAttachment } from "./lib/prompt-attachment";
+import { type AppliedPromptShortcut, promptShortcutPath } from "./lib/prompt-compose";
+import type { PromptShortcut } from "./lib/prompt-shortcuts";
+import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
-import { toMobileConfigPayload } from "./components/platform-selector";
-import { parseTestCasesFromPrompt, shortcutToRegistryEntry } from "./lib/parse-test-cases";
-import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
-import { MobileDevicesProvider } from "./contexts/mobile-devices-context";
 
 const STORAGE_KEY = "knitto-automation-web";
 
@@ -317,8 +317,6 @@ export function App() {
     <MobileDevicesProvider enabled={platform === "mobile" || platform === "hybrid"}>
     <div className="flex h-screen flex-col bg-[#0d0d0d]">
       <ChatHeader
-        bridges={bridges}
-        selectedBridgeId={selectedBridgeId}
         connectionState={connectionState}
         bridgeAvailable={bridgeAvailable}
         onOpenSettings={() => setSettingsOpen(true)}
@@ -343,7 +341,12 @@ export function App() {
         onPromptAttachmentsChange={setPromptAttachments}
         onSelectBridge={setSelectedBridgeId}
         onSelectModel={setSelectedModel}
-        onPlatformChange={setPlatform}
+        onPlatformChange={(next) => {
+          setPlatform(next);
+          if (next === "hybrid") {
+            setMobileConfig({ appPackage: "", udid: undefined, deepLink: undefined });
+          }
+        }}
         onMobileConfigChange={setMobileConfig}
         onSend={handleSend}
         onCancel={handleCancel}

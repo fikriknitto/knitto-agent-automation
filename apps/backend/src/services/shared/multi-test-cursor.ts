@@ -146,6 +146,7 @@ export async function acquireCursorHybridDevice(
 ): Promise<string | undefined> {
   if (!mobileConfig?.appPackage?.trim()) return undefined;
   setMobileJobConfig(jobId, mobileConfig);
+  // udid omitted / empty → device pool Auto
   const udid = await devicePool.acquire(jobId, mobileConfig.udid);
   setMobileJobUdid(jobId, udid);
   return udid;

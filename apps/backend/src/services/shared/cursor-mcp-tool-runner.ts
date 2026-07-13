@@ -27,9 +27,12 @@ async function connectStdioMcp(args: {
   jobId: string;
   server: CursorMcpServerKind;
   mobileConfig?: MobileConfig;
+  segmentManaged?: boolean;
+  forceClose?: boolean;
 }): Promise<Client> {
   const mcpCommand = config.automationMcpCommand;
   const cwd = resolveMonorepoRoot();
+  const segmentManaged = args.segmentManaged ?? true;
 
   let command: string;
   let spawnArgs: string[];
@@ -41,7 +44,7 @@ async function connectStdioMcp(args: {
     command = spawn.command;
     spawnArgs = spawn.args;
     env = Object.fromEntries(
-      Object.entries(mobileMcpEnv(args.jobId, args.mobileConfig, { segmentManaged: true })).filter(
+      Object.entries(mobileMcpEnv(args.jobId, args.mobileConfig, { segmentManaged })).filter(
         ([, v]) => v
       )
     );
@@ -51,14 +54,26 @@ async function connectStdioMcp(args: {
     command = spawn.command;
     spawnArgs = spawn.args;
     env = Object.fromEntries(
-      Object.entries(automationMcpEnv(args.jobId, { segmentManaged: true })).filter(([, v]) => v)
+      Object.entries(automationMcpEnv(args.jobId, { segmentManaged })).filter(([, v]) => v)
     );
+  }
+
+  if (args.forceClose) {
+    env.AUTOMATION_FORCE_CLOSE = "1";
+    env.MOBILE_FORCE_CLOSE = "1";
+  }
+
+  const mergedEnv = { ...process.env, ...env } as Record<string, string>;
+  // Cleanup must not inherit MULTI_TC from parent process when segmentManaged is off.
+  if (!segmentManaged) {
+    delete mergedEnv.AUTOMATION_MULTI_TC;
+    delete mergedEnv.MOBILE_MULTI_TC;
   }
 
   const transport = new StdioClientTransport({
     command,
     args: spawnArgs,
-    env: { ...process.env, ...env } as Record<string, string>,
+    env: mergedEnv,
     cwd,
     stderr: "pipe",
   });
@@ -105,6 +120,10 @@ export async function callCursorSubprocessTool(args: {
   toolName: string;
   arguments?: Record<string, unknown>;
   mobileConfig?: MobileConfig;
+  /** Default true — keep MULTI_TC for stop-segment. Cleanup close must pass false. */
+  segmentManaged?: boolean;
+  /** Bypass multi-TC close guard in the spawned MCP process. */
+  forceClose?: boolean;
 }): Promise<CursorMcpToolResult> {
   setAutomationJobId(args.jobId);
   let client: Client | undefined;

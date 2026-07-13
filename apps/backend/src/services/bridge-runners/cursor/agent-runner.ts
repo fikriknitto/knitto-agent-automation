@@ -22,6 +22,7 @@ import {
   setMobileJobUdid,
 } from "../../../mobile-automation/libs/mobile-job-context.js";
 import {
+  resolveHybridMobileConfig,
   resolveJobTestCasesAsync,
   shouldUseOrchestrator,
 } from "../../shared/test-case-parser.js";
@@ -110,13 +111,19 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
 
     if (shouldUseOrchestrator(platform, testCases)) {
       const hasMobileTc = testCases.some((tc) => tc.platform === "mobile");
+      const hybridMobileConfig = resolveHybridMobileConfig(testCases, job.mobileConfig);
       let acquiredUdid: string | undefined;
       if (hasMobileTc) {
-        acquiredUdid = await acquireCursorHybridDevice(job.id, job.mobileConfig);
+        acquiredUdid = await acquireCursorHybridDevice(job.id, hybridMobileConfig);
       }
 
       await executeMultiTestBridgeJob({
-        job: { ...job, testCases, platform: "hybrid" },
+        job: {
+          ...job,
+          testCases,
+          platform: "hybrid",
+          mobileConfig: hybridMobileConfig ?? job.mobileConfig,
+        },
         testCases,
         emit,
         isCancelled: () => cancelled,
@@ -127,7 +134,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
             job.id,
             modelId,
             acquiredUdid,
-            job.mobileConfig
+            hybridMobileConfig ?? job.mobileConfig
           ),
       });
       return;

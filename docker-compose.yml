@@ -12,12 +12,17 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       CURSOR_API_KEY: ${CURSOR_API_KEY:-}
       NINEROUTER_API_KEY: ${NINEROUTER_API_KEY:-}
+      NINEROUTER_BASE_URL: ${NINEROUTER_BASE_URL:-http://host.docker.internal:20128}
+      APPIUM_SERVER_URL: ${APPIUM_SERVER_URL:-http://host.docker.internal:4723}
+      ADB_SERVER_SOCKET: ${ADB_SERVER_SOCKET:-tcp:host.docker.internal:5037}
     ports:
       - "${BACKEND_PORT:-3080}:3080"
     volumes:
       - knitto-storage:/app/storage
       - knitto-screenshoot:/app/screenshoot
       - knitto-memory:/app/memory
+      # Edit shortcut di host; ikut ke container (jangan pakai named volume kosong)
+      - ./prompt-shortcuts:/app/prompt-shortcuts
     shm_size: "1gb"
     extra_hosts:
       - "host.docker.internal:host-gateway"

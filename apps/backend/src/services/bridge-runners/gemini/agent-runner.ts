@@ -18,6 +18,7 @@ import { jobMediaPayload, jobMediaPayloadAsync } from "../../shared/job-media-pa
 import { agentMessages } from "../../shared/agent-messages.js";
 import { closeMcpSession } from "../../shared/mcp-session-cleanup.js";
 import {
+  resolveHybridMobileConfig,
   resolveJobTestCasesAsync,
   shouldUseOrchestrator,
 } from "../../shared/test-case-parser.js";
@@ -93,8 +94,16 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
     }
 
     if (shouldUseOrchestrator(platform, testCases)) {
+      const hybridMobileConfig =
+        platform === "hybrid"
+          ? resolveHybridMobileConfig(testCases, job.mobileConfig)
+          : undefined;
       await executeMultiTestBridgeJob({
-        job: { ...job, testCases },
+        job: {
+          ...job,
+          testCases,
+          ...(hybridMobileConfig ? { mobileConfig: hybridMobileConfig } : {}),
+        },
         testCases,
         emit,
         isCancelled: () => cancelled,

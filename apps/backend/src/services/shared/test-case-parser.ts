@@ -99,6 +99,26 @@ export function mobileConfigForTestCase(
   };
 }
 
+/**
+ * Hybrid job: device always Auto (pool). Package diambil dari TC mobile pertama
+ * (App: / shortcut), bukan dari pilihan composer.
+ */
+export function resolveHybridMobileConfig(
+  testCases: TestCaseSpec[],
+  fallback?: MobileConfig
+): MobileConfig | undefined {
+  const mobileTc = testCases.find((tc) => tc.platform === "mobile");
+  if (!mobileTc) return undefined;
+  const appPackage =
+    mobileTc.appPackage?.trim() || fallback?.appPackage?.trim() || "";
+  if (!appPackage) return undefined;
+  return {
+    appPackage,
+    udid: undefined,
+    deepLink: mobileTc.deepLink?.trim() || fallback?.deepLink?.trim() || undefined,
+  };
+}
+
 export async function validateJobTestCasesForQueueAsync(
   platform: AutomationPlatform | undefined,
   text: string,
