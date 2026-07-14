@@ -83,7 +83,13 @@ async function launchBrowser(): Promise<Browser> {
   browser = await puppeteer.launch({
     headless: config.headless,
     slowMo: config.slowMoMs > 0 ? config.slowMoMs : undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || undefined,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+    ],
   });
   writeBrowserState(browser.wsEndpoint());
   process.on("exit", () => {

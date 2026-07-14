@@ -1,4 +1,4 @@
-# Knitto Browser Agent
+# Knitto Agent Automation
 
 Aplikasi otomatisasi **browser** dan **Android (mobile)** untuk menjelajahi dan menguji sistem internal Knitto (`knitto.co.id`, CMS lokal, dll.) menggunakan AI agent + Puppeteer / Appium.
 
@@ -29,7 +29,7 @@ HTTP server listen **segera** saat startup; inisialisasi bridge (verifikasi API 
 ## Struktur folder
 
 ```
-knitto-browser-agent/
+knitto-agent-browser/
 ├── apps/
 │   ├── frontend/              # @knitto/frontend — React + Vite + Tailwind v4
 │   │   └── src/
@@ -46,7 +46,8 @@ knitto-browser-agent/
 ├── packages/
 │   └── shared/                # @knitto/shared — Zod schemas + types (compile → dist/)
 ├── docker/
-│   └── nginx.conf             # Reverse proxy /api + /ws untuk image frontend
+│   ├── nginx.conf             # Reverse proxy /api + /ws untuk image frontend
+│   └── appium/                # Dockerfile service Appium 3 + UiAutomator2
 ├── prompt-shortcuts/          # Template prompt Knitto (.md)
 ├── scripts/                   # BlueStacks launcher + adb connect (Windows)
 │   └── bluestacks/
@@ -94,9 +95,9 @@ knitto-browser-agent/
 
 Prasyarat:
 
-1. **Appium** — jalankan `appium` (default `http://127.0.0.1:4723`, atur `APPIUM_SERVER_URL` jika beda)
+1. **Appium** — host: install global (`npm i -g appium` lalu `appium driver install uiautomator2`), jalankan `appium` di port `4723` dengan `ANDROID_HOME` ter-set; atau Docker: `pnpm docker:appium` / `pnpm docker:up`
 2. **ADB** di PATH — emulator/device terhubung (`adb devices`)
-3. UiAutomator2 driver terkonfigurasi di Appium
+3. UiAutomator2 driver (global host, atau sudah ada di image Docker Appium)
 
 
 
@@ -325,15 +326,22 @@ pnpm dev
 | Web UI      | [http://localhost:3000](http://localhost:3000)                       |
 | Backend API | [http://localhost:3080/api/health](http://localhost:3080/api/health) |
 | WebSocket   | ws://localhost:3000/ws (proxy Vite)                                  |
+| Appium      | Host global `appium` di `:4723`, atau Docker `pnpm docker:appium`    |
 
 
 > **Port backend & frontend harus selaras:** `BACKEND_PORT` di `apps/backend/.env` harus sama dengan `VITE_BACKEND_PORT` dan `VITE_WS_PORT` di `apps/frontend/.env`. Jika backend gagal start (`EADDRINUSE`), hentikan proses lama di port tersebut lalu jalankan ulang `pnpm dev`.
+>
+> **Appium (host):** set `ANDROID_HOME`, jalankan Appium global di terminal terpisah. Backend mengarah ke `APPIUM_SERVER_URL` (default `http://127.0.0.1:4723`). Jangan bentrok port dengan `pnpm docker:appium`.
 
 Jalankan terpisah:
 
 ```bash
 pnpm dev:frontend   # hanya Vite
-pnpm dev:backend    # hanya backend (tsx watch)
+pnpm dev:backend    # hanya backend (tsx)
+# Appium host (global, di luar repo):
+#   npm i -g appium@3.1.0
+#   appium driver install uiautomator2@4.2.3
+#   appium --address 127.0.0.1 --port 4723 --base-path / --relaxed-security --allow-insecure adb_shell
 ```
 
 **Production lokal:**
@@ -357,7 +365,7 @@ Stack production siap pakai dengan **multi-stage build** — image terpisah untu
 ### Prasyarat
 
 - Docker Desktop / Engine **24+** + Compose v2 (daemon harus running)
-- Untuk **mobile / hybrid**: Appium di host (`http://localhost:4723`) + ADB server yang listen ke jaringan Docker (lihat di bawah)
+- Untuk **mobile / hybrid**: service **Appium** ikut Compose; device/emulator tetap di host + ADB server yang listen ke jaringan Docker (lihat di bawah)
 
 ### Menjalankan
 
@@ -376,26 +384,113 @@ docker compose up -d --build
 
 Di panel Connection Web UI, host/port default **`localhost:3080`** (backend dipublish). REST `/api` dari UI memakai same-origin lewat nginx di port 3000.
 
-### Mobile / hybrid dari Docker
+### Checklist: emulator host → Appium Docker → test automation
 
-Container **tidak** menjalankan Appium atau emulator. Ia menghubungi host:
+Urutan ini untuk **BlueStacks di host + Appium di Docker**. Matikan Appium lokal di port **4723** agar tidak bentrok.
 
-1. Jalankan Appium di host (port **4723**).
-2. Pastikan `adb devices` di host melihat emulator/device.
-3. Expose ADB server ke Docker (satu kali per boot host):
+#### 1. Jalankan emulator (host)
+
+```bash
+# 1 instance (default script)
+pnpm instances:up
+
+# atau N instance, contoh 3:
+pnpm start:instances -- emulator=3
+pnpm connect:instances
+```
+
+Tunggu instance boot. `pnpm connect:instances` akan `adb kill-server` lalu `adb connect` ke port BlueStacks.
+
+#### 2. Pastikan device terlihat di host
+
+```bash
+adb devices
+```
+
+Contoh sukses:
+
+```text
+List of devices attached
+127.0.0.1:5555    device
+```
+
+Status harus `device` (bukan `offline` / `unauthorized`).
+
+#### 3. Expose ADB server ke Docker (wajib)
+
+`connect:instances` biasanya menyisakan ADB yang hanya listen di `127.0.0.1`. Docker butuh listen `0.0.0.0`:
 
 ```bash
 adb kill-server
 adb -a nodaemon server start
 ```
 
-4. `docker.env` sudah mengarahkan:
+- Biarkan terminal ini **tetap terbuka** (proses foreground).
+- Di terminal lain, verifikasi:
 
-- `APPIUM_SERVER_URL=http://host.docker.internal:4723`
+```bash
+adb devices
+netstat -ano | findstr 5037
+```
+
+Harus ada **`0.0.0.0:5037`** (bukan hanya `127.0.0.1:5037`).
+
+#### 4. Jalankan stack Docker (Appium + backend + frontend)
+
+```bash
+cp .env.example .env   # sekali; isi API key jika perlu
+docker compose up -d --build
+docker compose ps
+```
+
+Cek Appium healthy:
+
+```bash
+curl http://127.0.0.1:4723/status
+# "ready": true
+
+docker compose exec appium sh -c 'echo ANDROID_HOME=$ANDROID_HOME; adb devices'
+```
+
+`adb devices` **dari dalam container Appium** harus melihat device (mis. `host.docker.internal:5555`). Jika kosong → cek port BlueStacks / `ADB_CONNECT_TARGETS`.
+
+> Appium memakai **`adb connect`** ke host (bukan `ADB_SERVER_SOCKET`). Env: `ADB_CONNECT_TARGETS=host.docker.internal:5555` (tambah port lain dipisah koma untuk multi-instance).
+> Log `adb … reconnect offline` berarti Appium belum melihat device online — biasanya entrypoint connect gagal atau port ADB host salah.
+
+Backend harus mengarah ke Appium Compose:
+
+- `APPIUM_SERVER_URL=http://appium:4723`
 - `ADB_SERVER_SOCKET=tcp:host.docker.internal:5037`
-- `MOBILE_MCP_PATH=apps/backend/dist/mobile-automation/mcp-stdio-server.js`
 
-Tanpa langkah ADB `-a`, daftar device di UI Docker biasanya kosong.
+#### 5. Test automation di Web UI
+
+1. Buka [http://localhost:3000](http://localhost:3000)
+2. Connection: host `localhost`, port `3080` → Connect
+3. Platform → **Mobile** (atau **Hybrid** jika multi-TC)
+4. Pilih **Device** (Auto / UDID) + **Package** app di emulator
+5. Kirim prompt singkat, contoh:
+
+```text
+Buka app, ambil snapshot layar, lalu screenshot.
+```
+
+Sukses bila:
+
+- Job status completed (bukan error Appium / ADB)
+- Screenshot muncul di chat / `screenshoot/agents/{jobId}/`
+- Log Appium: `docker compose logs -f appium` tidak error `ANDROID_HOME` / device not found
+
+#### 6. Matikan (opsional)
+
+```bash
+# tutup terminal adb -a (Ctrl+C) atau:
+adb kill-server
+
+docker compose down
+pnpm instances:down
+```
+
+**Catatan:** setiap kali menjalankan `pnpm connect:instances` lagi, ulangi langkah **3** (`adb -a nodaemon server start`) karena skrip connect me-reset ADB server.
 
 ### Stage build (`Dockerfile`)
 
@@ -426,13 +521,13 @@ BACKEND_PORT=3080
 | -------------------- | ----------------------- | --------------------------------- |
 | `knitto-storage`     | `/app/storage`          | Lampiran file manager             |
 | `knitto-screenshoot` | `/app/screenshoot`      | Screenshot & video agent          |
-| `knitto-memory`      | `/app/memory`           | Memori otomatisasi per app        |
+| `./memory`           | `/app/memory`           | Memori app (bind mount host)      |
 | `./prompt-shortcuts` | `/app/prompt-shortcuts` | Template prompt (bind mount host) |
 
 ### Catatan Docker
 
 - Browser **tidak muncul di layar host** — container headless; pantau lewat screenshot/video di Web UI.
-- `NINEROUTER_BASE_URL` / `APPIUM_SERVER_URL` memakai `host.docker.internal` agar container menjangkau layanan di host.
+- `NINEROUTER_BASE_URL` memakai `host.docker.internal`. `APPIUM_SERVER_URL` menunjuk service Compose `http://appium:4723`. Device tetap di host lewat `ADB_SERVER_SOCKET`.
 - `shm_size: 1gb` untuk stabilitas Chromium.
 - Frontend mem-proxy `/api` dan `/ws` ke service `backend`.
 
@@ -508,7 +603,7 @@ Override lanjutan (jarang dipakai): `KNITTO_BRIDGE_CWD`, `AUTOMATION_MCP_COMMAND
 | `MOBILE_UPLOAD_MAX_BYTES`          | Batas ukuran upload mobile               | `52428800`               |
 
 
-**Khusus Docker** (`docker.env`): `AUTOMATION_MCP_COMMAND=node`, `AUTOMATION_MCP_PATH=apps/backend/dist/automation/mcp-stdio-server.js`, `MOBILE_MCP_PATH=apps/backend/dist/mobile-automation/mcp-stdio-server.js`, `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`, `APPIUM_SERVER_URL` / `ADB_SERVER_SOCKET` → `host.docker.internal`.
+**Khusus Docker** (`docker.env`): `AUTOMATION_MCP_COMMAND=node`, `AUTOMATION_MCP_PATH=apps/backend/dist/automation/mcp-stdio-server.js`, `MOBILE_MCP_PATH=apps/backend/dist/mobile-automation/mcp-stdio-server.js`, `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`, `APPIUM_SERVER_URL=http://appium:4723`, `ADB_SERVER_SOCKET` → `host.docker.internal`.
 
 ### Frontend (`apps/frontend/.env`)
 
@@ -628,8 +723,12 @@ Job panjang (timeout default 10 menit) dapat menghasilkan file video besar.
 | `pnpm connect:instances`    | `adb connect` ke instance yang dilaunch / `--all`       |
 | `pnpm close:instances`      | Tutup instance BlueStacks (quit / taskkill)             |
 | `pnpm disconnect:instances` | `adb disconnect` dari instance                          |
-| `pnpm instances:up`         | `start:instances --emulator=3` lalu `connect:instances` |
+| `pnpm instances:up`         | `start:instances --emulator=1` lalu `connect:instances` |
 | `pnpm instances:down`       | `close:instances` lalu `disconnect:instances`           |
+| `pnpm docker:up`            | `docker compose up -d --build` (backend+frontend+appium)|
+| `pnpm docker:appium`        | Build/start service Appium saja                         |
+| `pnpm docker:down`          | `docker compose down`                                   |
+| `pnpm docker:logs`          | Follow log Compose                                      |
 
 
 ---
@@ -668,12 +767,12 @@ Lihat `memory/` untuk pola navigasi CMS Knitto dan `prompt-shortcuts/` untuk tem
 | Docker: `backend unhealthy`                               | Build lama / env salah                                                                   | `docker compose up -d --build`; cek `docker compose logs backend`                                                                        |
 | Docker: Chromium tidak terlihat                           | Container tanpa display GUI                                                              | Normal — pantau lewat screenshot/video di UI                                                                                             |
 | Docker: device mobile kosong                              | ADB server host hanya localhost                                                          | `adb kill-server && adb -a nodaemon server start`                                                                                        |
-| Docker: Appium error                                      | URL salah dari container                                                                 | Pastikan Appium di host:4723; `APPIUM_SERVER_URL=http://host.docker.internal:4723`                                                       |
+| Docker: Appium error                                      | Service Appium down / ADB host tidak exposed                                             | `docker compose ps` / `logs appium`; `adb -a nodaemon server start`; cek `APPIUM_SERVER_URL=http://appium:4723`                          |
 | Docker: 9Router tidak terjangkau                          | URL salah dari dalam container                                                           | Pakai `host.docker.internal` (sudah di `docker.env`) atau sesuaikan `NINEROUTER_BASE_URL`                                                |
 | `docker compose` gagal build pnpm                         | Node/pnpm tidak selaras                                                                  | Pakai Node **24.16.0** + pnpm **11.5.2** (sama dengan image Docker & `package.json` engines)                                             |
 | Mobile: tidak ada device di UI                            | ADB kosong / belum connect                                                               | `adb devices`; untuk BlueStacks: `pnpm connect:instances` setelah launch                                                                 |
 | Mobile: Send disabled                                     | Package belum dipilih atau device kosong                                                 | Pilih package; hubungkan emulator/USB                                                                                                    |
-| Mobile: Appium error                                      | Server tidak jalan                                                                       | `appium` di host; cek `APPIUM_SERVER_URL`                                                                                                |
+| Mobile: Appium error                                      | Server tidak jalan / `ANDROID_HOME` kosong                                               | Jalankan Appium **global** di host (`appium`) + set `ANDROID_HOME`; atau `pnpm docker:appium`; cek `APPIUM_SERVER_URL`                   |
 | Mobile: request lambat (banyak tab)                       | Polling ADB berlebihan                                                                   | Naikkan `MOBILE_DEVICES_POLL_MS`; pastikan satu SSE per tab (sudah dioptimasi)                                                           |
 
 

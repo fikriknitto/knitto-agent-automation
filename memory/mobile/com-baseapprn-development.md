@@ -843,3 +843,38 @@
 
 ### Status: PASS
 - Sesi mobile tidak ditutup (orchestrator cleanup di akhir multi-TC job).
+
+
+## [tc-01-test-case-1]
+
+## TC-01 Test Case 1 — automation-default (2026-07-14, multi-TC job 1/2)
+
+### Status: PASS
+
+### Konteks
+- Package: `com.baseapprn.development`, device: 127.0.0.1:5555.
+- Channel: automation-default.
+- Multi-TC job 1/2; TC berikutnya = browser CMS Login.
+
+### Navigasi
+- `mobile_launch_app` — berhasil (activity com.baseapprn.MainActivity).
+- Dashboard: Text Input tidak match pada tap pertama → scroll down → `mobile_wait_for` text "Text Input" → tap `text: "Text Input"`.
+- UI snapshot sering kosong (React Native); text locator tetap berfungsi.
+
+### Form Input
+- Tiga field: **Small**, **Medium**, **Large**.
+- Nilai uji (sesi ini):
+  - Small → `ini text small broo`
+  - Medium → `ini text medium bro`
+  - Large → `ini text large broo`
+- Isi via `mobile_input_text` dengan locator `text: "Small"|"Medium"|"Large"`, clear=true, hideKeyboard=true.
+
+### Verifikasi
+- `mobile_assert_visible` pada ketiga nilai — semua berhasil (visible: true).
+
+### Screenshot
+- `tc01-text-input-start.png`, `tc01-text-input-screen.png`, `tc01-text-input-filled.png`
+
+### Catatan
+- App/session tidak ditutup (orchestrator cleanup di akhir multi-TC job).
+- Tidak ada HANDOFF ke TC-02 (skenario browser CMS Login berdiri sendiri).

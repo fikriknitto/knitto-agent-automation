@@ -23,6 +23,10 @@ export function automationMcpEnv(
 ): Record<string, string> {
   const root = resolveMonorepoRoot();
   const env: Record<string, string> = {
+    // Pastikan MCP Cursor mewarisi binary Chromium/ffmpeg Docker (env MCP sering replace, bukan merge penuh)
+    PATH: process.env.PATH ?? "",
+    PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH ?? "",
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD ?? "",
     AUTOMATION_HEADLESS: process.env.AUTOMATION_HEADLESS ?? "false",
     AUTOMATION_SLOW_MO_MS: process.env.AUTOMATION_SLOW_MO_MS ?? "",
     AUTOMATION_MEMORY_DIR: resolveMemoryDir(root),

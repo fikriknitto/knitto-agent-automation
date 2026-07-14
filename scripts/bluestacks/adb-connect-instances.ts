@@ -1,9 +1,8 @@
 import { adbConnect, formatAdbTarget } from "./adb-connect.js";
 import {
-  adbKillServer,
   formatAdbDevicesSummary,
   isAdbTargetOnline,
-  listAdbDevices,
+  listAdbDevices
 } from "./adb-devices.js";
 import type { ConnectOptions } from "./config.js";
 import { assertBlueStacksConfig } from "./config.js";
@@ -30,10 +29,10 @@ export async function connectBlueStacksAdb(options: ConnectOptions): Promise<Con
     throw new Error("No instances to connect.");
   }
 
-  if (!options.dryRun) {
-    console.log("Restarting ADB server (adb kill-server)…");
-    await adbKillServer();
-  }
+  // if (!options.dryRun) {
+  //   console.log("Restarting ADB server (adb kill-server)…");
+  //   await adbKillServer();
+  // }
 
   let adbBefore = await listAdbDevices();
   console.log("adb devices (before):");
