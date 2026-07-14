@@ -23,11 +23,12 @@ ENV ANDROID_HOME=/usr/lib/android-sdk \
     ADB_CONNECT_TARGETS=host.docker.internal:5555
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Strip CRLF (Windows checkout) so shebang resolves to /bin/sh, not /bin/sh\r
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 4723
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=8 \
   CMD curl -fsS "http://127.0.0.1:4723/status" >/dev/null || exit 1
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]

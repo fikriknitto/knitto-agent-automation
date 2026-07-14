@@ -126,24 +126,25 @@ Client MCP di process backend yang sama dengan map session Puppeteer/Appium. Coc
 sequenceDiagram
     participant BE as Backend Cursor runner
     participant Child as MCP stdio process
-    participant Driver as Puppeteer/Appium
-    BE->>Child: spawn + env JOB_ID / MULTI_TC / package
-    Child->>Driver: tools
-    BE->>Child: stop segment / cleanup tools spawn terpisah
+    participant Driver as Puppeteer or Appium
+    BE->>Child: spawn with job env
+    Child->>Driver: run tools
+    BE->>Child: stop segment or cleanup tools
 ```
 
 - Saat `segmentManaged: true` → `AUTOMATION_MULTI_TC=1` / `MOBILE_MULTI_TC=1`
-- Cleanup close: `segmentManaged: false` + `FORCE_CLOSE=1`, dan **menghapus** MULTI_TC dari env agar close guard tidak memblokir
+- Cleanup close: `segmentManaged: false` + `FORCE_CLOSE=1`, dan **tetap set** `MULTI_TC=1` agar early `createSession` tidak jalan; close guard di-bypass oleh `FORCE_CLOSE`
 
-### Risiko
+### Cleanup vs early session (mobile)
 
-Mobile MCP bootstrap:
+Sebelumnya cleanup menghapus `MOBILE_MULTI_TC` → boot MCP memanggil `createSession()` (karena `recordVideo`) → app relaunch setelah force-stop.
 
-```ts
-if (recordVideo && MOBILE_MULTI_TC !== "1") await createSession();
-```
+Mitigasi sekarang:
 
-Pada spawn cleanup, MULTI_TC kosong + record on → **session baru** (app relaunch). Lihat [mobile.md](mobile.md) § pitfall.
+1. `cursor-mcp-tool-runner`: saat `forceClose`, set ulang `MOBILE_MULTI_TC=1` / `AUTOMATION_MULTI_TC=1`
+2. `mcp-stdio-server` (mobile): skip early `createSession` jika `FORCE_CLOSE` atau `MULTI_TC`
+
+Close tool tetap jalan lewat state file / ADB (`terminateMobileAppFromState`, `closeMobileSessionFromState`) tanpa membuat session baru.
 
 ---
 

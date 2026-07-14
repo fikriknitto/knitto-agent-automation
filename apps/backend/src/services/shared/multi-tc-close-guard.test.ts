@@ -57,6 +57,14 @@ describe("isMultiTcCloseBlocked", () => {
     delete process.env.AUTOMATION_FORCE_CLOSE;
   });
 
+  it("allows close when MOBILE_FORCE_CLOSE is set with MOBILE_MULTI_TC (cleanup spawn)", () => {
+    delete process.env.AUTOMATION_MULTI_TC;
+    delete process.env.AUTOMATION_FORCE_CLOSE;
+    process.env.MOBILE_MULTI_TC = "1";
+    process.env.MOBILE_FORCE_CLOSE = "1";
+    assert.equal(isMultiTcCloseBlocked("job-env-guard"), false);
+  });
+
   it("blocks when in-memory segment managed flag is set", () => {
     delete process.env.AUTOMATION_MULTI_TC;
     delete process.env.MOBILE_MULTI_TC;

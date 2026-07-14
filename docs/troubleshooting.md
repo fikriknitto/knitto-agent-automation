@@ -17,7 +17,7 @@ Katalog masalah umum saat development lokal dan Docker untuk Knitto Agent Automa
 
 ## Ruang Lingkup
 
-Gejala operasional. Hardening / bug terbuka (mis. relaunch app setelah cleanup): lihat [mobile.md](mobile.md) dan [features.md](features.md).
+Gejala operasional. Jika app mobile masih relaunch setelah job: pastikan backend memuat patch cleanup `FORCE_CLOSE` + `MULTI_TC` (lihat [mcp.md](mcp.md) / [mobile.md](mobile.md)).
 
 ---
 
@@ -33,7 +33,7 @@ Gejala operasional. Hardening / bug terbuka (mis. relaunch app setelah cleanup):
 | Video corrupt | ffmpeg path salah | `ffmpeg -version`; set `AUTOMATION_FFMPEG_PATH` |
 | MP4 &lt; 10 KB | Rekaman gagal / frame hitam | headless=false atau pastikan activity visible |
 | Platform tetap terbuka setelah multi-TC | Close guard / FORCE_CLOSE | Restart backend terbaru; cek log `test-case-cleanup` |
-| App mobile tutup lalu buka lagi setelah job | Cleanup Cursor `createSession` | Lihat [mobile.md](mobile.md) pitfall / ROADMAP P0 |
+| App mobile tutup lalu buka lagi setelah job | Cleanup Cursor early `createSession` (versi lama) | Restart backend terbaru (MULTI_TC + FORCE_CLOSE di cleanup spawn); cek log `skip early createSession` |
 | Dropdown opsi salah | Partial match | Perjelas exact option di shortcut |
 | `EADDRINUSE` | Port terpakai | Kill proses di `BACKEND_PORT` |
 | Docker: `backend unhealthy` | Build/env | `docker compose up -d --build`; `logs backend` |

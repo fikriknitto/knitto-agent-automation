@@ -117,12 +117,19 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
         acquiredUdid = await acquireCursorHybridDevice(job.id, hybridMobileConfig);
       }
 
+      const mobileConfigForJob = (() => {
+        const base = hybridMobileConfig ?? job.mobileConfig;
+        if (!base) return undefined;
+        if (!acquiredUdid) return base;
+        return { ...base, udid: acquiredUdid };
+      })();
+
       await executeMultiTestBridgeJob({
         job: {
           ...job,
           testCases,
           platform: "hybrid",
-          mobileConfig: hybridMobileConfig ?? job.mobileConfig,
+          mobileConfig: mobileConfigForJob,
         },
         testCases,
         emit,
@@ -134,7 +141,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
             job.id,
             modelId,
             acquiredUdid,
-            hybridMobileConfig ?? job.mobileConfig
+            mobileConfigForJob
           ),
       });
       return;

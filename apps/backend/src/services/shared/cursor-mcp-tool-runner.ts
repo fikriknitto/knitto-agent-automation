@@ -64,10 +64,17 @@ async function connectStdioMcp(args: {
   }
 
   const mergedEnv = { ...process.env, ...env } as Record<string, string>;
-  // Cleanup must not inherit MULTI_TC from parent process when segmentManaged is off.
   if (!segmentManaged) {
-    delete mergedEnv.AUTOMATION_MULTI_TC;
-    delete mergedEnv.MOBILE_MULTI_TC;
+    if (args.forceClose) {
+      // End-of-job cleanup: keep MULTI_TC so mobile MCP does NOT early-createSession
+      // (that would relaunch the app). FORCE_CLOSE still bypasses the close guard.
+      mergedEnv.AUTOMATION_MULTI_TC = "1";
+      mergedEnv.MOBILE_MULTI_TC = "1";
+    } else {
+      // Non-cleanup spawn with segmentManaged off — do not inherit parent MULTI_TC.
+      delete mergedEnv.AUTOMATION_MULTI_TC;
+      delete mergedEnv.MOBILE_MULTI_TC;
+    }
   }
 
   const transport = new StdioClientTransport({

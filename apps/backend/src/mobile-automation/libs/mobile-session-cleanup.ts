@@ -25,6 +25,35 @@ export async function terminateAppViaAdb(udid: string, appPackage: string): Prom
   await execFileAsync("adb", args, { timeout: 15_000 });
 }
 
+/**
+ * Force-stop app using session state and/or explicit udid/package.
+ * Needed for Cursor cleanup MCP (no in-memory driver; state may already be cleared).
+ */
+export async function terminateMobileAppBestEffort(opts: {
+  jobId?: string;
+  udid?: string;
+  appPackage?: string;
+}): Promise<boolean> {
+  const state = opts.jobId ? readMobileSessionState(opts.jobId) : undefined;
+  const udid = (opts.udid || state?.udid || "").trim();
+  const appPackage = (opts.appPackage || state?.appPackage || "").trim();
+  if (!appPackage) return false;
+
+  try {
+    await terminateAppViaAdb(udid, appPackage);
+    logger.info(
+      `Mobile app terminated via adb: ${appPackage} udid=${udid || "(default)"} job=${opts.jobId ?? "-"}`
+    );
+    return true;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.warn(
+      `adb force-stop failed for ${appPackage} job=${opts.jobId ?? "-"}: ${msg}`
+    );
+    return false;
+  }
+}
+
 export async function deleteAppiumSession(sessionId: string): Promise<boolean> {
   try {
     const res = await fetch(appiumSessionDeleteUrl(sessionId), { method: "DELETE" });
@@ -38,18 +67,7 @@ export async function deleteAppiumSession(sessionId: string): Promise<boolean> {
 
 /** Force-stop app via adb using persisted session state (no in-process driver). */
 export async function terminateMobileAppFromState(jobId: string): Promise<boolean> {
-  const state = readMobileSessionState(jobId);
-  if (!state) return false;
-
-  try {
-    await terminateAppViaAdb(state.udid, state.appPackage);
-    logger.info(`Mobile app terminated via state: ${state.appPackage} job=${jobId}`);
-    return true;
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    logger.warn(`adb force-stop from state failed for job=${jobId}: ${msg}`);
-    return false;
-  }
+  return terminateMobileAppBestEffort({ jobId });
 }
 
 /** Close Appium session + release device via persisted session state. */
@@ -60,6 +78,13 @@ export async function closeMobileSessionFromState(jobId: string): Promise<boolea
     clearMobileJobContext(jobId);
     return false;
   }
+
+  // Ensure app is stopped even if mobile_close_app was skipped / failed earlier.
+  await terminateMobileAppBestEffort({
+    jobId,
+    udid: state.udid,
+    appPackage: state.appPackage,
+  });
 
   const deleted = await deleteAppiumSession(state.sessionId);
   if (deleted) {

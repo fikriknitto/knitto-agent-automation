@@ -37,7 +37,14 @@ async function main(): Promise<void> {
         deepLink: process.env.MOBILE_JOB_DEEP_LINK?.trim() || undefined,
       });
 
-      if (mobileConfig.recordVideo && process.env.MOBILE_MULTI_TC !== "1") {
+      // Skip early session when multi-TC (segment managed) OR end-of-job cleanup
+      // (FORCE_CLOSE). Cleanup used to clear MULTI_TC which triggered createSession
+      // and relaunched the app after mobile_close_app.
+      const forceClose =
+        process.env.MOBILE_FORCE_CLOSE === "1" ||
+        process.env.AUTOMATION_FORCE_CLOSE === "1";
+      const multiTc = process.env.MOBILE_MULTI_TC === "1";
+      if (mobileConfig.recordVideo && !multiTc && !forceClose) {
         try {
           await createSession();
           logger.info(`MCP stdio: recording started at job start (job=${jobId})`);
@@ -45,6 +52,10 @@ async function main(): Promise<void> {
           const msg = error instanceof Error ? error.message : String(error);
           logger.warn(`MCP stdio: early createSession failed: ${msg}`);
         }
+      } else if (forceClose) {
+        logger.info(
+          `MCP stdio: skip early createSession (FORCE_CLOSE cleanup, job=${jobId})`
+        );
       }
     }
   }

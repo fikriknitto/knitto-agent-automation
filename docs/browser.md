@@ -42,13 +42,13 @@ sequenceDiagram
     participant Agent
     participant MCP
     participant Puppeteer
-    Agent->>MCP: automation_navigate / tools
+    Agent->>MCP: automation_navigate and tools
     MCP->>Puppeteer: ensure session
     Puppeteer-->>MCP: page ready
-    Note over MCP: recording start (job atau segment TC)
-    Agent->>MCP: snapshot / click / fill
+    Note over MCP: recording starts for job or TC segment
+    Agent->>MCP: snapshot click fill
     Agent->>MCP: automation_close_browser
-    Note over MCP: multi-TC: diblok close guard; orchestrator menutup di akhir
+    Note over MCP: multi-TC close blocked - orchestrator closes at end
 ```
 
 ---

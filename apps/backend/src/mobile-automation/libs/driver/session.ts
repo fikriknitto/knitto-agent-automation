@@ -21,7 +21,7 @@ import { getPendingSegment, isJobSegmentManaged } from "../../../services/shared
 import { writeMobileSessionState, clearMobileSessionState } from "../mobile-session-state.js";
 import {
   closeMobileSessionFromState,
-  terminateMobileAppFromState,
+  terminateMobileAppBestEffort,
 } from "../mobile-session-cleanup.js";
 
 const sessions = new Map<string, Browser>();
@@ -205,23 +205,31 @@ export async function closeApp(): Promise<{
   const udid = getMobileJobUdid(jobId) ?? mobileCfg.udid ?? "";
   const pkg = mobileCfg.appPackage;
 
-  if (!driver) {
-    const closed = await terminateMobileAppFromState(jobId);
-    if (!closed) {
-      throw new ToolError(
-        "Tidak ada sesi Appium aktif — panggil mobile_close_app sebelum mobile_close_session."
-      );
+  if (driver) {
+    try {
+      await driver.terminateApp(pkg);
+    } catch (error) {
+      // Appium session may already be gone; fall back to adb.
+      const viaAdb = await terminateMobileAppBestEffort({ jobId, udid, appPackage: pkg });
+      if (!viaAdb) {
+        const msg = error instanceof Error ? error.message : String(error);
+        throw new ToolError(`Failed to close app ${pkg}: ${msg}`);
+      }
     }
     return { package: pkg, closed: true, udid };
   }
 
-  try {
-    await driver.terminateApp(pkg);
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    throw new ToolError(`Failed to close app ${pkg}: ${msg}`);
+  // Cursor cleanup spawn: no in-memory driver (and state file may be gone after agent MCP exit).
+  const closed = await terminateMobileAppBestEffort({
+    jobId,
+    udid,
+    appPackage: pkg,
+  });
+  if (!closed) {
+    throw new ToolError(
+      `Gagal force-stop ${pkg} via adb — pastikan adb devices melihat device dan ANDROID_HOME/ADB tersedia.`
+    );
   }
-
   return { package: pkg, closed: true, udid };
 }
 

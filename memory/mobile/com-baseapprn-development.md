@@ -858,19 +858,18 @@
 
 ### Navigasi
 - `mobile_launch_app` — berhasil (activity com.baseapprn.MainActivity).
-- Dashboard: Text Input tidak match pada tap pertama → scroll down → `mobile_wait_for` text "Text Input" → tap `text: "Text Input"`.
+- Dashboard: Text Input tidak match pada wait pertama (timeout 5s) → scroll down → `mobile_wait_for` text "Text Input" → tap `text: "Text Input"`.
 - UI snapshot sering kosong (React Native); text locator tetap berfungsi.
 
 ### Form Input
-- Tiga field: **Small**, **Medium**, **Large**.
+- Field yang diisi: **Small**, **Medium** (Large tidak diisi — di luar variabel TC).
 - Nilai uji (sesi ini):
-  - Small → `ini text small broo`
-  - Medium → `ini text medium bro`
-  - Large → `ini text large broo`
-- Isi via `mobile_input_text` dengan locator `text: "Small"|"Medium"|"Large"`, clear=true, hideKeyboard=true.
+  - Small → `ini text small lagi`
+  - Medium → `ini test medium lagi`
+- Isi via `mobile_input_text` dengan locator `text: "Small"|"Medium"`, clear=true, hideKeyboard=true.
 
 ### Verifikasi
-- `mobile_assert_visible` pada ketiga nilai — semua berhasil (visible: true).
+- `mobile_assert_visible` pada kedua nilai — semua berhasil (visible: true).
 
 ### Screenshot
 - `tc01-text-input-start.png`, `tc01-text-input-screen.png`, `tc01-text-input-filled.png`

@@ -91,8 +91,8 @@ Flag: `MOBILE_RECORD_VIDEO` (default true).
 
 ---
 
-## 7. Pitfall cleanup Cursor
+## 7. Cleanup Cursor (tanpa relaunch)
 
-Saat cleanup subprocess dengan `MOBILE_MULTI_TC` dihapus, MCP stdio dapat `createSession()` lagi karena `recordVideo` → app **terbuka kembali**; `deleteSession` tidak force-stop app target.
+End-of-job cleanup spawn MCP dengan `FORCE_CLOSE=1` **dan** `MOBILE_MULTI_TC=1` agar close guard terbuka tetapi **early `createSession` di-skip**. App di-force-stop lewat state/ADB tanpa membuat session Appium baru yang akan me-launch `appPackage` lagi.
 
-Lihat pitfall ini di [features.md](features.md) / [mcp.md](mcp.md).
+Detail: [mcp.md](mcp.md) § Cursor stdio.

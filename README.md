@@ -21,7 +21,7 @@ Arsitektur **monorepo** (Turborepo + pnpm): React frontend dan Express backend t
 | **Web UI**             | Chat, progress WS, screenshot/video, credentials, platform Hybrid      |
 
 
-> Detail spesifikasi: [features](docs/architecture/features.md).
+> Detail spesifikasi: [features](docs/features.md).
 
 ---
 
@@ -103,7 +103,7 @@ Variabel penting (lokal):
 | `APPIUM_SERVER_URL`                 | Appium (host global)   | `http://127.0.0.1:4723` |
 
 
-Tabel lengkap: [environment.md](docs/architecture/environment.md).
+Tabel lengkap: [environment.md](docs/environment.md).
 
 ### 3. Appium global (mobile lokal)
 
@@ -134,7 +134,7 @@ Cek: [http://127.0.0.1:4723/status](http://127.0.0.1:4723/status) → `"ready": 
 | Dev lokal + mobile | **Global** di host (langkah di atas) |
 | Docker | Service Compose — **tidak** perlu Appium global; matikan Appium host di port `4723` agar tidak bentrok |
 
-Detail: [mobile.md](docs/architecture/mobile.md). Docker + ADB: [docker.md](docs/architecture/docker.md).
+Detail: [mobile.md](docs/mobile.md). Docker + ADB: [docker.md](docs/docker.md).
 
 ### 4. Mode development
 
@@ -176,7 +176,7 @@ cp .env.example .env   # secret, port, ADB_CONNECT_TARGETS
 pnpm docker:up         # appium + backend + frontend
 ```
 
-Panduan lengkap (ADB dual-path, checklist BlueStacks): [docker.md](docs/architecture/docker.md).
+Panduan lengkap (ADB dual-path, checklist BlueStacks): [docker.md](docs/docker.md).
 
 ---
 
@@ -194,8 +194,7 @@ knitto-agent-browser/
 ├── docker/
 │   ├── nginx.conf
 │   └── appium/                # Appium 3 + UiAutomator2 image
-├── docs/
-│   └── architecture/          # system, features, docker, …
+├── docs/                      # system, features, browser, mobile, docker, …
 ├── prompt-shortcuts/          # Template prompt
 ├── scripts/bluestacks/        # Launch / ADB BlueStacks (Windows)
 ├── memory/                    # Agent memory (web + mobile/)
@@ -213,17 +212,17 @@ knitto-agent-browser/
 
 ```mermaid
 graph LR
-    UI["Frontend\nReact :3000"] -->|REST + WS| API["Backend\nExpress :3080"]
-    API --> Bridges["Bridges\nGemini / Cursor / 9Router"]
-    Bridges --> BrowserMCP["Browser MCP\nPuppeteer"]
-    Bridges --> MobileMCP["Mobile MCP\nAppium"]
+    UI["Frontend React port 3000"] -->|REST and WS| API["Backend Express port 3080"]
+    API --> Bridges["Bridges Gemini Cursor 9Router"]
+    Bridges --> BrowserMCP["Browser MCP Puppeteer"]
+    Bridges --> MobileMCP["Mobile MCP Appium"]
     BrowserMCP --> Chrome["Chromium"]
-    MobileMCP --> Device["Emulator / device"]
+    MobileMCP --> Device["Emulator or device"]
 ```
 
 
 
-Satu proses backend menjalankan HTTP, WebSocket, dan semua bridge. Gemini/9Router memakai MCP **in-process**; Cursor men-spawn MCP via **stdio**. Detail: [system.md](docs/architecture/system.md).
+Satu proses backend menjalankan HTTP, WebSocket, dan semua bridge. Gemini/9Router memakai MCP **in-process**; Cursor men-spawn MCP via **stdio**. Detail: [system.md](docs/system.md).
 
 ---
 
@@ -266,16 +265,16 @@ Semantic locator (bukan CSS): ref snapshot (`e12`), `role` + `name`, teks terlih
 
 | Dokumen | Isi |
 | ------- | --- |
-| [system.md](docs/architecture/system.md) | Arsitektur sistem & monorepo |
-| [features.md](docs/architecture/features.md) | Spesifikasi fitur utama |
-| [browser.md](docs/architecture/browser.md) | Puppeteer, recording, locator |
-| [mobile.md](docs/architecture/mobile.md) | Appium, ADB, device pool |
-| [hybrid.md](docs/architecture/hybrid.md) | Multi-TC orchestrator & segment video |
-| [mcp.md](docs/architecture/mcp.md) | MCP tools (browser + mobile), in-process vs Cursor stdio |
-| [docker.md](docs/architecture/docker.md) | Compose, dual ADB, checklist |
-| [environment.md](docs/architecture/environment.md) | Tabel environment variables |
-| [api.md](docs/architecture/api.md) | REST + WebSocket |
-| [troubleshooting.md](docs/architecture/troubleshooting.md) | Gejala & solusi |
+| [system.md](docs/system.md) | Arsitektur sistem & monorepo |
+| [features.md](docs/features.md) | Spesifikasi fitur utama |
+| [browser.md](docs/browser.md) | Puppeteer, recording, locator |
+| [mobile.md](docs/mobile.md) | Appium, ADB, device pool |
+| [hybrid.md](docs/hybrid.md) | Multi-TC orchestrator & segment video |
+| [mcp.md](docs/mcp.md) | MCP tools (browser + mobile), in-process vs Cursor stdio |
+| [docker.md](docs/docker.md) | Compose, dual ADB, checklist |
+| [environment.md](docs/environment.md) | Tabel environment variables |
+| [api.md](docs/api.md) | REST + WebSocket |
+| [troubleshooting.md](docs/troubleshooting.md) | Gejala & solusi |
 
 
 ---

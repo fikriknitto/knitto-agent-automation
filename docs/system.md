@@ -30,13 +30,13 @@ Tidak mencakup detail domain — lihat:
 
 | Topik | Dokumen |
 |-------|---------|
-| Puppeteer, recording browser | `browser.md` |
-| Appium, ADB, device pool | `mobile.md` |
-| Multi-TC orchestrator | `hybrid.md` |
-| MCP in-process vs stdio | `mcp.md` |
-| Compose & dual ADB | `docker.md` |
-| Env vars | `environment.md` |
-| REST / WS | `api.md` |
+| Puppeteer, recording browser | [browser.md](browser.md) |
+| Appium, ADB, device pool | [mobile.md](mobile.md) |
+| Multi-TC orchestrator | [hybrid.md](hybrid.md) |
+| MCP in-process vs stdio | [mcp.md](mcp.md) |
+| Compose & dual ADB | [docker.md](docker.md) |
+| Env vars | [environment.md](environment.md) |
+| REST / WS | [api.md](api.md) |
 
 ---
 
@@ -47,10 +47,10 @@ Satu proses **backend** menjalankan HTTP API, WebSocket hub, dan bridge agent. F
 ```mermaid
 graph TB
     subgraph Client
-        FE["Frontend\nReact + Vite :3000"]
+        FE["Frontend React Vite"]
     end
 
-    subgraph Server["Backend — Express :3080"]
+    subgraph Server["Backend Express"]
         HTTP[REST Controllers]
         WS[WebSocket Hub]
         Queue[Job Queue]
@@ -62,17 +62,22 @@ graph TB
         MM[Mobile automation libs]
     end
 
-    FE -->|/api + /ws| HTTP
+    FE -->|api and ws| HTTP
     FE --> WS
     HTTP --> Queue
     Queue --> Orch
-    Orch --> G & C & N
-    G --> BM & MM
-    N --> BM & MM
-    C -->|stdio MCP| BM & MM
+    Orch --> G
+    Orch --> C
+    Orch --> N
+    G --> BM
+    G --> MM
+    N --> BM
+    N --> MM
+    C -->|stdio MCP| BM
+    C -->|stdio MCP| MM
     BM --> Chromium
     MM --> Appium
-    Appium --> Device[Emulator/Device]
+    Appium --> Device[Emulator or Device]
 ```
 
 ### Aturan penting

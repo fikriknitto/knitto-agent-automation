@@ -28,7 +28,7 @@
     "disconnect:instances": "tsx --env-file=apps/backend/.env scripts/disconnect-instance.ts",
     "instances:up": "pnpm start:instances --emulator=1 && pnpm connect:instances",
     "instances:down": "pnpm close:instances && pnpm disconnect:instances",
-    "docker:up": "docker compose up -d --build",
+    "docker:up": "docker compose up -d --build --force-recreate",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:appium": "docker compose up -d --build appium"
