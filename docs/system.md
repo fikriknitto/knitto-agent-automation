@@ -53,22 +53,28 @@ graph TB
     subgraph Server["Backend Express"]
         HTTP[REST Controllers]
         WS[WebSocket Hub]
-        Queue[Job Queue]
+        G[Gemini Bridge]
+        C[Cursor Bridge]
+        N[9Router Bridge]
         Orch[Test-case Orchestrator]
-        G[Gemini Runner]
-        C[Cursor Runner]
-        N[9Router Runner]
         BM[Browser automation libs]
         MM[Mobile automation libs]
     end
 
-    FE -->|api and ws| HTTP
-    FE --> WS
-    HTTP --> Queue
-    Queue --> Orch
-    Orch --> G
-    Orch --> C
-    Orch --> N
+    FE -->|REST only| HTTP
+    FE <-->|WS /ws| WS
+
+    WS -->|user_prompt| G
+    WS -->|user_prompt| C
+    WS -->|user_prompt| N
+    G -->|agent_job| WS
+    C -->|agent_job| WS
+    N -->|agent_job| WS
+
+    G --> Orch
+    C --> Orch
+    N --> Orch
+
     G --> BM
     G --> MM
     N --> BM
@@ -79,6 +85,16 @@ graph TB
     MM --> Appium
     Appium --> Device[Emulator or Device]
 ```
+
+Alur prompt agent (bukan REST):
+
+1. UI kirim `user_prompt` lewat **WebSocket Hub** (`/ws`)
+2. Hub memanggil `bridge.handleUserPrompt(...)` (Gemini / Cursor / 9Router)
+3. Bridge mengantri job (queue internal per bridge) → runner; multi-TC/hybrid lewat **orchestrator**
+4. Runner memakai browser/mobile libs (Puppeteer / Appium; Cursor via MCP stdio)
+5. Progress `agent_job` di-emit balik ke Hub → UI
+
+**REST** terpisah: health, shortcuts, file manager, screenshot/video, mobile devices — bukan jalur kirim prompt.
 
 ### Aturan penting
 
