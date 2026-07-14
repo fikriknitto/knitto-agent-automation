@@ -262,9 +262,12 @@ Semantic locator (bukan CSS): ref snapshot (`e12`), `role` + `name`, teks terlih
 
 ## Dokumentasi
 
+Indeks lengkap: **[docs/README.md](docs/README.md)**.
+
 
 | Dokumen | Isi |
 | ------- | --- |
+| [docs/README.md](docs/README.md) | Summary & indeks seluruh dokumentasi |
 | [system.md](docs/system.md) | Arsitektur sistem & monorepo |
 | [features.md](docs/features.md) | Spesifikasi fitur utama |
 | [browser.md](docs/browser.md) | Puppeteer, recording, locator |
