@@ -181,7 +181,7 @@ Satu prompt berisi beberapa `## Test Case N` lintas browser dan/atau mobile. Orc
 
 ### Catatan teknis
 
-[hybrid.md](hybrid.md)
+[hybrid.md](hybrid.md) — termasuk [contoh prompt multi-TC](hybrid.md#7-contoh-prompt).
 
 ---
 
@@ -216,7 +216,10 @@ Pengetahuan navigasi / locator hints per app ID. Browser: `memory/`; mobile: `me
 ### Kebutuhan fungsional
 
 - Get / update via tools
-- Prefer `upsert_section` + `sectionKey` (hindari append buta)
+- Prefer `upsert_section` + `sectionKey` (body section diganti; mode `append` sudah dihapus)
+- Upsert hanya mempertahankan section `## [key]`; heading lama tanpa key dibuang saat rewrite (anti-duplikat)
+- Browser appId dari URL: hostname; bila host IPv4 + port → `192.168.20.27:5420` (file `192.168.20.27-5420.md`); prompt job menyuntikkan appId ini agar agent tidak invent nama produk
+- Mobile appId = `appPackage` → `memory/mobile/{package}.md`
 - Editable di Settings → Memory (UI)
 
 ---

@@ -8,6 +8,7 @@ import { createLogger } from "../../../automation/core/index.js";
 import { connectAutomationMcp } from "../../shared/automation-mcp-client.js";
 import { setAutomationJobId } from "../../../automation/libs/job-context.js";
 import { buildPromptForJob, buildGeminiContents } from "../../shared/prompt-builder.js";
+import { resolveMemoryAppIdForJob } from "../../shared/resolve-memory-app-id-for-job.js";
 import {
   cleanupJobAttachments,
   loadVisionAttachments,
@@ -114,6 +115,12 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       return;
     }
 
+    const memoryAppId = await resolveMemoryAppIdForJob({
+      platform,
+      text: job.text,
+      mobileConfig: job.mobileConfig,
+      promptBasePaths: job.promptBasePaths,
+    });
     const promptInput = buildPromptForJob({
       platform,
       mobileConfig: job.mobileConfig,
@@ -124,6 +131,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       visionAttachments,
       savedAttachments,
       promptBasePaths: job.promptBasePaths,
+      memoryAppId,
     });
 
     const modelId = job.model ?? config.modelId;

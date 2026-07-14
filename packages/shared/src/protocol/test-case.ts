@@ -227,59 +227,52 @@ export function inferPlatformFromUrl(text: string): TestCasePlatform | null {
 
 
 export function extractHostnameFromUrl(url: string): string | undefined {
-
   try {
-
     return new URL(url).hostname || undefined;
-
   } catch {
-
     return undefined;
-
   }
-
 }
 
+const IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 
+/** Host for memory file; IPv4 includes port when present (`192.168.20.27:5367`). */
+export function extractMemoryAppIdFromUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    if (!host) return undefined;
+    if (IPV4_RE.test(host) && parsed.port) {
+      return `${host}:${parsed.port}`;
+    }
+    return host;
+  } catch {
+    return undefined;
+  }
+}
 
 export function resolveMemoryAppId(args: {
-
   platform: TestCasePlatform;
-
   url?: string;
-
   appPackage?: string;
-
   text?: string;
-
 }): string | undefined {
-
   if (args.platform === "mobile" && args.appPackage?.trim()) {
-
     return args.appPackage.trim();
-
   }
 
   if (args.url?.trim()) {
-
-    return extractHostnameFromUrl(args.url.trim());
-
+    return extractMemoryAppIdFromUrl(args.url.trim());
   }
 
   if (args.text) {
-
     const match = args.text.match(URL_IN_TEXT_RE);
-
     if (match?.[0]) {
-
-      return extractHostnameFromUrl(match[0]);
-
+      return extractMemoryAppIdFromUrl(match[0]);
     }
-
   }
 
   return undefined;
-
 }
 
 

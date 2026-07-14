@@ -3,6 +3,16 @@ import { hint, statusMessage as statusMessageClass } from "../lib/ui";
 import { SettingsRow, SettingsRowStacked, SettingsSectionTitle } from "./settings-row";
 import { Button, Card, CardTitle, Input, Label, Select } from "./ui";
 
+export type BridgeCredKind = "gemini" | "cursor" | "openrouter" | "ninerouter";
+
+export type BridgeCredStatus = {
+  message: string;
+  /** true = verified, false = rejected, undefined = pending / info */
+  valid?: boolean;
+};
+
+export type BridgeCredStatusMap = Partial<Record<BridgeCredKind, BridgeCredStatus>>;
+
 type BridgeCredentialsProps = {
   embedded?: boolean;
   bridges: BridgeSummary[];
@@ -12,7 +22,7 @@ type BridgeCredentialsProps = {
   openRouterKey: string;
   nineRouterBaseUrl: string;
   nineRouterKey: string;
-  statusMessage: string;
+  statusByBridge: BridgeCredStatusMap;
   onSelectBridge: (id: string) => void;
   onGeminiKeyChange: (value: string) => void;
   onCursorKeyChange: (value: string) => void;
@@ -27,6 +37,19 @@ type BridgeCredentialsProps = {
 
 const controlWidth = "w-56 max-w-xs";
 
+function statusClassName(valid: boolean | undefined): string {
+  if (valid === true) return `${statusMessageClass} text-emerald-400`;
+  if (valid === false) return `${statusMessageClass} text-rose-400`;
+  return statusMessageClass;
+}
+
+function CredStatusLine({ status }: { status?: BridgeCredStatus }) {
+  if (!status?.message) return null;
+  return (
+    <p className={`${statusClassName(status.valid)} max-w-xs text-right`}>{status.message}</p>
+  );
+}
+
 export function BridgeCredentials({
   embedded = false,
   bridges,
@@ -36,7 +59,7 @@ export function BridgeCredentials({
   openRouterKey,
   nineRouterBaseUrl,
   nineRouterKey,
-  statusMessage,
+  statusByBridge,
   onSelectBridge,
   onGeminiKeyChange,
   onCursorKeyChange,
@@ -121,6 +144,7 @@ export function BridgeCredentials({
           >
             Save to Gemini bridge
           </Button>
+          <CredStatusLine status={statusByBridge.gemini} />
         </SettingsRowStacked>
 
         <SettingsRowStacked
@@ -143,7 +167,7 @@ export function BridgeCredentials({
           >
             Save to Cursor bridge
           </Button>
-          {statusMessage && <p className={`${statusMessageClass} pb-2`}>{statusMessage}</p>}
+          <CredStatusLine status={statusByBridge.cursor} />
         </SettingsRowStacked>
 
         <SettingsRowStacked
@@ -166,6 +190,7 @@ export function BridgeCredentials({
           >
             Save to OpenRouter bridge
           </Button>
+          <CredStatusLine status={statusByBridge.openrouter} />
         </SettingsRowStacked>
 
         <SettingsRowStacked
@@ -181,7 +206,7 @@ export function BridgeCredentials({
             className={controlWidth}
             value={nineRouterBaseUrl}
             onChange={(e) => onNineRouterBaseUrlChange(e.target.value)}
-            placeholder="http://localhost:20128"
+            placeholder="http://host.docker.internal:20128"
             autoComplete="off"
             disabled={!nineRouterBridge}
           />
@@ -201,6 +226,7 @@ export function BridgeCredentials({
           >
             Save to 9Router bridge
           </Button>
+          <CredStatusLine status={statusByBridge.ninerouter} />
         </SettingsRowStacked>
 
         {selected && (
@@ -208,7 +234,6 @@ export function BridgeCredentials({
             Chat bridge: {selected.bridgeLabel} — default model {selected.defaultModel ?? "—"}
           </p>
         )}
-        {statusMessage && <p className={`${statusMessageClass} pb-2`}>{statusMessage}</p>}
       </section>
     );
   }
@@ -265,9 +290,14 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!geminiBridge}
           />
-          <Button variant="default" onClick={onSaveGemini} disabled={!geminiBridge || !geminiKey.trim()}>
+          <Button
+            variant="default"
+            onClick={onSaveGemini}
+            disabled={!geminiBridge || !geminiKey.trim()}
+          >
             Save to Gemini bridge
           </Button>
+          <CredStatusLine status={statusByBridge.gemini} />
           {!geminiBridge && (
             <span className={hint}>Gemini bridge offline — jalankan pnpm run start:bridge</span>
           )}
@@ -283,9 +313,14 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!cursorBridge}
           />
-          <Button variant="default" onClick={onSaveCursor} disabled={!cursorBridge || !cursorKey.trim()}>
+          <Button
+            variant="default"
+            onClick={onSaveCursor}
+            disabled={!cursorBridge || !cursorKey.trim()}
+          >
             Save to Cursor bridge
           </Button>
+          <CredStatusLine status={statusByBridge.cursor} />
           {!cursorBridge && <span className={hint}>Cursor bridge offline</span>}
         </Label>
 
@@ -299,9 +334,14 @@ export function BridgeCredentials({
             autoComplete="off"
             disabled={!openRouterBridge}
           />
-          <Button variant="default" onClick={onSaveOpenRouter} disabled={!openRouterBridge || !openRouterKey.trim()}>
+          <Button
+            variant="default"
+            onClick={onSaveOpenRouter}
+            disabled={!openRouterBridge || !openRouterKey.trim()}
+          >
             Save to OpenRouter bridge
           </Button>
+          <CredStatusLine status={statusByBridge.openrouter} />
           {!openRouterBridge && <span className={hint}>OpenRouter bridge offline</span>}
         </Label>
 
@@ -311,7 +351,7 @@ export function BridgeCredentials({
             type="url"
             value={nineRouterBaseUrl}
             onChange={(e) => onNineRouterBaseUrlChange(e.target.value)}
-            placeholder="http://localhost:20128"
+            placeholder="http://host.docker.internal:20128"
             autoComplete="off"
             disabled={!nineRouterBridge}
           />
@@ -331,9 +371,14 @@ export function BridgeCredentials({
           >
             Save to 9Router bridge
           </Button>
-          {!nineRouterBridge && (
+          <CredStatusLine status={statusByBridge.ninerouter} />
+          {!nineRouterBridge ? (
             <span className={hint}>
               9Router bridge offline — jalankan pnpm run start:bridge:ninerouter + app 9Router
+            </span>
+          ) : (
+            <span className={hint}>
+              Lokal: localhost:20128 — Backend Docker: host.docker.internal:20128
             </span>
           )}
         </Label>
@@ -344,7 +389,6 @@ export function BridgeCredentials({
           Chat bridge: {selected.bridgeLabel} — default model {selected.defaultModel ?? "—"}
         </p>
       )}
-      {statusMessage && <p className={`${statusMessageClass} mt-2`}>{statusMessage}</p>}
     </>
   );
 

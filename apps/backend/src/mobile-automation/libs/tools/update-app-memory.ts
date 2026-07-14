@@ -5,7 +5,7 @@ import { updateAppMemoryInputSchema, updateAppMemoryOutputShape } from "../schem
 export const mobile_update_app_memory = defineTool({
   name: "mobile_update_app_memory",
   description:
-    "Persist mobile app learnings after a test run. Use appPackage as appId.",
+    "Persist mobile app learnings after a test run. Use appPackage as appId. Default mode upsert_section replaces that section only (requires sectionKey). Use replace only to overwrite the entire memory file. Never append — updates must replace.",
   inputSchema: updateAppMemoryInputSchema,
   outputSchema: updateAppMemoryOutputShape,
   handler: async (args) => {

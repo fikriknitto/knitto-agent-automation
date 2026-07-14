@@ -2,7 +2,7 @@ import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcut
 import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppMemorySettings } from "./components/app-memory-settings";
-import { BridgeCredentials } from "./components/bridge-credentials";
+import { BridgeCredentials, type BridgeCredKind, type BridgeCredStatusMap } from "./components/bridge-credentials";
 import { ChatHeader } from "./components/chat-header";
 import { ChatMain } from "./components/chat-main";
 import { ConnectionPanel } from "./components/connection-panel";
@@ -60,6 +60,27 @@ function jobId(): string {
   return `job-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function normalizeCredKind(value: string | undefined): BridgeCredKind | undefined {
+  const kind = String(value ?? "").toLowerCase();
+  if (
+    kind === "gemini" ||
+    kind === "cursor" ||
+    kind === "openrouter" ||
+    kind === "ninerouter"
+  ) {
+    return kind;
+  }
+  return undefined;
+}
+
+function bridgesRefKindFromId(
+  list: BridgeSummary[],
+  bridgeId: string
+): BridgeCredKind | undefined {
+  const bridge = list.find((b) => b.bridgeId === bridgeId);
+  return normalizeCredKind(bridge?.bridgeKind);
+}
+
 export function App() {
   const persisted = useMemo(() => loadState(), []);
   const [host, setHost] = useState(persisted.host ?? DEFAULT_WS_HOST);
@@ -88,12 +109,14 @@ export function App() {
     persisted.nineRouterBaseUrl ?? "http://localhost:20128"
   );
   const [nineRouterKey, setNineRouterKey] = useState(persisted.nineRouterKey ?? "");
-  const [credStatus, setCredStatus] = useState("");
+  const [credStatusByBridge, setCredStatusByBridge] = useState<BridgeCredStatusMap>({});
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const lastSubmittedJobId = useRef<string | null>(null);
   const activeJobIds = useRef(new Set<string>());
   const wsRef = useRef<AutomationWsClient | null>(null);
+  const bridgesRef = useRef(bridges);
+  bridgesRef.current = bridges;
   const { data: promptShortcuts = [] } = usePromptShortcuts();
   const shortcutRegistry = useMemo(
     () => promptShortcuts.map((shortcut) => shortcutToRegistryEntry(shortcut)),
@@ -166,11 +189,28 @@ export function App() {
           return [...prev, line];
         });
       },
-      onCredentialsRequest: () => {
-        setCredStatus("Bridge requested API credentials — save keys below.");
+      onCredentialsRequest: (payload) => {
+        const kind = normalizeCredKind(payload.bridgeKind);
+        if (!kind) return;
+        setCredStatusByBridge((prev) => ({
+          ...prev,
+          [kind]: {
+            message: "Bridge requested API credentials — save key below.",
+          },
+        }));
       },
       onCredentialsStatus: (payload) => {
-        setCredStatus(payload.valid ? "Credentials verified." : payload.message);
+        const kind =
+          normalizeCredKind(payload.bridgeKind) ??
+          bridgesRefKindFromId(bridgesRef.current, payload.bridgeId);
+        if (!kind) return;
+        setCredStatusByBridge((prev) => ({
+          ...prev,
+          [kind]: {
+            message: payload.valid ? "Credentials verified." : payload.message,
+            valid: payload.valid,
+          },
+        }));
       },
     });
 
@@ -296,8 +336,11 @@ export function App() {
     const bridge = bridges.find((b) => b.bridgeKind === bridgeKind);
     const bridgeId = bridge?.bridgeId ?? selectedBridgeId;
     if (!bridgeId || !apiKey.trim()) return;
+    setCredStatusByBridge((prev) => ({
+      ...prev,
+      [bridgeKind]: { message: `Sent ${bridgeKind} credentials…` },
+    }));
     wsRef.current?.sendCredentials({ bridgeId, bridgeKind, apiKey: apiKey.trim() });
-    setCredStatus(`Sent ${bridgeKind} credentials…`);
   };
 
   const sendNineRouterCred = async () => {
@@ -305,12 +348,15 @@ export function App() {
     const bridgeId = bridge?.bridgeId ?? selectedBridgeId;
     const baseUrl = nineRouterBaseUrl.trim();
     if (!bridgeId || !baseUrl) return;
+    setCredStatusByBridge((prev) => ({
+      ...prev,
+      ninerouter: { message: "Sent 9Router credentials…" },
+    }));
     wsRef.current?.sendCredentials({
       bridgeId,
       bridgeKind: "ninerouter",
       nineRouter: { baseUrl, apiKey: nineRouterKey.trim() },
     });
-    setCredStatus("Sent 9Router credentials…");
   };
 
   return (
@@ -383,7 +429,7 @@ export function App() {
               openRouterKey={openRouterKey}
               nineRouterBaseUrl={nineRouterBaseUrl}
               nineRouterKey={nineRouterKey}
-              statusMessage={credStatus}
+              statusByBridge={credStatusByBridge}
               onSelectBridge={setSelectedBridgeId}
               onGeminiKeyChange={setGeminiKey}
               onCursorKeyChange={setCursorKey}

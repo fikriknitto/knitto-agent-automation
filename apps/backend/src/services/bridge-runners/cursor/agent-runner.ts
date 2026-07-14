@@ -7,6 +7,7 @@ import {
   resolveMcpPathForJob,
 } from "../../shared/automation-mcp-config.js";
 import { buildCursorSdkMessage, buildPromptForJob } from "../../shared/prompt-builder.js";
+import { resolveMemoryAppIdForJob } from "../../shared/resolve-memory-app-id-for-job.js";
 import {
   cleanupJobAttachments,
   loadVisionAttachments,
@@ -147,6 +148,12 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       return;
     }
 
+    const memoryAppId = await resolveMemoryAppIdForJob({
+      platform: job.platform,
+      text: job.text,
+      mobileConfig: job.mobileConfig,
+      promptBasePaths: job.promptBasePaths,
+    });
     const promptInput = buildPromptForJob({
       platform: job.platform,
       mobileConfig: job.mobileConfig,
@@ -157,6 +164,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
       visionAttachments,
       savedAttachments,
       promptBasePaths: job.promptBasePaths,
+      memoryAppId,
     });
 
     const sendMessage = buildCursorSdkMessage(promptInput);

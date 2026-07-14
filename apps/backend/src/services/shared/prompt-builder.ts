@@ -1,5 +1,5 @@
 import type { AutomationPlatform, MobileConfig, PromptAttachment, TestCaseSpec } from "@knitto/shared";
-import { formatTestCaseShortcutSummary } from "@knitto/shared";
+import { formatTestCaseShortcutSummary, resolveMemoryAppId } from "@knitto/shared";
 import {
   formatHandoffForPrompt,
   serializeHandoffInstruction,
@@ -21,6 +21,16 @@ import type { SavedAttachment, VisionAttachment } from "./persist-attachments.js
 export interface AgentPromptInput {
   text: string;
   visionAttachments?: VisionAttachment[];
+}
+
+function memoryAppIdBlock(memoryAppId: string | undefined): string {
+  if (!memoryAppId?.trim()) return "";
+  return `
+Memory appId (WAJIB — jangan invent nama lain seperti knitto-cms):
+- Gunakan appId tepat: "${memoryAppId.trim()}"
+- automation_get_app_memory / automation_update_app_memory selalu dengan appId ini
+- File memory = host:port untuk IP (contoh 192.168.20.27:5420), bukan nama produk
+`;
 }
 
 export type AgentRunInput =
@@ -80,6 +90,7 @@ export function buildAgentPrompt(args: {
   promptBasePaths?: string[];
   skipPlatformClose?: boolean;
   reuseBrowserSession?: boolean;
+  memoryAppId?: string;
 }): AgentPromptInput {
   const strategyKey = args.strategy as AutomationStrategyKey | undefined;
   const visionCount =
@@ -94,6 +105,9 @@ export function buildAgentPrompt(args: {
       : AUTOMATION_PROMPT_STRATEGIES.automation_human_strategy.body;
 
   const userText = args.text.trim();
+  const memoryAppId =
+    args.memoryAppId?.trim() ||
+    resolveMemoryAppId({ platform: "browser", text: userText });
 
   const navigateStep = args.reuseBrowserSession
     ? "automation_navigate — hanya jika perlu pindah URL (skip jika halaman sudah benar)"
@@ -103,13 +117,21 @@ export function buildAgentPrompt(args: {
     ? "- JANGAN panggil automation_close_browser — orchestrator menutup browser sekali setelah semua TC selesai."
     : "";
 
+  const memoryStep = memoryAppId
+    ? `1. automation_get_app_memory — appId = "${memoryAppId}" (wajib; jangan invent appId lain)`
+    : `1. automation_get_app_memory — appId dari host:port URL target (IPv4 + port), jangan invent nama produk`;
+
+  const memoryUpdateStep = memoryAppId
+    ? `8. automation_update_app_memory — appId = "${memoryAppId}", mode upsert_section + sectionKey (replace section; jangan append)`
+    : `8. automation_update_app_memory — upsert_section + sectionKey; appId = host:port dari URL (jangan invent nama seperti knitto-cms)`;
+
   const text = `You are a web automation tester. Use only MCP tools with the automation_ prefix.
 
 Channel (for logging): ${args.channel}
 
 Strategy:
 ${strategyBody}
-${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}
+${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}${memoryAppIdBlock(memoryAppId)}
 Behave like a human tester:
 ${closeInstructions ? `${closeInstructions}\n` : ""}- Observe the page (automation_get_page_snapshot; elements include bbox, inViewport, disabled, inputType for inputs; div>svg menu icons appear as role=button; div cursor-pointer menu rows appear as role=menuitem)
 - Call automation_take_screenshot when the snapshot is ambiguous or you need visual confirmation (optional path = filename only; files are saved under screenshoot/agents/{jobId}/)
@@ -120,7 +142,7 @@ ${closeInstructions ? `${closeInstructions}\n` : ""}- Observe the page (automati
 - automation_upload_file for input[type=file] — do NOT use automation_fill or type a path manually
 - automation_go_back / automation_go_forward for history navigation
 - Verify with automation_assert_text / automation_assert_visible
-- Persist learnings via automation_get_app_memory / automation_update_app_memory
+- Persist learnings via automation_get_app_memory / automation_update_app_memory (mode upsert_section + sectionKey; never append; appId = host:port untuk IP, bukan nama produk)
 
 File upload workflow:
 1. automation_get_page_snapshot — find input with inputType=file (or label/name from user request)
@@ -146,14 +168,14 @@ User request:
 ${userText}
 
 Workflow:
-1. automation_get_app_memory — read app knowledge when appId is known or infer from URL
+${memoryStep}
 2. ${navigateStep}
 3. automation_get_page_snapshot — discover UI; prefer inViewport refs; no data-testid
 4. automation_scroll / automation_hover / automation_click / automation_click_at / automation_fill / automation_upload_file / automation_press_key
 5. automation_wait_for — after navigation, menu open, SPA actions, or file upload
 6. automation_assert_text / automation_assert_visible — validate
 7. automation_take_screenshot — capture evidence (vision models receive PNG in tool result)
-8. automation_update_app_memory — persist menu trigger refs and navigation patterns
+${memoryUpdateStep}
 
 Ringkasan akhir:
 - Tulis seluruh ringkasan hasil dalam Bahasa Indonesia (formal, jelas, dan ringkas).
@@ -204,7 +226,7 @@ Behave like a human tester on Android:
 - Observe screen (mobile_get_screen_snapshot; elements have refs e1, e2, … with bbox)
 - Interact via mobile_tap / mobile_tap_at / mobile_scroll / mobile_input_text / mobile_upload_file
 - Capture evidence (mobile_take_screenshot)
-- Persist learnings (mobile_update_app_memory with appId = "${appPackage}")
+- Persist learnings (mobile_update_app_memory with appId = "${appPackage}"; mode upsert_section + sectionKey; never append)
 ${closeInstructions}
 
 Do NOT use automation_* tools on mobile jobs.
@@ -219,7 +241,7 @@ Workflow:
 4. mobile_scroll / mobile_tap / mobile_tap_at / mobile_input_text / mobile_upload_file / mobile_press_key
 5. mobile_assert_visible / mobile_wait_for — validate when needed
 6. mobile_take_screenshot — capture evidence
-7. mobile_update_app_memory — persist locator hints and flows${workflowCloseSteps}
+7. mobile_update_app_memory — upsert_section + sectionKey (replace section body; jangan append)${workflowCloseSteps}
 
 Ringkasan akhir:
 - Tulis seluruh ringkasan hasil dalam Bahasa Indonesia (formal, jelas, dan ringkas).
@@ -241,14 +263,15 @@ export function buildPromptForJob(args: {
   visionAttachments?: VisionAttachment[];
   savedAttachments?: SavedAttachment[];
   promptBasePaths?: string[];
+  memoryAppId?: string;
 }): AgentPromptInput {
   if (args.platform === "mobile") {
     return buildMobileAgentPrompt(args);
   }
   if (args.platform === "hybrid") {
-    return buildAgentPrompt({ ...args, text: args.text });
+    return buildAgentPrompt({ ...args, text: args.text, memoryAppId: args.memoryAppId });
   }
-  return buildAgentPrompt(args);
+  return buildAgentPrompt({ ...args, memoryAppId: args.memoryAppId });
 }
 
 function slugifySectionKey(value: string): string {
@@ -334,7 +357,7 @@ Aturan penting:
 - Fokus hanya pada test case yang sedang dijalankan.
 - Multi-TC: JANGAN panggil automation_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
 - ${serializeHandoffInstruction()}
-- Memory: baca get_app_memory dulu, lalu update dengan upsert_section + sectionKey jika ada learning baru.`;
+- Memory: baca get_app_memory dulu; update hanya dengan mode upsert_section + sectionKey (isi section diganti, bukan ditumpuk). Jangan append.`;
 }
 
 export function buildTestCasePrompt(args: {
@@ -362,7 +385,7 @@ export function buildTestCasePrompt(args: {
 Multi-TC job (${args.testCaseIndex + 1}/${args.testCaseTotal}):
 - JANGAN panggil automation_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
 ${sessionReuseRule ? `${sessionReuseRule}\n` : ""}- ${serializeHandoffInstruction()}
-- Memory sectionKey untuk TC ini: "${sectionKey}"
+- Memory: jika ada learning baru, panggil update_app_memory dengan mode upsert_section, sectionKey="${sectionKey}" (body section diganti). Jangan append / jangan buat heading bebas yang numpuk.
 `
     : "";
 

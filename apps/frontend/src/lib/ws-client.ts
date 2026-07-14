@@ -14,11 +14,11 @@ export type WsClientCallbacks = {
   }) => void;
   onCredentialsStatus: (payload: {
     bridgeId: string;
+    bridgeKind: string;
     valid: boolean;
     message: string;
   }) => void;
 };
-
 export class AutomationWsClient {
   private socket: WebSocket | null = null;
   private channel = "";
@@ -197,6 +197,7 @@ export class AutomationWsClient {
       case "bridge_credentials_status":
         this.callbacks.onCredentialsStatus({
           bridgeId: String(data.bridgeId ?? ""),
+          bridgeKind: String(data.bridgeKind ?? ""),
           valid: data.valid === true,
           message: String(data.message ?? ""),
         });

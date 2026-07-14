@@ -28,14 +28,14 @@ export const getAppMemoryOutputShape = {
 export const updateAppMemoryInputSchema = {
   ...appIdSchema,
   content: z.string().min(1),
-  mode: z.enum(["append", "replace", "upsert_section"]).default("upsert_section"),
+  mode: z.enum(["replace", "upsert_section"]).default("upsert_section"),
   sectionKey: z.string().optional(),
 } as const;
 
 export const updateAppMemoryOutputShape = {
   appId: z.string(),
   path: z.string(),
-  mode: z.enum(["append", "replace", "upsert_section"]),
+  mode: z.enum(["replace", "upsert_section"]),
   bytesWritten: z.number(),
 } as const;
 

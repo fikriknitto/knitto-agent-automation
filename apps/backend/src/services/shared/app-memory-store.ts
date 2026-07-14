@@ -1,5 +1,4 @@
 import {
-  appendFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -12,6 +11,8 @@ import { join } from "node:path";
 import { upsertMemorySection } from "./app-memory-sections.js";
 import { ToolError } from "../../automation/core/index.js";
 
+export type AppMemoryWriteMode = "replace" | "upsert_section";
+
 export type AppMemoryListItem = {
   appId: string;
   updatedAt: string;
@@ -20,7 +21,13 @@ export type AppMemoryListItem = {
 };
 
 export function sanitizeAppId(appId: string): string {
-  const safe = appId.trim().replace(/[^a-zA-Z0-9_-]/g, "-");
+  // Keep host:port readable as host-port on disk (Windows-safe; `:` not allowed in filenames).
+  const safe = appId
+    .trim()
+    .replace(/:/g, "-")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
   if (!safe) throw new ToolError("appId is invalid after sanitization");
   return safe;
 }
@@ -76,12 +83,12 @@ export function createAppMemoryStore(memoryDir: string) {
   function writeAppMemory(
     appId: string,
     content: string,
-    mode: "append" | "replace" | "upsert_section",
+    mode: AppMemoryWriteMode,
     sectionKey?: string
   ): {
     appId: string;
     path: string;
-    mode: "append" | "replace" | "upsert_section";
+    mode: AppMemoryWriteMode;
     bytesWritten: number;
   } {
     const path = memoryPath(appId);
@@ -103,20 +110,8 @@ export function createAppMemoryStore(memoryDir: string) {
     }
 
     const body = content.endsWith("\n") ? content : `${content}\n`;
-
-    if (mode === "replace" || !existsSync(path)) {
-      writeFileSync(path, body, "utf8");
-      return { appId: safeId, path, mode, bytesWritten: Buffer.byteLength(body, "utf8") };
-    }
-
-    const prefix = readFileSync(path, "utf8").endsWith("\n") ? "" : "\n";
-    appendFileSync(path, `${prefix}${body}`, "utf8");
-    return {
-      appId: safeId,
-      path,
-      mode,
-      bytesWritten: Buffer.byteLength(`${prefix}${body}`, "utf8"),
-    };
+    writeFileSync(path, body, "utf8");
+    return { appId: safeId, path, mode, bytesWritten: Buffer.byteLength(body, "utf8") };
   }
 
   function deleteAppMemory(appId: string): { appId: string; path: string } {

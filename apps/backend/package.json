@@ -7,7 +7,7 @@
     "dev:watch": "tsx watch -r dotenv/config src/server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm run build && node --test dist/services/shared/segment-context.test.js dist/services/shared/segment-state-file.test.js dist/services/shared/segment-recording.test.js dist/services/shared/multi-tc-close-guard.test.js dist/automation/libs/browser/session-page.test.js dist/automation/libs/browser/session-reconnect.test.js dist/mobile-automation/libs/mobile-session-state.test.js dist/mobile-automation/libs/mobile-session-cleanup.test.js dist/mobile-automation/libs/mobile-recording.test.js dist/mobile-automation/libs/mobile-job-context-segment.test.js",
+    "test": "pnpm run build && node --test dist/services/shared/segment-context.test.js dist/services/shared/segment-state-file.test.js dist/services/shared/segment-recording.test.js dist/services/shared/multi-tc-close-guard.test.js dist/services/shared/app-memory-sections.test.js dist/automation/libs/browser/session-page.test.js dist/automation/libs/browser/session-reconnect.test.js dist/mobile-automation/libs/mobile-session-state.test.js dist/mobile-automation/libs/mobile-session-cleanup.test.js dist/mobile-automation/libs/mobile-recording.test.js dist/mobile-automation/libs/mobile-job-context-segment.test.js",
     "start": "node -r dotenv/config dist/server.js"
   },
   "dependencies": {

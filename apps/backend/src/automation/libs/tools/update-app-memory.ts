@@ -5,7 +5,7 @@ import { updateAppMemoryInputSchema, updateAppMemoryOutputShape } from "../schem
 export const automation_update_app_memory = defineTool({
   name: "automation_update_app_memory",
   description:
-    "Persist new learnings after a test run (URLs, locator hints, quirks). Use append to add notes or replace to overwrite.",
+    "Persist learnings after a test run (URLs, locator hints, quirks). Default mode upsert_section replaces that section only (requires sectionKey). Use replace only to overwrite the entire memory file. For browser appId use host:port from the target URL when IPv4 (e.g. 192.168.20.27:5420) — never invent product names like knitto-cms.",
   inputSchema: updateAppMemoryInputSchema,
   outputSchema: updateAppMemoryOutputShape,
   handler: async (args) => {

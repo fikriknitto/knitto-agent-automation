@@ -27,21 +27,31 @@ export function parseMemorySections(content: string): Map<string, string> {
     const nextHeading = normalized.indexOf("\n## [", sliceStart);
     const sliceEnd = nextHeading >= 0 ? nextHeading : normalized.length;
     const body = normalized.slice(sliceStart, sliceEnd).trim();
-    if (!sections.has(current.key)) {
-      sections.set(current.key, body);
-    }
+    // Last write wins so repeated upserts / duplicate keys replace.
+    sections.set(current.key, body);
   }
 
   return sections;
 }
 
-function splitPreambleAndSections(content: string): { preamble: string; sections: Map<string, string> } {
+/**
+ * Preamble = text before the first markdown heading (`## …`).
+ * Legacy unkeyed headings (`## Title` without `[key]`) are discarded on rewrite
+ * so upsert does not keep stacking old append-style blocks.
+ */
+function splitPreambleAndSections(content: string): {
+  preamble: string;
+  sections: Map<string, string>;
+} {
   const normalized = content.replace(/\r\n/g, "\n");
-  const firstSection = normalized.search(/^##\s+\[/m);
+  const firstHeading = normalized.search(/^##\s+/m);
   const preamble =
-    firstSection > 0 ? normalized.slice(0, firstSection).trim() : firstSection === -1 ? normalized.trim() : "";
-  const sectionsPart = firstSection >= 0 ? normalized.slice(firstSection) : "";
-  return { preamble, sections: parseMemorySections(sectionsPart) };
+    firstHeading > 0
+      ? normalized.slice(0, firstHeading).trim()
+      : firstHeading === -1
+        ? normalized.trim()
+        : "";
+  return { preamble, sections: parseMemorySections(normalized) };
 }
 
 export function upsertMemorySection(
@@ -62,7 +72,10 @@ export function upsertMemorySection(
   );
 
   const parts: string[] = [];
-  if (preamble) parts.push(preamble);
+  // Only keep a short title-style preamble (no ##). Drop if it looks like leftover notes.
+  if (preamble && !/^##\s+/m.test(preamble) && preamble.length <= 500) {
+    parts.push(preamble);
+  }
   parts.push(...sectionBlocks);
 
   return `${parts.join("\n\n").trim()}\n`;

@@ -88,9 +88,14 @@ export async function validateNinerouterCredentials(
     }
     return { valid: true, message: "9Router credentials verified" };
   } catch (error) {
+    const raw = error instanceof Error ? error.message : "Cannot reach 9Router";
+    const message =
+      raw === "fetch failed" || /ECONNREFUSED|ENOTFOUND|network/i.test(raw)
+        ? `${raw} — pastikan app 9Router jalan. Jika backend di Docker, pakai http://host.docker.internal:20128 (bukan localhost).`
+        : raw;
     return {
       valid: false,
-      message: error instanceof Error ? error.message : "Cannot reach 9Router",
+      message,
     };
   }
 }
