@@ -1,4 +1,10 @@
-import type { PromptAttachment } from "@knitto/shared";
+import type { AutomationPlatform, MobileConfig, PromptAttachment, TestCaseSpec } from "@knitto/shared";
+import { formatTestCaseShortcutSummary } from "@knitto/shared";
+import {
+  formatHandoffForPrompt,
+  serializeHandoffInstruction,
+  type HandoffState,
+} from "./handoff.js";
 import {
   DROPDOWN_SELECTION_WORKFLOW,
 } from "../../automation/libs/prompts/dropdown-workflow.js";
@@ -72,6 +78,8 @@ export function buildAgentPrompt(args: {
   visionAttachments?: VisionAttachment[];
   savedAttachments?: SavedAttachment[];
   promptBasePaths?: string[];
+  skipPlatformClose?: boolean;
+  reuseBrowserSession?: boolean;
 }): AgentPromptInput {
   const strategyKey = args.strategy as AutomationStrategyKey | undefined;
   const visionCount =
@@ -87,6 +95,14 @@ export function buildAgentPrompt(args: {
 
   const userText = args.text.trim();
 
+  const navigateStep = args.reuseBrowserSession
+    ? "automation_navigate — hanya jika perlu pindah URL (skip jika halaman sudah benar)"
+    : "automation_navigate — open the target URL";
+
+  const closeInstructions = args.skipPlatformClose
+    ? "- JANGAN panggil automation_close_browser — orchestrator menutup browser sekali setelah semua TC selesai."
+    : "";
+
   const text = `You are a web automation tester. Use only MCP tools with the automation_ prefix.
 
 Channel (for logging): ${args.channel}
@@ -95,7 +111,7 @@ Strategy:
 ${strategyBody}
 ${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}
 Behave like a human tester:
-- Observe the page (automation_get_page_snapshot; elements include bbox, inViewport, disabled, inputType for inputs; div>svg menu icons appear as role=button; div cursor-pointer menu rows appear as role=menuitem)
+${closeInstructions ? `${closeInstructions}\n` : ""}- Observe the page (automation_get_page_snapshot; elements include bbox, inViewport, disabled, inputType for inputs; div>svg menu icons appear as role=button; div cursor-pointer menu rows appear as role=menuitem)
 - Call automation_take_screenshot when the snapshot is ambiguous or you need visual confirmation (optional path = filename only; files are saved under screenshoot/agents/{jobId}/)
 - Scroll to reveal off-screen content (automation_scroll)
 - Wait for dynamic loads (automation_wait_for with network_idle or locator)
@@ -131,7 +147,7 @@ ${userText}
 
 Workflow:
 1. automation_get_app_memory — read app knowledge when appId is known or infer from URL
-2. automation_navigate — open the target URL
+2. ${navigateStep}
 3. automation_get_page_snapshot — discover UI; prefer inViewport refs; no data-testid
 4. automation_scroll / automation_hover / automation_click / automation_click_at / automation_fill / automation_upload_file / automation_press_key
 5. automation_wait_for — after navigation, menu open, SPA actions, or file upload
@@ -148,6 +164,239 @@ Ringkasan akhir:
     text,
     visionAttachments: args.visionAttachments?.length ? args.visionAttachments : undefined,
   };
+}
+
+export function buildMobileAgentPrompt(args: {
+  channel: string;
+  text: string;
+  mobileConfig?: MobileConfig;
+  attachments?: PromptAttachment[];
+  visionAttachments?: VisionAttachment[];
+  savedAttachments?: SavedAttachment[];
+  promptBasePaths?: string[];
+  skipPlatformClose?: boolean;
+}): AgentPromptInput {
+  const visionCount =
+    args.visionAttachments?.length ?? visionAttachmentsFrom(args.attachments).length;
+  const hasVision = visionCount > 0;
+  const hasSavedFiles = Boolean(args.savedAttachments?.length);
+  const hasPromptBasePaths = Boolean(args.promptBasePaths?.length);
+  const appPackage = args.mobileConfig?.appPackage ?? "";
+  const userText = args.text.trim();
+  const closeInstructions = args.skipPlatformClose
+    ? "- JANGAN panggil mobile_close_app / mobile_close_session — orchestrator menutup app dan session sekali setelah semua TC selesai."
+    : "- Tutup app lalu session (mobile_close_app → mobile_close_session) — WAJIB sebelum selesai. JANGAN panggil mobile_close_session sebelum mobile_close_app.";
+  const workflowCloseSteps = args.skipPlatformClose
+    ? ""
+    : `
+8. mobile_close_app — WAJIB: force-stop target app via Appium (session stays open). Harus sebelum step 9.
+9. mobile_close_session — WAJIB: release device back to pool. Hanya setelah step 8; jangan panggil tool mobile lain setelah ini.`;
+
+  const text = `You are an Android mobile automation tester. Use only MCP tools with the mobile_ prefix.
+
+Channel (for logging): ${args.channel}
+Target app package: ${appPackage}
+${args.mobileConfig?.deepLink ? `Deep link: ${args.mobileConfig.deepLink}` : ""}
+${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!).replace(/automation_upload_file/g, "mobile_upload_file") : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}
+Behave like a human tester on Android:
+- Read mobile app memory first (mobile_get_app_memory with appId = "${appPackage}")
+- Launch app (mobile_launch_app)
+- Observe screen (mobile_get_screen_snapshot; elements have refs e1, e2, … with bbox)
+- Interact via mobile_tap / mobile_tap_at / mobile_scroll / mobile_input_text / mobile_upload_file
+- Capture evidence (mobile_take_screenshot)
+- Persist learnings (mobile_update_app_memory with appId = "${appPackage}")
+${closeInstructions}
+
+Do NOT use automation_* tools on mobile jobs.
+
+User request:
+${userText}
+
+Workflow:
+1. mobile_get_app_memory — appId = "${appPackage}"
+2. mobile_launch_app
+3. mobile_get_screen_snapshot — discover UI; use refs for interactions
+4. mobile_scroll / mobile_tap / mobile_tap_at / mobile_input_text / mobile_upload_file / mobile_press_key
+5. mobile_assert_visible / mobile_wait_for — validate when needed
+6. mobile_take_screenshot — capture evidence
+7. mobile_update_app_memory — persist locator hints and flows${workflowCloseSteps}
+
+Ringkasan akhir:
+- Tulis seluruh ringkasan hasil dalam Bahasa Indonesia (formal, jelas, dan ringkas).
+- Jelaskan langkah yang dilakukan, hasil verifikasi, dan kesimpulan untuk user.`;
+
+  return {
+    text,
+    visionAttachments: args.visionAttachments?.length ? args.visionAttachments : undefined,
+  };
+}
+
+export function buildPromptForJob(args: {
+  platform?: AutomationPlatform;
+  channel: string;
+  text: string;
+  strategy?: string;
+  mobileConfig?: MobileConfig;
+  attachments?: PromptAttachment[];
+  visionAttachments?: VisionAttachment[];
+  savedAttachments?: SavedAttachment[];
+  promptBasePaths?: string[];
+}): AgentPromptInput {
+  if (args.platform === "mobile") {
+    return buildMobileAgentPrompt(args);
+  }
+  if (args.platform === "hybrid") {
+    return buildAgentPrompt({ ...args, text: args.text });
+  }
+  return buildAgentPrompt(args);
+}
+
+function slugifySectionKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+export function defaultSectionKeyForTestCase(tc: TestCaseSpec): string {
+  const slugSource = tc.shortcutId ?? tc.shortcutLabel ?? tc.title;
+  const slug = slugSource ? slugifySectionKey(slugSource) : "";
+  return slug ? `${tc.id}-${slug}` : tc.id;
+}
+
+function formatVariablesBlock(variables?: Record<string, string>): string {
+  if (!variables || !Object.keys(variables).length) return "";
+  const lines = Object.entries(variables).map(([key, value]) => `- ${key} = ${value}`);
+  return `Variabel test case:\n${lines.join("\n")}`;
+}
+
+function formatShortcutStepsBlock(tc: TestCaseSpec): string {
+  if (tc.shortcuts?.length) {
+    const header = "Jalankan system prompt berikut secara berurutan dalam TC ini:";
+    const steps = tc.shortcuts.map(
+      (s, i) =>
+        `Langkah ${i + 1} — system prompt "${s.shortcutLabel}":\n---\n${s.resolvedBody}\n---`
+    );
+    return [header, ...steps].join("\n\n");
+  }
+  if (tc.resolvedShortcutBody && tc.shortcutLabel) {
+    return `Langkah dari system prompt "${tc.shortcutLabel}":\n---\n${tc.resolvedShortcutBody}\n---`;
+  }
+  return "";
+}
+
+function buildTestCaseInstructionText(args: {
+  tc: TestCaseSpec;
+  handoffBlock: string;
+  multiTestRules: string;
+}): string {
+  const { tc, handoffBlock, multiTestRules } = args;
+  const parts: string[] = [
+    `${tc.title ?? tc.id}`,
+    `Platform: ${tc.platform}`,
+    handoffBlock.trim(),
+    multiTestRules.trim(),
+  ].filter(Boolean);
+
+  const shortcutBlock = formatShortcutStepsBlock(tc);
+  if (shortcutBlock) parts.push(shortcutBlock);
+
+  const variablesBlock = formatVariablesBlock(tc.variables);
+  if (variablesBlock) parts.push(variablesBlock);
+
+  if (tc.narrativeInstruction?.trim()) {
+    parts.push(`Instruksi tambahan:\n${tc.narrativeInstruction.trim()}`);
+  } else if (!tc.shortcuts?.length && !tc.resolvedShortcutBody) {
+    parts.push(`Instruksi test case:\n${tc.instruction}`);
+  }
+
+  if (tc.memoryAppId) {
+    parts.push(`Memory appId untuk TC ini: "${tc.memoryAppId}"`);
+  }
+
+  return parts.filter(Boolean).join("\n\n");
+}
+
+export function buildHybridOverviewPrompt(testCases: TestCaseSpec[]): string {
+  const lines = testCases.map((tc, i) => {
+    const shortcutSummary = formatTestCaseShortcutSummary(tc);
+    const shortcutPart = shortcutSummary ? ` ← ${shortcutSummary}` : "";
+    const packagePart = tc.appPackage ? ` (${tc.appPackage})` : "";
+    return `${i + 1}. ${tc.id} — ${tc.platform}${packagePart}${shortcutPart}`;
+  });
+  return `Multi test case job (${testCases.length} TC). Satu TC = satu video.
+
+Urutan test case:
+${lines.join("\n")}
+
+Aturan penting:
+- Fokus hanya pada test case yang sedang dijalankan.
+- Multi-TC: JANGAN panggil automation_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
+- ${serializeHandoffInstruction()}
+- Memory: baca get_app_memory dulu, lalu update dengan upsert_section + sectionKey jika ada learning baru.`;
+}
+
+export function buildTestCasePrompt(args: {
+  tc: TestCaseSpec;
+  handoff: HandoffState;
+  channel: string;
+  strategy?: string;
+  mobileConfig?: MobileConfig;
+  attachments?: PromptAttachment[];
+  visionAttachments?: VisionAttachment[];
+  savedAttachments?: SavedAttachment[];
+  promptBasePaths?: string[];
+  testCaseIndex: number;
+  testCaseTotal: number;
+  isMultiTest: boolean;
+}): AgentPromptInput {
+  const sectionKey = defaultSectionKeyForTestCase(args.tc);
+  const handoffBlock = formatHandoffForPrompt(args.handoff);
+  const sessionReuseRule =
+    args.isMultiTest && args.tc.platform === "browser" && args.testCaseIndex > 0
+      ? "- Browser sudah terbuka dari TC sebelumnya — lanjutkan session yang sama; JANGAN buka browser baru; navigasi hanya jika perlu pindah URL."
+      : "";
+  const multiTestRules = args.isMultiTest
+    ? `
+Multi-TC job (${args.testCaseIndex + 1}/${args.testCaseTotal}):
+- JANGAN panggil automation_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
+${sessionReuseRule ? `${sessionReuseRule}\n` : ""}- ${serializeHandoffInstruction()}
+- Memory sectionKey untuk TC ini: "${sectionKey}"
+`
+    : "";
+
+  const instruction = buildTestCaseInstructionText({
+    tc: args.tc,
+    handoffBlock,
+    multiTestRules,
+  });
+
+  const promptBasePaths = args.tc.shortcuts?.length || args.tc.shortcutId ? undefined : args.promptBasePaths;
+
+  if (args.tc.platform === "mobile") {
+    const mobileConfig: MobileConfig = {
+      appPackage: args.tc.appPackage ?? args.mobileConfig?.appPackage ?? "",
+      appActivity: args.mobileConfig?.appActivity,
+      udid: args.tc.udid ?? args.mobileConfig?.udid,
+      deepLink: args.tc.deepLink ?? args.mobileConfig?.deepLink,
+    };
+    return buildMobileAgentPrompt({
+      ...args,
+      promptBasePaths,
+      mobileConfig,
+      text: instruction,
+      skipPlatformClose: args.isMultiTest,
+    });
+  }
+
+  return buildAgentPrompt({
+    ...args,
+    promptBasePaths,
+    text: instruction,
+    skipPlatformClose: args.isMultiTest,
+    reuseBrowserSession: args.isMultiTest && args.tc.platform === "browser" && args.testCaseIndex > 0,
+  });
 }
 
 type UserContentPart =

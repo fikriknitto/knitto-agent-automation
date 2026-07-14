@@ -28,13 +28,14 @@ export const getAppMemoryOutputShape = {
 export const updateAppMemoryInputSchema = {
   ...appIdSchema,
   content: z.string().min(1),
-  mode: z.enum(["append", "replace"]).default("append"),
+  mode: z.enum(["append", "replace", "upsert_section"]).default("upsert_section"),
+  sectionKey: z.string().optional(),
 } as const;
 
 export const updateAppMemoryOutputShape = {
   appId: z.string(),
   path: z.string(),
-  mode: z.enum(["append", "replace"]),
+  mode: z.enum(["append", "replace", "upsert_section"]),
   bytesWritten: z.number(),
 } as const;
 
@@ -231,6 +232,16 @@ export const uploadFileOutputShape = {
 
 export const closeBrowserOutputShape = {
   closed: z.boolean(),
+} as const;
+
+export const stopTestCaseSegmentInputSchema = {
+  testCaseId: z.string().optional(),
+} as const;
+
+export const stopTestCaseSegmentOutputShape = {
+  stopped: z.boolean(),
+  path: z.string().optional(),
+  warning: z.string().optional(),
 } as const;
 
 export type SemanticLocator = {

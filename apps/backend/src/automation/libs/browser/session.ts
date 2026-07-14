@@ -5,7 +5,23 @@ import puppeteer, { type Browser, type Page } from "puppeteer";
 import { ToolError } from "../../core/index.js";
 import { getAutomationJobId } from "../job-context.js";
 import config from "../config.js";
-import { startJobRecording, stopJobRecording } from "./recording.js";
+import { isJobSegmentManaged } from "../../../services/shared/segment-context.js";
+import { ensureSegmentRecordingStarted } from "../../../services/shared/segment-recording.js";
+import {
+  ensureBrowserSegmentRecording,
+  startJobRecording,
+  stopJobRecording,
+} from "./recording.js";
+
+export function isRecordablePageUrl(url: string): boolean {
+  const trimmed = url.trim();
+  return trimmed !== "" && trimmed !== "about:blank";
+}
+
+export function getOpenPage(): Page | null {
+  if (page && !page.isClosed()) return page;
+  return null;
+}
 
 let browser: Browser | null = null;
 let page: Page | null = null;
@@ -32,12 +48,48 @@ function clearBrowserState(): void {
   }
 }
 
+/** Reconnect to a live browser from state.json (Cursor multi-TC reuse). */
+export async function connectBrowserFromStateFile(): Promise<Browser | null> {
+  let state: BrowserState;
+  try {
+    state = JSON.parse(readFileSync(BROWSER_STATE_FILE, "utf8")) as BrowserState;
+  } catch {
+    return null;
+  }
+
+  if (!state.wsEndpoint) return null;
+
+  try {
+    const connected = await puppeteer.connect({ browserWSEndpoint: state.wsEndpoint });
+    if (!connected.connected) {
+      await connected.disconnect().catch(() => undefined);
+      return null;
+    }
+    browser = connected;
+    const pages = await connected.pages();
+    page = pages.find((p) => !p.isClosed()) ?? pages[0] ?? null;
+    return connected;
+  } catch {
+    return null;
+  }
+}
+
 async function launchBrowser(): Promise<Browser> {
   if (browser?.connected) return browser;
+
+  const reconnected = await connectBrowserFromStateFile();
+  if (reconnected) return reconnected;
+
   browser = await puppeteer.launch({
     headless: config.headless,
     slowMo: config.slowMoMs > 0 ? config.slowMoMs : undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || undefined,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+    ],
   });
   writeBrowserState(browser.wsEndpoint());
   process.on("exit", () => {
@@ -46,10 +98,22 @@ async function launchBrowser(): Promise<Browser> {
   return browser;
 }
 
+async function startRecordingForPage(page: Page): Promise<void> {
+  const jobId = getAutomationJobId();
+  if (!jobId) return;
+
+  if (isJobSegmentManaged(jobId)) {
+    if (!isRecordablePageUrl(page.url())) return;
+    await ensureBrowserSegmentRecording(page, jobId);
+  } else {
+    await startJobRecording(page);
+  }
+}
+
 export async function getPage(): Promise<Page> {
   if (page && !page.isClosed()) {
     if (getAutomationJobId()) {
-      await startJobRecording(page);
+      await startRecordingForPage(page);
     }
     return page;
   }
@@ -61,8 +125,9 @@ export async function getPage(): Promise<Page> {
     height: config.viewportHeight,
   });
   page.setDefaultTimeout(config.browserTimeoutMs);
-  if (getAutomationJobId()) {
-    await startJobRecording(page);
+  const jobId = getAutomationJobId();
+  if (jobId && !isJobSegmentManaged(jobId)) {
+    await startRecordingForPage(page);
   }
   return page;
 }
@@ -73,6 +138,10 @@ export async function navigatePage(
 ): Promise<{ url: string; title: string }> {
   const p = await getPage();
   await p.goto(url, { waitUntil, timeout: config.browserTimeoutMs });
+  const jobId = getAutomationJobId();
+  if (jobId && isJobSegmentManaged(jobId)) {
+    await ensureSegmentRecordingStarted(jobId);
+  }
   return { url: p.url(), title: await p.title() };
 }
 
@@ -102,8 +171,10 @@ export async function closeBrowser(): Promise<void> {
   if (browser) {
     await browser.close().catch(() => undefined);
     browser = null;
+    clearBrowserState();
+    return;
   }
-  clearBrowserState();
+  await closeBrowserFromStateFile();
 }
 
 /** Capture PNG base64 from the live browser via saved WebSocket endpoint (Cursor SDK path). */

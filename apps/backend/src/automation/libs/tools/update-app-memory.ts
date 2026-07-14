@@ -10,7 +10,12 @@ export const automation_update_app_memory = defineTool({
   outputSchema: updateAppMemoryOutputShape,
   handler: async (args) => {
     try {
-      return writeAppMemory(args.appId, args.content, args.mode ?? "append");
+      return writeAppMemory(
+        args.appId,
+        args.content,
+        args.mode ?? "upsert_section",
+        args.sectionKey
+      );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       throw new ToolError(`Failed to update app memory: ${msg}`);

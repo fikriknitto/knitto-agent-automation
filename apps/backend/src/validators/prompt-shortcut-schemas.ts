@@ -7,9 +7,15 @@ export const promptShortcutIdSchema = z
 
 export const promptShortcutVariantSchema = z.enum(["blue", "green", "amber", "neutral"]);
 
+export const promptShortcutPlatformSchema = z.enum(["browser", "mobile"]);
+
 export const createPromptShortcutBodySchema = z.object({
   label: z.string().min(1),
   variant: promptShortcutVariantSchema.default("neutral"),
+  platform: promptShortcutPlatformSchema.default("browser"),
+  appPackage: z.string().optional(),
+  url: z.string().optional(),
+  deepLink: z.string().optional(),
   template: z.string().min(1),
   defaults: z.record(z.string()).default({}),
 });

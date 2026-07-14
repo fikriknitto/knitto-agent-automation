@@ -1,4 +1,6 @@
+import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { resolveWsUrl } from "./api-client";
+import { isTerminalJobStatus } from "./active-jobs";
 import type { AgentJobMessage, BridgeSummary, ConnectionState } from "./types";
 
 export type WsClientCallbacks = {
@@ -20,8 +22,16 @@ export type WsClientCallbacks = {
 export class AutomationWsClient {
   private socket: WebSocket | null = null;
   private channel = "";
+  private connectionId = "";
+  private readonly submittedJobIds = new Set<string>();
 
   constructor(private readonly callbacks: WsClientCallbacks) {}
+
+  clearSubmittedJob(jobId: string, status: AgentJobMessage["status"]): void {
+    if (isTerminalJobStatus(status)) {
+      this.submittedJobIds.delete(jobId);
+    }
+  }
 
   connect(host: string, port: string, channel: string, useWss = false): void {
     this.disconnect();
@@ -43,7 +53,6 @@ export class AutomationWsClient {
     this.socket.onmessage = (event) => {
       try {
         const data = JSON.parse(String(event.data)) as Record<string, unknown>;
-        console.log("DATA", data)
         this.handleMessage(data);
       } catch {
         // ignore
@@ -64,6 +73,7 @@ export class AutomationWsClient {
       this.socket.close();
       this.socket = null;
     }
+    this.connectionId = "";
     this.callbacks.onConnectionState("disconnected");
   }
 
@@ -79,6 +89,8 @@ export class AutomationWsClient {
     model: string;
     promptBasePaths?: string[];
     mainPrompt?: string;
+    platform?: AutomationPlatform;
+    mobileConfig?: MobileConfig;
     attachments?: Array<{
       storagePath: string;
       mimeType: string;
@@ -86,6 +98,7 @@ export class AutomationWsClient {
       kind: "image" | "file";
     }>;
   }): void {
+    this.submittedJobIds.add(payload.id);
     this.send({
       type: "user_prompt",
       id: payload.id,
@@ -96,6 +109,8 @@ export class AutomationWsClient {
       model: payload.model,
       ...(payload.promptBasePaths?.length ? { promptBasePaths: payload.promptBasePaths } : {}),
       ...(payload.mainPrompt ? { mainPrompt: payload.mainPrompt } : {}),
+      ...(payload.platform ? { platform: payload.platform } : {}),
+      ...(payload.mobileConfig ? { mobileConfig: payload.mobileConfig } : {}),
       ...(payload.attachments?.length ? { attachments: payload.attachments } : {}),
     });
   }
@@ -147,6 +162,9 @@ export class AutomationWsClient {
     switch (data.type) {
       case "joined":
       case "system":
+        if (typeof data.connectionId === "string") {
+          this.connectionId = data.connectionId;
+        }
         this.callbacks.onConnectionState("connected");
         this.refreshStatus();
         break;
@@ -159,9 +177,17 @@ export class AutomationWsClient {
           this.callbacks.onBridges(data.bridges as BridgeSummary[]);
         }
         break;
-      case "agent_job":
-        this.callbacks.onAgentJob(data as unknown as AgentJobMessage);
+      case "agent_job": {
+        const msg = data as unknown as AgentJobMessage;
+        const ownsJob = this.submittedJobIds.has(msg.id);
+        const sameConnection =
+          !msg.connectionId || !this.connectionId || msg.connectionId === this.connectionId;
+        if (!ownsJob && !sameConnection) {
+          break;
+        }
+        this.callbacks.onAgentJob(msg);
         break;
+      }
       case "bridge_credentials_request":
         this.callbacks.onCredentialsRequest({
           bridgeId: String(data.bridgeId ?? ""),

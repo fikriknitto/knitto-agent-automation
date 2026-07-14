@@ -18,9 +18,11 @@ screenshoot/**
 storage/**
 !storage/**/.gitkeep
 memory/**
-*.png
+docs
 agent-transcripts
 mcps
+test.md
+*.png
 banner-*.png
 cms-*.png
 content-*.png

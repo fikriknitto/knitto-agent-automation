@@ -3,6 +3,11 @@ import {
   useCreateAppMemory,
   useUpdateAppMemory,
 } from "@/hooks/app-memory/use-app-memory-mutations";
+import { useMobileAppMemory } from "@/hooks/mobile-app-memory/use-mobile-app-memories";
+import {
+  useCreateMobileAppMemory,
+  useUpdateMobileAppMemory,
+} from "@/hooks/mobile-app-memory/use-mobile-app-memory-mutations";
 import type { AppMemorySummary } from "@/lib/app-memory/types";
 import { XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -14,6 +19,7 @@ import { Button, Input, Label } from "./ui";
 type AppMemoryFormModalProps = {
   mode: "create" | "edit";
   memory: AppMemorySummary | null;
+  memoryKind?: "browser" | "mobile";
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -22,30 +28,37 @@ type AppMemoryFormModalProps = {
 export function AppMemoryFormModal({
   mode,
   memory,
+  memoryKind = "browser",
   open,
   onClose,
   onSaved,
 }: AppMemoryFormModalProps) {
   const editingAppId = open && mode === "edit" ? memory?.appId : null;
-  const {
-    data: loadedMemory,
-    isError: loadFailed,
-    error: loadError,
-  } = useAppMemory(editingAppId);
+  const browserDetail = useAppMemory(memoryKind === "browser" ? editingAppId : null);
+  const mobileDetail = useMobileAppMemory(memoryKind === "mobile" ? editingAppId : null);
+  const loadedMemory = memoryKind === "mobile" ? mobileDetail.data : browserDetail.data;
+  const loadFailed = memoryKind === "mobile" ? mobileDetail.isError : browserDetail.isError;
+  const loadError = memoryKind === "mobile" ? mobileDetail.error : browserDetail.error;
 
   const detailReady =
     mode === "create" ||
     Boolean(loadedMemory && memory && loadedMemory.appId === memory.appId);
 
-  const createMutation = useCreateAppMemory();
-  const updateMutation = useUpdateAppMemory();
+  const createBrowser = useCreateAppMemory();
+  const updateBrowser = useUpdateAppMemory();
+  const createMobile = useCreateMobileAppMemory();
+  const updateMobile = useUpdateMobileAppMemory();
 
   const [appId, setAppId] = useState("");
   const [content, setContent] = useState("");
   const [initializedFor, setInitializedFor] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const saving = createMutation.isPending || updateMutation.isPending;
+  const saving =
+    createBrowser.isPending ||
+    updateBrowser.isPending ||
+    createMobile.isPending ||
+    updateMobile.isPending;
   const isBusy = saving || (mode === "edit" && !detailReady);
   const editorReady = mode === "create" ? open : initializedFor === memory?.appId;
 
@@ -103,12 +116,17 @@ export function AppMemoryFormModal({
     setError("");
     try {
       if (mode === "create") {
-        await createMutation.mutateAsync({ appId: trimmedId, content });
+        if (memoryKind === "mobile") {
+          await createMobile.mutateAsync({ appId: trimmedId, content });
+        } else {
+          await createBrowser.mutateAsync({ appId: trimmedId, content });
+        }
       } else if (memory) {
-        await updateMutation.mutateAsync({
-          appId: memory.appId,
-          input: { content },
-        });
+        if (memoryKind === "mobile") {
+          await updateMobile.mutateAsync({ appId: memory.appId, input: { content } });
+        } else {
+          await updateBrowser.mutateAsync({ appId: memory.appId, input: { content } });
+        }
       }
       onSaved();
     } catch (err) {
@@ -155,7 +173,8 @@ export function AppMemoryFormModal({
               className="font-mono"
             />
             <p className="m-0 text-xs text-slate-500">
-              Disimpan sebagai <code className="text-slate-400">{`{appId}.md`}</code> di folder memory.
+              Disimpan sebagai <code className="text-slate-400">{`{appId}.md`}</code> di folder{" "}
+              {memoryKind === "mobile" ? "memory/mobile" : "memory"}.
             </p>
           </div>
 

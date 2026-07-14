@@ -3,9 +3,12 @@ import { useState } from "react";
 import type { AppMemorySummary } from "@/lib/app-memory/types";
 import { useDeleteAppMemory } from "@/hooks/app-memory/use-app-memory-mutations";
 import { useAppMemories } from "@/hooks/app-memory/use-app-memories";
+import { useDeleteMobileAppMemory } from "@/hooks/mobile-app-memory/use-mobile-app-memory-mutations";
+import { useMobileAppMemories } from "@/hooks/mobile-app-memory/use-mobile-app-memories";
 import { AppMemoryDeleteModal } from "./app-memory-delete-modal";
 import { AppMemoryFormModal } from "./app-memory-form-modal";
 import { Button } from "./ui";
+import { cn } from "@/lib/cn";
 
 function formatUpdatedAt(iso: string): string {
   try {
@@ -18,13 +21,23 @@ function formatUpdatedAt(iso: string): string {
   }
 }
 
+type MemoryTab = "browser" | "mobile";
+
 export function AppMemorySettings() {
-  const { data: memories = [], isError, error } = useAppMemories();
-  const deleteMutation = useDeleteAppMemory();
+  const [tab, setTab] = useState<MemoryTab>("browser");
+  const browserQuery = useAppMemories();
+  const mobileQuery = useMobileAppMemories();
+  const deleteBrowser = useDeleteAppMemory();
+  const deleteMobile = useDeleteMobileAppMemory();
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [editingMemory, setEditingMemory] = useState<AppMemorySummary | null>(null);
   const [deletingMemory, setDeletingMemory] = useState<AppMemorySummary | null>(null);
   const [deleteError, setDeleteError] = useState("");
+
+  const memories = tab === "browser" ? (browserQuery.data ?? []) : (mobileQuery.data ?? []);
+  const isError = tab === "browser" ? browserQuery.isError : mobileQuery.isError;
+  const error = tab === "browser" ? browserQuery.error : mobileQuery.error;
+  const toolPrefix = tab === "browser" ? "automation_get_app_memory" : "mobile_get_app_memory";
 
   const loadError = isError
     ? error instanceof Error
@@ -46,7 +59,11 @@ export function AppMemorySettings() {
     if (!deletingMemory) return;
     setDeleteError("");
     try {
-      await deleteMutation.mutateAsync(deletingMemory.appId);
+      if (tab === "browser") {
+        await deleteBrowser.mutateAsync(deletingMemory.appId);
+      } else {
+        await deleteMobile.mutateAsync(deletingMemory.appId);
+      }
       setDeletingMemory(null);
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Gagal menghapus app memory");
@@ -55,16 +72,38 @@ export function AppMemorySettings() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 pb-2">
-        <p className="m-0 text-sm text-slate-500">
-          Kelola file pengetahuan agent di folder memory. appId dipakai di{" "}
-          <code className="text-slate-400">automation_get_app_memory</code>.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-0.5">
+            {(["browser", "mobile"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs capitalize transition-colors",
+                  tab === value
+                    ? "bg-white/15 text-slate-100"
+                    : "text-slate-500 hover:text-slate-300"
+                )}
+                onClick={() => setTab(value)}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+          <p className="m-0 text-sm text-slate-500">
+            {tab === "browser" ? "memory/" : "memory/mobile/"}
+          </p>
+        </div>
         <Button type="button" variant="outline" size="sm" onClick={openCreate}>
           <PlusIcon className="size-3.5" />
           Buat memory
         </Button>
       </div>
+
+      <p className="m-0 pb-2 text-xs text-slate-600">
+        appId dipakai di <code className="text-slate-400">{toolPrefix}</code>
+      </p>
 
       {loadError && <p className="m-0 pb-2 text-sm text-red-400">{loadError}</p>}
 
@@ -116,6 +155,7 @@ export function AppMemorySettings() {
       <AppMemoryFormModal
         mode={formMode === "edit" ? "edit" : "create"}
         memory={editingMemory}
+        memoryKind={tab}
         open={formMode !== null}
         onClose={() => {
           setFormMode(null);
@@ -129,7 +169,7 @@ export function AppMemorySettings() {
 
       <AppMemoryDeleteModal
         memory={deletingMemory}
-        busy={deleteMutation.isPending}
+        busy={deleteBrowser.isPending || deleteMobile.isPending}
         onClose={() => setDeletingMemory(null)}
         onConfirm={() => void handleDelete()}
       />

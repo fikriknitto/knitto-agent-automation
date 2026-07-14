@@ -1,5 +1,6 @@
 import { resolveApiUrl } from "@/lib/api/config";
 import { useEffect, useRef, useState } from "react";
+import type { VideoRecordingMeta } from "@knitto/shared";
 
 type AgentVideosProps = {
   url: string;
@@ -40,16 +41,43 @@ export function AgentVideos({ url }: AgentVideosProps) {
   };
 
   return (
-    <div className="relative pb-10">
+    <div className="relative pb-4">
       <video
         key={playbackUrl}
         controls
-        className="mt-3 max-h-[360px] rounded-lg border mx-auto border-white/10 bg-black"
+        className="mt-3 max-h-[360px] rounded-lg border mx-auto border-white/10 bg-black w-full"
         src={playbackUrl}
         preload="auto"
         onError={handleError}
       />
-      <div className="text-center w-full mt-2 text-gray-500 italic text-sm truncate">Video : {filename}</div>
+      <div className="text-center w-full mt-2 text-gray-500 italic text-sm truncate">
+        Video: {filename}
+      </div>
+    </div>
+  );
+}
+
+type AgentVideoStackProps = {
+  videoUrls: string[];
+  videoRecordingMeta?: VideoRecordingMeta[];
+};
+
+export function AgentVideoStack({ videoUrls, videoRecordingMeta }: AgentVideoStackProps) {
+  if (!videoUrls.length) return null;
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="text-sm font-semibold text-slate-400">Recordings</div>
+      {videoUrls.map((url, index) => {
+        const meta = videoRecordingMeta?.find((m) => m.url === url) ?? videoRecordingMeta?.[index];
+        const label = meta?.label ?? `TC${index + 1}`;
+        return (
+          <div key={url} className="space-y-1">
+            <div className="text-xs text-slate-500">{label}</div>
+            <AgentVideos url={url} />
+          </div>
+        );
+      })}
     </div>
   );
 }

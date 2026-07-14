@@ -1,10 +1,16 @@
 export type PromptShortcutVariant = "blue" | "green" | "amber" | "neutral";
 
+export type PromptShortcutPlatform = "browser" | "mobile";
+
 export type PromptShortcut = {
   id: string;
   label: string;
   icon: string;
   variant: PromptShortcutVariant;
+  platform: PromptShortcutPlatform;
+  appPackage?: string;
+  url?: string;
+  deepLink?: string;
   template: string;
   defaults: Record<string, string>;
 };
@@ -12,6 +18,10 @@ export type PromptShortcut = {
 export type PromptShortcutWriteInput = {
   label: string;
   variant: PromptShortcutVariant;
+  platform: PromptShortcutPlatform;
+  appPackage?: string;
+  url?: string;
+  deepLink?: string;
   template: string;
   defaults: Record<string, string>;
 };

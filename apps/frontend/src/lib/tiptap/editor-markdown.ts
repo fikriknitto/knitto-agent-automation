@@ -5,10 +5,12 @@ export function autosizeEditor(
   minHeight: number,
   maxHeight: number
 ): void {
+  const scrollTop = editorElement.scrollTop;
   editorElement.style.height = "auto";
   const next = Math.min(Math.max(editorElement.scrollHeight, minHeight), maxHeight);
   editorElement.style.height = `${next}px`;
   editorElement.style.overflowY = editorElement.scrollHeight > maxHeight ? "auto" : "hidden";
+  editorElement.scrollTop = scrollTop;
 }
 
 export function isEmptyMarkdown(markdown: string): boolean {
@@ -16,7 +18,10 @@ export function isEmptyMarkdown(markdown: string): boolean {
 }
 
 export function normalizeMarkdown(markdown: string): string {
-  return markdown.replace(/\r\n/g, "\n").trim();
+  return markdown
+    .replace(/\r\n/g, "\n")
+    .replace(/\n+$/, "")
+    .trim();
 }
 
 /** TipTap empty doc may serialize differently than parent `""` — treat both as empty. */
@@ -25,6 +30,17 @@ export function markdownMatches(a: string, b: string): boolean {
   const right = normalizeMarkdown(b);
   if (!left && !right) return true;
   return left === right;
+}
+
+export function shouldSkipExternalMarkdownSync(
+  editor: Editor,
+  incomingValue: string,
+  lastEmittedMarkdown: string
+): boolean {
+  const current = editor.getMarkdown();
+  if (markdownMatches(incomingValue, current)) return true;
+  if (markdownMatches(incomingValue, lastEmittedMarkdown)) return true;
+  return false;
 }
 
 export function setEditorPlainText(editor: Editor, text: string): void {

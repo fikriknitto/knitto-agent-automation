@@ -51,6 +51,7 @@ function parseNinerouterCredentials(data: Record<string, unknown>): {
 export class WsHub {
   private readonly channels = new Map<string, Set<WebSocket>>();
   private readonly socketMeta = new WeakMap<WebSocket, ClientMeta>();
+  private readonly socketsByConnectionId = new Map<string, WebSocket>();
   private readonly wss: WebSocketServer;
 
   constructor(
@@ -61,8 +62,16 @@ export class WsHub {
     this.wss.on("connection", (ws) => this.handleConnection(ws));
   }
 
-  broadcastAgentJob(channel: string, msg: AgentJobMessage): void {
-    this.broadcastToWeb(channel, msg);
+  emitAgentJob(msg: AgentJobMessage): void {
+    const connectionId = msg.connectionId;
+    if (connectionId) {
+      const ws = this.socketsByConnectionId.get(connectionId);
+      if (ws && ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify(msg));
+        return;
+      }
+    }
+    this.broadcastToWeb(msg.channel, msg);
   }
 
   broadcastCredentialsRequest(bridgeId: string, bridgeKind: BridgeKind, channel?: string): void {
@@ -186,12 +195,14 @@ export class WsHub {
     }
 
     if (data.type === "user_prompt") {
+      const connectionId = meta.connectionId;
       if (!this.bridgeRegistry.isAvailable()) {
         ws.send(
           JSON.stringify({
             type: "agent_job",
             id: data.id,
             channel,
+            connectionId,
             status: "error",
             message: "AI bridge offline.",
             progress: 100,
@@ -205,6 +216,7 @@ export class WsHub {
             type: "agent_job",
             id: data.id,
             channel,
+            connectionId,
             status: "error",
             message: "bridgeId is required",
             progress: 100,
@@ -219,6 +231,7 @@ export class WsHub {
             type: "agent_job",
             id: data.id,
             channel,
+            connectionId,
             status: "error",
             message: "Selected bridge is offline or not found.",
             progress: 100,
@@ -226,7 +239,7 @@ export class WsHub {
         );
         return true;
       }
-      bridge.handleUserPrompt(data as never);
+      bridge.handleUserPrompt({ ...data, connectionId } as never);
       return true;
     }
 
@@ -271,6 +284,7 @@ export class WsHub {
   private removeClient(ws: WebSocket): void {
     const meta = this.socketMeta.get(ws);
     if (!meta) return;
+    this.socketsByConnectionId.delete(meta.connectionId);
     this.getChannelClients(meta.channel).delete(ws);
     if (this.getChannelClients(meta.channel).size === 0) {
       this.channels.delete(meta.channel);
@@ -294,6 +308,7 @@ export class WsHub {
 
           const connectionId = createConnectionId();
           this.socketMeta.set(ws, { channel, role: "web", connectionId });
+          this.socketsByConnectionId.set(connectionId, ws);
           this.getChannelClients(channel).add(ws);
 
           ws.send(

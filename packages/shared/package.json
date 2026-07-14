@@ -18,6 +18,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "test": "pnpm run build && node --test dist/protocol/test-case.resolve.test.js dist/protocol/test-case-results.test.js",
     "prepare": "pnpm run build",
     "dev": "tsx watch src/index.ts"
   },

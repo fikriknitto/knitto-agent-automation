@@ -1,7 +1,7 @@
 {
-  "name": "knitto-browser-agent",
+  "name": "knitto-agent-automation",
   "version": "1.0.0",
-  "description": "Knitto Browser Agent — frontend + backend monorepo",
+  "description": "Knitto Agent Automation — frontend + backend monorepo",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.5.2",
@@ -21,18 +21,30 @@
     "typecheck": "turbo run typecheck",
     "start": "pnpm --filter @knitto/backend start",
     "preview": "pnpm --filter @knitto/frontend preview",
-    "clean": "pnpm -r exec node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\""
+    "clean": "pnpm -r exec node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\"",
+    "start:instances": "tsx --env-file=apps/backend/.env scripts/start-instance.ts",
+    "connect:instances": "tsx --env-file=apps/backend/.env scripts/connect-instance.ts",
+    "close:instances": "tsx --env-file=apps/backend/.env scripts/close-instance.ts",
+    "disconnect:instances": "tsx --env-file=apps/backend/.env scripts/disconnect-instance.ts",
+    "instances:up": "pnpm start:instances --emulator=1 && pnpm connect:instances",
+    "instances:down": "pnpm close:instances && pnpm disconnect:instances",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:appium": "docker compose up -d --build appium"
   },
   "keywords": [
     "knitto",
     "browser",
     "agent",
     "puppeteer",
+    "appium",
     "monorepo"
   ],
   "author": "knittotextile",
   "license": "ISC",
   "devDependencies": {
+    "@types/node": "^24.13.2",
     "tsx": "^4.7.1",
     "turbo": "^2.10.0",
     "typescript": "^5.3.3"

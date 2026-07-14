@@ -17,3 +17,4 @@ export { automation_go_back } from "./tools/go-back.js";
 export { automation_go_forward } from "./tools/go-forward.js";
 export { automation_upload_file } from "./tools/upload-file.js";
 export { automation_close_browser } from "./tools/close-browser.js";
+export { automation_stop_test_case_segment } from "./tools/stop-test-case-segment.js";

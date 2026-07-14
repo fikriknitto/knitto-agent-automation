@@ -1,15 +1,22 @@
+import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
+import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppMemorySettings } from "./components/app-memory-settings";
 import { BridgeCredentials } from "./components/bridge-credentials";
 import { ChatHeader } from "./components/chat-header";
 import { ChatMain } from "./components/chat-main";
 import { ConnectionPanel } from "./components/connection-panel";
+import { toMobileConfigPayload } from "./components/platform-selector";
 import { PromptShortcutsSettings } from "./components/prompt-shortcuts-settings";
-import { AppMemorySettings } from "./components/app-memory-settings";
 import { SettingsModal } from "./components/settings-modal";
+import { MobileDevicesProvider } from "./contexts/mobile-devices-context";
+import { isActiveJobStatus, syncActiveJobIds } from "./lib/active-jobs";
+import { mergeAgentChatLine } from "./lib/merge-agent-chat-line";
+import { parseTestCasesFromPrompt, shortcutToRegistryEntry } from "./lib/parse-test-cases";
 import { type PromptAttachment } from "./lib/prompt-attachment";
 import { type AppliedPromptShortcut, promptShortcutPath } from "./lib/prompt-compose";
-import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
 import type { PromptShortcut } from "./lib/prompt-shortcuts";
+import { DEFAULT_CHANNEL, DEFAULT_WS_HOST, DEFAULT_WS_PORT } from "./lib/protocol";
 import type { BridgeSummary, ChatLine, ConnectionState } from "./lib/types";
 import { AutomationWsClient } from "./lib/ws-client";
 
@@ -28,6 +35,8 @@ type PersistedState = {
   openRouterKey?: string;
   nineRouterBaseUrl?: string;
   nineRouterKey?: string;
+  platform?: AutomationPlatform;
+  mobileConfig?: MobileConfig;
 };
 
 function loadState(): PersistedState {
@@ -63,6 +72,10 @@ export function App() {
   const [selectedBridgeId, setSelectedBridgeId] = useState(persisted.selectedBridgeId ?? "");
   const [selectedModel, setSelectedModel] = useState(persisted.selectedModel ?? "");
   const [strategy] = useState(persisted.strategy ?? "automation_human_strategy");
+  const [platform, setPlatform] = useState<AutomationPlatform>(persisted.platform ?? "browser");
+  const [mobileConfig, setMobileConfig] = useState<MobileConfig>(
+    persisted.mobileConfig ?? { appPackage: "" }
+  );
   const [prompt, setPrompt] = useState("");
   const [promptBases, setPromptBases] = useState<AppliedPromptShortcut[]>([]);
   const [promptAttachments, setPromptAttachments] = useState<PromptAttachment[]>([]);
@@ -78,8 +91,14 @@ export function App() {
   const [credStatus, setCredStatus] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const activeJobId = useRef<string | null>(null);
+  const lastSubmittedJobId = useRef<string | null>(null);
+  const activeJobIds = useRef(new Set<string>());
   const wsRef = useRef<AutomationWsClient | null>(null);
+  const { data: promptShortcuts = [] } = usePromptShortcuts();
+  const shortcutRegistry = useMemo(
+    () => promptShortcuts.map((shortcut) => shortcutToRegistryEntry(shortcut)),
+    [promptShortcuts]
+  );
 
   useEffect(() => {
     saveState({
@@ -95,6 +114,8 @@ export function App() {
       openRouterKey,
       nineRouterBaseUrl,
       nineRouterKey,
+      platform,
+      mobileConfig: mobileConfig.appPackage ? mobileConfig : undefined,
     });
   }, [
     host,
@@ -109,6 +130,8 @@ export function App() {
     openRouterKey,
     nineRouterBaseUrl,
     nineRouterKey,
+    platform,
+    mobileConfig,
   ]);
 
   useEffect(() => {
@@ -125,25 +148,16 @@ export function App() {
       onBridges: setBridges,
       onBridgeAvailable: setBridgeAvailable,
       onAgentJob: (msg) => {
-        if (msg.status === "queued" || msg.status === "running") {
-          setWorkerState("busy");
-        } else {
-          setWorkerState("idle");
-          activeJobId.current = null;
+        setWorkerState(syncActiveJobIds(msg.id, msg.status, activeJobIds.current));
+        if (!isActiveJobStatus(msg.status) && lastSubmittedJobId.current === msg.id) {
+          lastSubmittedJobId.current = null;
         }
+        wsRef.current?.clearSubmittedJob(msg.id, msg.status);
 
         setChatLines((prev) => {
           const idx = prev.findIndex((l) => l.id === msg.id && l.role === "agent");
           const prevLine = idx >= 0 ? prev[idx] : undefined;
-          const line: ChatLine = {
-            id: msg.id,
-            role: "agent",
-            text: msg.result ?? msg.message,
-            status: msg.status,
-            screenshots: msg.screenshots ?? prevLine?.screenshots,
-            videoUrl: msg.videoUrl ?? prevLine?.videoUrl,
-            toolName: msg.toolName ?? prevLine?.toolName,
-          };
+          const line = mergeAgentChatLine(msg, prevLine);
           if (idx >= 0) {
             const next = [...prev];
             next[idx] = line;
@@ -184,7 +198,8 @@ export function App() {
     const bridge = bridges.find((b) => b.bridgeId === selectedBridgeId);
 
     const id = jobId();
-    activeJobId.current = id;
+    lastSubmittedJobId.current = id;
+    activeJobIds.current.add(id);
 
     const attachments = promptAttachments.length ? [...promptAttachments] : undefined;
     const baseSnapshot = promptBases.map((b) => ({
@@ -195,14 +210,28 @@ export function App() {
       path: promptShortcutPath(b.id),
     }));
 
+    const parsedTc =
+      platform === "hybrid"
+        ? parseTestCasesFromPrompt(main, mobileConfig, shortcutRegistry)
+        : null;
+
     setChatLines((prev) => [
       ...prev,
       {
         id: `u-${id}`,
         role: "user",
         text: main,
+        jobPlatform: platform,
+        testCaseCount: parsedTc?.testCases.length,
         promptBases: baseSnapshot.length ? baseSnapshot : undefined,
         attachments,
+      },
+      {
+        id,
+        role: "agent",
+        text: "Memulai…",
+        status: "running",
+        progress: 0,
       },
     ]);
     setWorkerState("busy");
@@ -223,6 +252,11 @@ export function App() {
         bridge?.models?.[0]?.id ||
         "",
       attachments,
+      platform,
+      mobileConfig:
+        platform === "mobile" || platform === "hybrid"
+          ? toMobileConfigPayload(mobileConfig)
+          : undefined,
     });
   };
 
@@ -250,7 +284,7 @@ export function App() {
   }, []);
 
   const handleCancel = () => {
-    const id = activeJobId.current;
+    const id = lastSubmittedJobId.current;
     if (!id || !selectedBridgeId || workerState !== "busy") return;
     wsRef.current?.cancelJob({ id, bridgeId: selectedBridgeId });
   };
@@ -280,10 +314,9 @@ export function App() {
   };
 
   return (
+    <MobileDevicesProvider enabled={platform === "mobile" || platform === "hybrid"}>
     <div className="flex h-screen flex-col bg-[#0d0d0d]">
       <ChatHeader
-        bridges={bridges}
-        selectedBridgeId={selectedBridgeId}
         connectionState={connectionState}
         bridgeAvailable={bridgeAvailable}
         onOpenSettings={() => setSettingsOpen(true)}
@@ -294,6 +327,8 @@ export function App() {
         prompt={prompt}
         promptBases={promptBases}
         promptAttachments={promptAttachments}
+        platform={platform}
+        mobileConfig={mobileConfig}
         workerState={workerState}
         connectionState={connectionState}
         selectedBridgeId={selectedBridgeId}
@@ -306,6 +341,13 @@ export function App() {
         onPromptAttachmentsChange={setPromptAttachments}
         onSelectBridge={setSelectedBridgeId}
         onSelectModel={setSelectedModel}
+        onPlatformChange={(next) => {
+          setPlatform(next);
+          if (next === "hybrid") {
+            setMobileConfig({ appPackage: "", udid: undefined, deepLink: undefined });
+          }
+        }}
+        onMobileConfigChange={setMobileConfig}
         onSend={handleSend}
         onCancel={handleCancel}
       />
@@ -365,6 +407,7 @@ export function App() {
         memory={<AppMemorySettings />}
       />
     </div>
+    </MobileDevicesProvider>
   );
 }
 export default App;

@@ -2,7 +2,8 @@ import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AgentScreenshots } from "./agent-screenshot";
-import { AgentVideos } from "./agent-videos";
+import { AgentVideoStack, AgentVideos } from "./agent-videos";
+import type { VideoRecordingMeta } from "@knitto/shared";
 
 function tableCellAlignClass(align?: "left" | "center" | "right" | "justify" | "char" | null) {
   if (align === "center") return "text-center";
@@ -14,6 +15,8 @@ type MarkdownPreviewProps = {
   text: string;
   screenshots?: string[];
   videoUrl?: string;
+  videoUrls?: string[];
+  videoRecordingMeta?: VideoRecordingMeta[];
 };
 
 const markdownComponents: Components = {
@@ -73,10 +76,17 @@ const markdownComponents: Components = {
   ),
 };
 
-export function MarkdownPreview({ text, screenshots = [], videoUrl }: MarkdownPreviewProps) {
+export function MarkdownPreview({
+  text,
+  screenshots = [],
+  videoUrl,
+  videoUrls = [],
+  videoRecordingMeta,
+}: MarkdownPreviewProps) {
   const hasText = Boolean(text.trim());
   const hasScreenshots = screenshots.length > 0;
-  const hasVideo = Boolean(videoUrl);
+  const hasVideoStack = videoUrls.length > 0;
+  const hasVideo = Boolean(videoUrl) || hasVideoStack;
 
   if (!hasText && !hasScreenshots && !hasVideo) return null;
 
@@ -88,7 +98,11 @@ export function MarkdownPreview({ text, screenshots = [], videoUrl }: MarkdownPr
         </ReactMarkdown>
       )}
       {hasScreenshots && <AgentScreenshots urls={screenshots} />}
-      {hasVideo && videoUrl && <AgentVideos url={videoUrl} />}
+      {hasVideoStack ? (
+        <AgentVideoStack videoUrls={videoUrls} videoRecordingMeta={videoRecordingMeta} />
+      ) : (
+        hasVideo && videoUrl && <AgentVideos url={videoUrl} />
+      )}
     </div>
   );
 }

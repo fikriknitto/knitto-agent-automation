@@ -2,6 +2,7 @@ export type {
   GeneratePromptShortcutInput,
   GeneratePromptShortcutResult,
   PromptShortcut,
+  PromptShortcutPlatform,
   PromptShortcutVariant,
   PromptShortcutWriteInput,
 } from "./prompt-shortcuts/types";

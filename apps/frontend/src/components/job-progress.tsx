@@ -1,12 +1,13 @@
+import type { AutomationPlatform } from "@knitto/shared";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 import type { ChatPromptBase } from "../lib/prompt-compose";
 import type { ChatLine } from "../lib/types";
-import { statusLine } from "../lib/ui";
 import { MarkdownPreview } from "./markdown-preview";
 import { ChatAttachments } from "./prompt-attachment-chip";
 import { PromptShortcutPreviewModal } from "./prompt-shortcut-preview-modal";
-import { Badge, Card, CardTitle } from "./ui";
+import { TestCaseResultStack } from "./test-case-result-stack";
+import { Badge } from "./ui";
 
 const promptBaseVariantClasses: Record<ChatPromptBase["variant"], string> = {
   blue: "border-blue-500/30 bg-blue-500/10 text-blue-300",
@@ -48,39 +49,104 @@ function ChatPromptBases({
   );
 }
 
-type JobProgressProps = {
-  workerState: "idle" | "busy";
-  lastJobMessage: string;
-  lastJobProgress: number;
-};
+function isAgentResult(status: string | undefined): boolean {
+  return status === "completed" || status === "error" || status === "cancelled";
+}
 
-export function JobProgress({ workerState, lastJobMessage, lastJobProgress }: JobProgressProps) {
+function AgentJobInlineProgress({ line }: { line: ChatLine }) {
   return (
-    <Card>
-      <CardTitle compact>Job progress</CardTitle>
-      <p className={statusLine}>
-        Worker:{" "}
-        <Badge variant={workerState === "busy" ? "warning" : "default"}>
-          {workerState === "busy" ? "Busy" : "Idle"}
-        </Badge>
-      </p>
-      {lastJobMessage && (
-        <>
-          <p className="my-2 text-sm text-slate-300">{lastJobMessage}</p>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/6">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-[width] duration-300 ease-out"
-              style={{ width: `${lastJobProgress}%` }}
-            />
-          </div>
-        </>
-      )}
-    </Card>
+    <div className="rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3">
+      {line.testCases?.length ? <TestCaseProgress line={line} /> : null}
+      <p className="text-sm text-slate-200">{line.text || "Memproses…"}</p>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {line.status && (
+          <Badge variant={line.status === "queued" ? "default" : "warning"}>{line.status}</Badge>
+        )}
+        {line.testCaseTotal ? (
+          <span className="text-xs text-slate-500">
+            TC {(line.testCaseIndex ?? 0) + 1} dari {line.testCaseTotal}
+          </span>
+        ) : null}
+        {line.toolName && (
+          <span className="text-xs text-slate-500">{line.toolName}</span>
+        )}
+      </div>
+    </div>
   );
 }
 
-function isAgentResult(status: string | undefined): boolean {
-  return status === "completed" || status === "error" || status === "cancelled";
+function platformBadgeLabel(platform?: AutomationPlatform): string {
+  if (platform === "hybrid") return "Hybrid";
+  if (platform === "mobile") return "Mobile";
+  return "Browser";
+}
+
+function UserPromptBadges({
+  platform,
+  testCaseCount,
+}: {
+  platform?: AutomationPlatform;
+  testCaseCount?: number;
+}) {
+  if (!platform) return null;
+  return (
+    <div className="mb-2 flex flex-wrap gap-1.5">
+      <Badge variant="default">{platformBadgeLabel(platform)}</Badge>
+      {platform === "hybrid" && testCaseCount ? (
+        <Badge variant="info">{testCaseCount} test cases</Badge>
+      ) : null}
+    </div>
+  );
+}
+
+function TestCaseProgress({ line }: { line: ChatLine }) {
+  const cases = line.testCases ?? [];
+  if (!cases.length) return null;
+
+  const activeIndex = line.testCaseIndex ?? 0;
+
+  return (
+    <div className="mb-3 space-y-1">
+      <div className="text-xs font-semibold text-slate-500">Test cases</div>
+      {cases.map((tc, index) => {
+        let statusIcon = "○";
+        let statusClass = "text-slate-500";
+        if (index < activeIndex || (index === activeIndex && line.testCaseStatus === "completed")) {
+          statusIcon = "✓";
+          statusClass = "text-emerald-400";
+        } else if (index === activeIndex && line.testCaseStatus === "running") {
+          statusIcon = "●";
+          statusClass = "text-amber-300";
+        } else if (line.testCaseStatus === "error" && index === activeIndex) {
+          statusIcon = "✗";
+          statusClass = "text-red-400";
+        } else if (index > activeIndex && line.testCaseStatus === "error") {
+          statusIcon = "○";
+          statusClass = "text-slate-600";
+        }
+
+        const suffix =
+          index === activeIndex && line.testCaseStatus === "running" && line.toolName
+            ? ` — ${line.toolName}`
+            : index === activeIndex && line.testCaseStatus === "completed"
+              ? " · Selesai"
+              : index === activeIndex && line.testCaseStatus === "error"
+                ? " · Gagal"
+                : index > activeIndex && line.testCaseStatus === "error"
+                  ? " · Dilewati"
+                  : "";
+
+        return (
+          <div key={tc.id} className={cn("text-xs", statusClass)}>
+            {statusIcon} {tc.title ?? tc.id} · {tc.platform}
+            {tc.appPackage ? ` · ${tc.appPackage}` : ""}
+            {suffix}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function ChatHistory({ lines }: { lines: ChatLine[] }) {
@@ -95,67 +161,71 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
 
   return (
     <>
-      <div
-        ref={scrollRef}
-        className="flex flex-col gap-4  py-4"
-      >
-
-
-      {lines.map((line) =>
-        line.role === "user" ? (
-          <div key={`${line.role}-${line.id}`} className="flex justify-end">
-            <div className="max-w-[85%] rounded-lg bg-[#2f2f2f] px-4 py-3 text-sm leading-relaxed text-slate-100">
-              {line.promptBases?.length ? (
-                <ChatPromptBases
-                  bases={line.promptBases}
-                  onPreview={(base) => setPreviewBaseId(base.id)}
+      <div ref={scrollRef} className="flex flex-col gap-4 pt-4 pb-[200px]">
+        {lines.map((line) =>
+          line.role === "user" ? (
+            <div key={`${line.role}-${line.id}`} className="flex justify-end">
+              <div className="max-w-[85%] rounded-lg bg-[#2f2f2f] px-4 py-3 text-sm leading-relaxed text-slate-100">
+                <UserPromptBadges
+                  platform={line.jobPlatform}
+                  testCaseCount={line.testCaseCount}
                 />
-              ) : null}
-              {line.attachments?.length && (
-                <div className="mb-2">
-                  <div className="text-xs font-semibold text-slate-500">Attachments</div>
-                  <div className={line.text.trim() || line.promptBases?.length ? "mt-2" : undefined}>
-                    <ChatAttachments attachments={line.attachments} />
-                  </div>
-                </div>
-              )}
-
-              {line.text.trim() && (
-                <div>
-                  {((line?.promptBases?.length && line?.promptBases?.length > 0) || (line?.attachments?.length && line?.attachments?.length > 0)) && <div className="text-xs font-semibold text-slate-500">Prompt</div>}
-                  <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
-                    <MarkdownPreview text={line.text} />
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-        ) : (
-          <div key={`${line.role}-${line.id}`} className="flex w-full justify-start">
-            <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-200">
-              {isAgentResult(line.status) ? (
-                <div className="rounded-xl px-4 py-3">
-                  <MarkdownPreview
-                    text={line.text}
-                    screenshots={line.screenshots}
-                    videoUrl={line.videoUrl}
+                {line.promptBases?.length ? (
+                  <ChatPromptBases
+                    bases={line.promptBases}
+                    onPreview={(base) => setPreviewBaseId(base.id)}
                   />
-                </div>
-              ) : (
-                <>
-                  {line.text.trim() && (
-                    <span className="wrap-break-word text-slate-300">{line.text}</span>
-                  )}
-                </>
-              )}
-              {line.status && line.status !== "completed" && (
-                <span className="mt-1.5 block text-xs text-slate-500">{line.status}</span>
-              )}
+                ) : null}
+                {line.attachments?.length && (
+                  <div className="mb-2">
+                    <div className="text-xs font-semibold text-slate-500">Attachments</div>
+                    <div
+                      className={line.text.trim() || line.promptBases?.length ? "mt-2" : undefined}
+                    >
+                      <ChatAttachments attachments={line.attachments} />
+                    </div>
+                  </div>
+                )}
+
+                {line.text.trim() && (
+                  <div>
+                    {((line?.promptBases?.length && line?.promptBases?.length > 0) ||
+                      (line?.attachments?.length && line?.attachments?.length > 0)) && (
+                      <div className="text-xs font-semibold text-slate-500">Prompt</div>
+                    )}
+                    <div className="[&_p:first-child]:mt-0 [&_p:last-child]:mb-0 prompt-user">
+                      <MarkdownPreview text={line.text} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )
-      )}
+          ) : (
+            <div key={`${line.role}-${line.id}`} className="flex w-full justify-start">
+              <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-200">
+                {isAgentResult(line.status) ? (
+                  <div className="rounded-xl px-4 pt-3 pb-28">
+                    {line.testCaseResults?.length ? (
+                      <>
+                        <TestCaseResultStack testCaseResults={line.testCaseResults} />
+                      </>
+                    ) : (
+                      <MarkdownPreview
+                        text={line.text}
+                        screenshots={line.screenshots}
+                        videoUrl={line.videoUrl}
+                        videoUrls={line.videoUrls}
+                        videoRecordingMeta={line.videoRecordingMeta}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <AgentJobInlineProgress line={line} />
+                )}
+              </div>
+            </div>
+          )
+        )}
       </div>
 
       <PromptShortcutPreviewModal

@@ -2,6 +2,8 @@
 label: Cari Produk knitto.co.id
 icon: "🔍"
 variant: blue
+platform: browser
+url: https://knitto.co.id
 order: 2
 defaults:
   PRODUCT_NAME: "Combed 20s"

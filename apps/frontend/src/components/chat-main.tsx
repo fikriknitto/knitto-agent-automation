@@ -1,3 +1,4 @@
+import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import type { PromptAttachment } from "../lib/prompt-attachment";
 import type { AppliedPromptShortcut } from "../lib/prompt-compose";
 import type { PromptShortcut } from "../lib/prompt-shortcuts";
@@ -11,6 +12,8 @@ type ChatMainProps = {
   prompt: string;
   promptBases: AppliedPromptShortcut[];
   promptAttachments: PromptAttachment[];
+  platform: AutomationPlatform;
+  mobileConfig: MobileConfig;
   workerState: "idle" | "busy";
   connectionState: ConnectionState;
   selectedBridgeId: string;
@@ -23,6 +26,8 @@ type ChatMainProps = {
   onPromptAttachmentsChange: (attachments: PromptAttachment[]) => void;
   onSelectBridge: (id: string) => void;
   onSelectModel: (id: string) => void;
+  onPlatformChange: (platform: AutomationPlatform) => void;
+  onMobileConfigChange: (config: MobileConfig) => void;
   onSend: () => void;
   onCancel: () => void;
 };
@@ -32,6 +37,8 @@ export function ChatMain({
   prompt,
   promptBases,
   promptAttachments,
+  platform,
+  mobileConfig,
   workerState,
   connectionState,
   selectedBridgeId,
@@ -44,6 +51,8 @@ export function ChatMain({
   onPromptAttachmentsChange,
   onSelectBridge,
   onSelectModel,
+  onPlatformChange,
+  onMobileConfigChange,
   onSend,
   onCancel,
 }: ChatMainProps) {
@@ -62,6 +71,8 @@ export function ChatMain({
         value={prompt}
         promptBases={promptBases}
         attachments={promptAttachments}
+        platform={platform}
+        mobileConfig={mobileConfig}
         placeholder="Tanyakan automation…"
         connectionState={connectionState}
         selectedBridgeId={selectedBridgeId}
@@ -73,6 +84,8 @@ export function ChatMain({
         onRemovePromptBase={onRemovePromptBase}
         onSelectBridge={onSelectBridge}
         onSelectModel={onSelectModel}
+        onPlatformChange={onPlatformChange}
+        onMobileConfigChange={onMobileConfigChange}
         onSend={onSend}
         onCancel={onCancel}
       />

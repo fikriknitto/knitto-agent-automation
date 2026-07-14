@@ -7,6 +7,7 @@
     "dev:watch": "tsx watch -r dotenv/config src/server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "test": "pnpm run build && node --test dist/services/shared/segment-context.test.js dist/services/shared/segment-state-file.test.js dist/services/shared/segment-recording.test.js dist/services/shared/multi-tc-close-guard.test.js dist/automation/libs/browser/session-page.test.js dist/automation/libs/browser/session-reconnect.test.js dist/mobile-automation/libs/mobile-session-state.test.js dist/mobile-automation/libs/mobile-session-cleanup.test.js dist/mobile-automation/libs/mobile-recording.test.js dist/mobile-automation/libs/mobile-job-context-segment.test.js",
     "start": "node -r dotenv/config dist/server.js"
   },
   "dependencies": {
@@ -18,9 +19,11 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.21.2",
+    "fast-xml-parser": "^5.9.3",
     "multer": "^2.2.0",
     "puppeteer": "^24.8.2",
     "puppeteer-screen-recorder": "^3.0.6",
+    "webdriverio": "^9.29.1",
     "ws": "^8.18.1",
     "zod": "^3.24.1"
   },

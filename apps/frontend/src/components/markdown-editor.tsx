@@ -1,11 +1,12 @@
-import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect, useRef } from "react";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import { useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/cn";
+import { createMarkdownClipboardEditorProps } from "@/lib/tiptap/editor-clipboard";
 import {
   applyEditorMarkdown,
   autosizeEditor,
-  markdownMatches,
   releaseSkipEmit,
+  shouldSkipExternalMarkdownSync,
 } from "@/lib/tiptap/editor-markdown";
 import { createPromptEditorExtensions } from "@/lib/tiptap/prompt-editor-extensions";
 
@@ -32,6 +33,12 @@ export function MarkdownEditor({
   className,
 }: MarkdownEditorProps) {
   const skipEmit = useRef(false);
+  const editorRef = useRef<Editor | null>(null);
+  const lastEmittedMarkdownRef = useRef(value);
+  const markdownClipboardProps = useMemo(
+    () => createMarkdownClipboardEditorProps(() => editorRef.current),
+    []
+  );
 
   const editor = useEditor({
     extensions: createPromptEditorExtensions(placeholder),
@@ -40,6 +47,7 @@ export function MarkdownEditor({
     immediatelyRender: false,
     editable: !disabled,
     editorProps: {
+      ...markdownClipboardProps,
       attributes: {
         class: cn("markdown-editor-content", className),
       },
@@ -50,9 +58,15 @@ export function MarkdownEditor({
     onUpdate: ({ editor: ed }) => {
       autosizeEditor(ed.view.dom as HTMLElement, minHeight, maxHeight);
       if (skipEmit.current) return;
-      onChange(ed.getMarkdown());
+      const markdown = ed.getMarkdown();
+      lastEmittedMarkdownRef.current = markdown;
+      onChange(markdown);
     },
   });
+
+  useEffect(() => {
+    editorRef.current = editor ?? null;
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -61,11 +75,13 @@ export function MarkdownEditor({
 
   useEffect(() => {
     if (!editor) return;
-    const current = editor.getMarkdown();
-    if (markdownMatches(value, current)) return;
+    if (shouldSkipExternalMarkdownSync(editor, value, lastEmittedMarkdownRef.current)) {
+      return;
+    }
 
     skipEmit.current = true;
     applyEditorMarkdown(editor, value, minHeight, maxHeight);
+    lastEmittedMarkdownRef.current = value;
     releaseSkipEmit(skipEmit);
   }, [editor, value, minHeight, maxHeight]);
 

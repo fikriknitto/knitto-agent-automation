@@ -8,6 +8,8 @@ import { createConfigRoutes } from "./config-routes.js";
 import { createFileManagerRoutes } from "./file-manager-routes.js";
 import { createHealthRoutes } from "./health-routes.js";
 import { createPromptShortcutRoutes } from "./prompt-shortcut-routes.js";
+import { createMobileDeviceRoutes } from "./mobile-device-routes.js";
+import { createMobileAppMemoryRoutes } from "./mobile-app-memory-routes.js";
 
 export function createApiRoutes(bridgeRegistry: BridgeRegistryService): Router {
   const router = Router();
@@ -16,6 +18,8 @@ export function createApiRoutes(bridgeRegistry: BridgeRegistryService): Router {
   router.use(createBridgeRoutes(() => bridgeRegistry.getAll()));
   router.use(createPromptShortcutRoutes(bridgeRegistry));
   router.use(createAppMemoryRoutes());
+  router.use(createMobileAppMemoryRoutes());
+  router.use(createMobileDeviceRoutes());
   router.use(createConfigRoutes());
   router.use(createFileManagerRoutes());
   router.use(createAgentScreenshotRoutes());
