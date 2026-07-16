@@ -1,5 +1,5 @@
 import { ToolError } from "../../../automation/core/index.js";
-import { listDevices } from "../adb/adb-client.js";
+import { listDevices, pingDevice } from "../adb/adb-client.js";
 import config from "../config.js";
 
 export type DeviceState = "idle" | "busy";
@@ -127,15 +127,33 @@ class DevicePool {
           throw new ToolError(`Device tidak ditemukan: ${pinned}`);
         }
         const entry = this.pool.get(pinned);
-        if (device.state === "idle" || entry?.jobId === jobId) {
+        if (entry?.jobId === jobId) {
+          // Re-entrant acquire by the job that already owns this device — no need to re-probe.
           this.markBusy(pinned, jobId);
           return pinned;
+        }
+        if (device.state === "idle") {
+          // Reserve synchronously (no await before markBusy) so a concurrent
+          // acquire() for another job can't also see this device as idle and
+          // grab it — the ping below only validates, it must not race the pick.
+          this.markBusy(pinned, jobId);
+          if (await pingDevice(pinned)) {
+            return pinned;
+          }
+          this.release(jobId);
+          throw new ToolError(
+            `Device ${pinned} terlihat "device" di adb tapi tidak merespons shell. Coba: adb kill-server && adb start-server, atau restart BlueStacks/emulator.`
+          );
         }
       } else {
         const udid = this.pickIdle();
         if (udid) {
           this.markBusy(udid, jobId);
-          return udid;
+          if (await pingDevice(udid)) {
+            return udid;
+          }
+          // Unresponsive device — release and let the next loop iteration try again.
+          this.release(jobId);
         }
       }
 

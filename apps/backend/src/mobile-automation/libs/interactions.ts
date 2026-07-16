@@ -7,7 +7,12 @@ import mobileConfig from "./config.js";
 import { getAutomationJobId } from "./job-context.js";
 import { getMobileJobUdid } from "./mobile-job-context.js";
 import { resolveLocator } from "./locators.js";
-import { getDriver } from "./driver/session.js";
+import {
+  getDriver,
+  isInstrumentationCrash,
+  recreateSessionAfterCrash,
+  withInstrumentationRecovery,
+} from "./driver/session.js";
 import type { MobileLocator } from "./schema.js";
 import { assertPageOpen } from "./screenshot.js";
 
@@ -28,20 +33,21 @@ export async function tapElement(
   clickCenter = true
 ): Promise<{ success: boolean; locator: MobileLocator }> {
   await assertPageOpen();
-  const driver = await getDriver();
-  const el = await resolveLocator(driver, locator);
+  return withInstrumentationRecovery(async (driver) => {
+    const el = await resolveLocator(driver, locator);
 
-  if (clickCenter) {
-    const rect = await el.getLocation();
-    const size = await el.getSize();
-    const x = rect.x + size.width / 2;
-    const y = rect.y + size.height / 2;
-    await tapAtCoordinates(driver, x, y);
-  } else {
-    await el.click();
-  }
+    if (clickCenter) {
+      const rect = await el.getLocation();
+      const size = await el.getSize();
+      const x = rect.x + size.width / 2;
+      const y = rect.y + size.height / 2;
+      await tapAtCoordinates(driver, x, y);
+    } else {
+      await el.click();
+    }
 
-  return { success: true, locator };
+    return { success: true, locator };
+  });
 }
 
 export async function tapAtCoordinates(
@@ -72,8 +78,7 @@ export async function tapAtCoordinates(
 
 export async function tapAt(x: number, y: number): Promise<{ success: boolean; x: number; y: number }> {
   await assertPageOpen();
-  const driver = await getDriver();
-  return tapAtCoordinates(driver, x, y);
+  return withInstrumentationRecovery((driver) => tapAtCoordinates(driver, x, y));
 }
 
 const MIN_SCROLL_DIMENSION = 100;
@@ -172,46 +177,47 @@ export async function scrollScreen(args: {
   locator?: MobileLocator;
 }): Promise<{ success: boolean }> {
   await assertPageOpen();
-  const driver = await getDriver();
   const amount = args.amount ?? DEFAULT_SCROLL_AMOUNT_PX;
 
-  const { left, top, width, height } = await getScrollBounds(driver, args.locator);
+  return withInstrumentationRecovery(async (driver) => {
+    const { left, top, width, height } = await getScrollBounds(driver, args.locator);
 
-  const stepPercent = scrollGesturePercent(amount, height, MAX_STEP_SCROLL_PERCENT);
-  let direction: string = args.direction;
-  if (args.direction === "top") direction = "up";
-  if (args.direction === "bottom") direction = "down";
+    const stepPercent = scrollGesturePercent(amount, height, MAX_STEP_SCROLL_PERCENT);
+    let direction: string = args.direction;
+    if (args.direction === "top") direction = "up";
+    if (args.direction === "bottom") direction = "down";
 
-  if (args.direction === "top") {
-    await driver.execute("mobile: scrollGesture", {
-      left,
-      top,
-      width,
-      height,
-      direction: "up",
-      percent: scrollGesturePercent(amount, height, MAX_EDGE_SCROLL_PERCENT),
-    });
-  } else if (args.direction === "bottom") {
-    await driver.execute("mobile: scrollGesture", {
-      left,
-      top,
-      width,
-      height,
-      direction: "down",
-      percent: scrollGesturePercent(amount, height, MAX_EDGE_SCROLL_PERCENT),
-    });
-  } else {
-    await driver.execute("mobile: scrollGesture", {
-      left,
-      top,
-      width,
-      height,
-      direction,
-      percent: stepPercent,
-    });
-  }
+    if (args.direction === "top") {
+      await driver.execute("mobile: scrollGesture", {
+        left,
+        top,
+        width,
+        height,
+        direction: "up",
+        percent: scrollGesturePercent(amount, height, MAX_EDGE_SCROLL_PERCENT),
+      });
+    } else if (args.direction === "bottom") {
+      await driver.execute("mobile: scrollGesture", {
+        left,
+        top,
+        width,
+        height,
+        direction: "down",
+        percent: scrollGesturePercent(amount, height, MAX_EDGE_SCROLL_PERCENT),
+      });
+    } else {
+      await driver.execute("mobile: scrollGesture", {
+        left,
+        top,
+        width,
+        height,
+        direction,
+        percent: stepPercent,
+      });
+    }
 
-  return { success: true };
+    return { success: true };
+  });
 }
 
 export async function inputText(args: {
@@ -221,28 +227,28 @@ export async function inputText(args: {
   hideKeyboard?: boolean;
 }): Promise<{ success: boolean; locator: MobileLocator }> {
   await assertPageOpen();
-  const driver = await getDriver();
-  const el = await resolveLocator(driver, args.locator);
-  await el.click();
-  if (args.clear !== false) {
-    await el.clearValue();
-  }
-  await el.setValue(args.value);
-  if (args.hideKeyboard !== false) {
-    try {
-      await driver.hideKeyboard();
-    } catch {
-      // ignore
+  return withInstrumentationRecovery(async (driver) => {
+    const el = await resolveLocator(driver, args.locator);
+    await el.click();
+    if (args.clear !== false) {
+      await el.clearValue();
     }
-  }
-  return { success: true, locator: args.locator };
+    await el.setValue(args.value);
+    if (args.hideKeyboard !== false) {
+      try {
+        await driver.hideKeyboard();
+      } catch {
+        // ignore
+      }
+    }
+    return { success: true, locator: args.locator };
+  });
 }
 
 export async function pressMobileKey(
   key: "BACK" | "HOME" | "ENTER" | "TAB" | "DEL" | "MENU"
 ): Promise<{ success: boolean; key: string }> {
   await assertPageOpen();
-  const driver = await getDriver();
   const keyCodeMap: Record<string, number> = {
     BACK: 4,
     HOME: 3,
@@ -251,7 +257,7 @@ export async function pressMobileKey(
     DEL: 67,
     MENU: 82,
   };
-  await driver.pressKeyCode(keyCodeMap[key]!);
+  await withInstrumentationRecovery((driver) => driver.pressKeyCode(keyCodeMap[key]!));
   return { success: true, key };
 }
 
@@ -267,7 +273,6 @@ export async function uploadFileToInput(args: {
 }> {
   const absolutePath = assertSafeUploadPath(args.filePath);
   await assertPageOpen();
-  const driver = await getDriver();
   const jobId = getAutomationJobId();
   const udid = jobId ? getMobileJobUdid(jobId) : undefined;
   if (!udid) {
@@ -278,13 +283,15 @@ export async function uploadFileToInput(args: {
   const remotePath = `/sdcard/Download/knitto-uploads/${fileName}`;
   await pushFile(udid, absolutePath, remotePath);
 
-  const el = await resolveLocator(driver, args.locator);
-  await el.click();
-  try {
-    await el.setValue(remotePath);
-  } catch {
-    await el.addValue(remotePath);
-  }
+  await withInstrumentationRecovery(async (driver) => {
+    const el = await resolveLocator(driver, args.locator);
+    await el.click();
+    try {
+      await el.setValue(remotePath);
+    } catch {
+      await el.addValue(remotePath);
+    }
+  });
 
   return {
     success: true,
@@ -299,13 +306,14 @@ export async function assertVisible(
   locator: MobileLocator
 ): Promise<{ success: boolean; locator: MobileLocator; visible: boolean }> {
   await assertPageOpen();
-  const driver = await getDriver();
-  const el = await resolveLocator(driver, locator);
-  const visible = await el.isDisplayed();
-  if (!visible) {
-    throw new ToolError(`Element not visible: ${JSON.stringify(locator)}`);
-  }
-  return { success: true, locator, visible: true };
+  return withInstrumentationRecovery(async (driver) => {
+    const el = await resolveLocator(driver, locator);
+    const visible = await el.isDisplayed();
+    if (!visible) {
+      throw new ToolError(`Element not visible: ${JSON.stringify(locator)}`);
+    }
+    return { success: true, locator, visible: true };
+  });
 }
 
 export async function waitFor(args: {
@@ -315,13 +323,15 @@ export async function waitFor(args: {
   timeoutMs?: number;
 }): Promise<{ success: boolean; type: "locator" | "text" | "timeout" }> {
   await assertPageOpen();
-  const driver = await getDriver();
+  let driver = await getDriver();
   const timeout = args.timeoutMs ?? 10_000;
 
   if (args.type === "timeout") {
     await driver.pause(timeout);
     return { success: true, type: "timeout" };
   }
+
+  const jobId = getAutomationJobId();
 
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
@@ -331,14 +341,25 @@ export async function waitFor(args: {
         if (await el.isDisplayed()) {
           return { success: true, type: "locator" };
         }
-      } catch {
-        // keep polling
+      } catch (error) {
+        if (jobId && isInstrumentationCrash(error)) {
+          driver = await recreateSessionAfterCrash(jobId);
+        }
+        // otherwise keep polling — locator just isn't there yet
       }
     }
     if (args.type === "text" && args.text) {
-      const source = await driver.getPageSource();
-      if (source.includes(args.text)) {
-        return { success: true, type: "text" };
+      try {
+        const source = await driver.getPageSource();
+        if (source.includes(args.text)) {
+          return { success: true, type: "text" };
+        }
+      } catch (error) {
+        if (jobId && isInstrumentationCrash(error)) {
+          driver = await recreateSessionAfterCrash(jobId);
+        } else {
+          throw error;
+        }
       }
     }
     await driver.pause(300);

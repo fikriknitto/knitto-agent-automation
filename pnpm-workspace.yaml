@@ -8,4 +8,6 @@ allowBuilds:
   esbuild: true
   protobufjs: true
   puppeteer: true
-  appium: set this to true or false
+  appium: true
+  edgedriver: true
+  geckodriver: true

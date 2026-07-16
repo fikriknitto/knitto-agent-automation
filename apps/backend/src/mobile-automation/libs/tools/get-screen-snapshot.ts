@@ -1,6 +1,6 @@
 import { defineTool, ToolError } from "../../../automation/core/index.js";
 import { captureScreenSnapshot } from "../driver/snapshot.js";
-import { getDriver } from "../driver/session.js";
+import { withInstrumentationRecovery } from "../driver/session.js";
 import {
   getScreenSnapshotInputSchema,
   getScreenSnapshotOutputShape,
@@ -14,11 +14,12 @@ export const mobile_get_screen_snapshot = defineTool({
   outputSchema: getScreenSnapshotOutputShape,
   handler: async (args) => {
     try {
-      const driver = await getDriver();
-      return await captureScreenSnapshot(driver, {
-        interactiveOnly: args.interactiveOnly,
-        maxElements: args.maxElements,
-      });
+      return await withInstrumentationRecovery((driver) =>
+        captureScreenSnapshot(driver, {
+          interactiveOnly: args.interactiveOnly,
+          maxElements: args.maxElements,
+        })
+      );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       throw new ToolError(`Failed to get screen snapshot: ${msg}`);

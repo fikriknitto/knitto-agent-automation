@@ -33,15 +33,45 @@ function parseDevicesOutput(stdout: string): AdbDevice[] {
   return devices;
 }
 
-async function runAdb(args: string[], udid?: string): Promise<string> {
+async function runAdb(args: string[], udid?: string, timeoutMs = 30_000): Promise<string> {
   return runSerial(async () => {
     const fullArgs = udid ? ["-s", udid, ...args] : args;
     const { stdout } = await execFileAsync("adb", fullArgs, {
-      timeout: 30_000,
+      timeout: timeoutMs,
       maxBuffer: 10 * 1024 * 1024,
     });
     return stdout;
   });
+}
+
+export async function killServer(): Promise<void> {
+  try {
+    await runAdb(["kill-server"]);
+  } catch {
+    // ignore
+  }
+}
+
+export async function startServer(): Promise<void> {
+  await runAdb(["start-server"]);
+}
+
+export async function reconnectOffline(): Promise<void> {
+  try {
+    await runAdb(["reconnect", "offline"]);
+  } catch {
+    // ignore
+  }
+}
+
+export async function connect(target: string): Promise<string> {
+  const stdout = await runAdb(["connect", target]);
+  return stdout.trim();
+}
+
+export async function disconnect(target: string): Promise<string> {
+  const stdout = await runAdb(["disconnect", target]);
+  return stdout.trim();
 }
 
 export async function listDevices(): Promise<AdbDevice[]> {
@@ -56,6 +86,16 @@ export async function listDevices(): Promise<AdbDevice[]> {
 export async function isDeviceOnline(udid: string): Promise<boolean> {
   const devices = await listDevices();
   return devices.some((d) => d.udid === udid && d.state === "device");
+}
+
+/** Cheap liveness probe — catches ADB endpoints that list as "device" but no longer respond to shell (common on BlueStacks under memory pressure). */
+export async function pingDevice(udid: string): Promise<boolean> {
+  try {
+    const stdout = await runAdb(["shell", "echo", "ok"], udid, 5_000);
+    return stdout.trim() === "ok";
+  } catch {
+    return false;
+  }
 }
 
 export async function listPackages(udid: string, query?: string): Promise<string[]> {

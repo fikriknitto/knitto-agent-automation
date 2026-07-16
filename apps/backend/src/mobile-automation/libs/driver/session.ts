@@ -1,4 +1,5 @@
 import { remote, type Browser } from "webdriverio";
+import type { MobileConfig } from "@knitto/shared";
 import { ToolError } from "../../../automation/core/index.js";
 import mobileConfig from "../config.js";
 import { getAutomationJobId } from "../job-context.js";
@@ -11,6 +12,14 @@ import {
 } from "../mobile-job-context.js";
 import { buildAndroidCapabilities } from "./capabilities.js";
 import { devicePool } from "./device-pool.js";
+import {
+  connect as adbConnect,
+  disconnect as adbDisconnect,
+  isDeviceOnline,
+  killServer as adbKillServer,
+  reconnectOffline,
+  startServer as adbStartServer,
+} from "../adb/adb-client.js";
 import {
   startMobileJobRecording,
   stopMobileJobRecording,
@@ -49,6 +58,77 @@ function parseAppiumUrl(url: string): {
   };
 }
 
+async function tryRecoverOfflineDevice(udid: string): Promise<void> {
+  // Best-effort: restart adb server and reconnect target.
+  // This is mainly for BlueStacks where ADB endpoints can flip to "offline".
+  await adbKillServer();
+  await adbStartServer();
+  await reconnectOffline();
+
+  // If udid is host:port (e.g. BlueStacks), reconnect explicitly.
+  if (udid.includes(":")) {
+    try {
+      await adbDisconnect(udid);
+    } catch {
+      // ignore
+    }
+    try {
+      await adbConnect(udid);
+    } catch {
+      // ignore
+    }
+  }
+}
+
+/** Opens the actual Appium session for a device the job already owns (or is acquiring for the first time). Does not touch the device pool. */
+async function openAppiumSession(
+  jobId: string,
+  udid: string,
+  mobileCfg: MobileConfig
+): Promise<Browser> {
+  const appium = parseAppiumUrl(mobileConfig.appiumServerUrl);
+  try {
+    if (!(await isDeviceOnline(udid))) {
+      await tryRecoverOfflineDevice(udid);
+      if (!(await isDeviceOnline(udid))) {
+        throw new ToolError(
+          `Device ${udid} offline. Jika pakai BlueStacks, jalankan: pnpm instances:up`
+        );
+      }
+    }
+
+    const driver = await remote({
+      hostname: appium.hostname,
+      port: appium.port,
+      path: appium.path,
+      protocol: appium.protocol,
+      capabilities: buildAndroidCapabilities({ udid, mobileConfig: mobileCfg }),
+      logLevel: "warn",
+    });
+    await driver.setTimeout({ implicit: mobileConfig.implicitWaitMs });
+    if (!isSegmentRecordingManaged(jobId)) {
+      await startMobileJobRecording(driver);
+    }
+    sessions.set(jobId, driver);
+    writeMobileSessionState(jobId, {
+      jobId,
+      sessionId: driver.sessionId,
+      udid,
+      appPackage: mobileCfg.appPackage,
+    });
+    return driver;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    // WebdriverIO remote() can throw various errors; keep message but make "device offline"
+    // actionable (it's not an Appium reachability issue).
+    const offlineHint =
+      /device offline/i.test(msg) || /Could not find online devices/i.test(msg)
+        ? ` Device ${udid} terlihat offline (ADB). Coba: adb kill-server && adb start-server && pnpm instances:up`
+        : "";
+    throw new ToolError(`Gagal membuat session Appium (${mobileConfig.appiumServerUrl}): ${msg}.${offlineHint}`);
+  }
+}
+
 export async function createSession(): Promise<Browser> {
   const jobId = getAutomationJobId();
   if (!jobId) {
@@ -84,34 +164,63 @@ export async function createSession(): Promise<Browser> {
 
   setMobileJobUdid(jobId, udid);
 
-  const appium = parseAppiumUrl(mobileConfig.appiumServerUrl);
   try {
-    const driver = await remote({
-      hostname: appium.hostname,
-      port: appium.port,
-      path: appium.path,
-      protocol: appium.protocol,
-      capabilities: buildAndroidCapabilities({ udid, mobileConfig: mobileCfg }),
-      logLevel: "warn",
-    });
-    await driver.setTimeout({ implicit: mobileConfig.implicitWaitMs });
-    if (!isSegmentRecordingManaged(jobId)) {
-      await startMobileJobRecording(driver);
-    }
-    sessions.set(jobId, driver);
-    writeMobileSessionState(jobId, {
-      jobId,
-      sessionId: driver.sessionId,
-      udid,
-      appPackage: mobileCfg.appPackage,
-    });
-    return driver;
+    return await openAppiumSession(jobId, udid, mobileCfg);
   } catch (error) {
     devicePool.release(jobId);
-    const msg = error instanceof Error ? error.message : String(error);
-    throw new ToolError(
-      `Appium tidak reachable di ${mobileConfig.appiumServerUrl}: ${msg}`
-    );
+    throw error;
+  }
+}
+
+const INSTRUMENTATION_CRASH_PATTERNS = [
+  /instrumentation process is not running/i,
+  /cannot be proxied to uiautomator2 server/i,
+  /uiautomator2 server .*(not running|not responding|has stopped|is not started)/i,
+];
+
+/** True for the "UiAutomator2 died mid-session" family of errors seen on BlueStacks (see memory/mobile logs) — not a device-offline or Appium-unreachable issue. */
+export function isInstrumentationCrash(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return INSTRUMENTATION_CRASH_PATTERNS.some((re) => re.test(msg));
+}
+
+/** Drops the broken Appium session and opens a fresh one on the same device, without releasing it back to the pool (the job still owns it). */
+export async function recreateSessionAfterCrash(jobId: string): Promise<Browser> {
+  const broken = sessions.get(jobId);
+  if (broken) {
+    try {
+      await broken.deleteSession();
+    } catch {
+      // Session is already dead server-side — nothing to clean up.
+    }
+    sessions.delete(jobId);
+  }
+
+  const mobileCfg = getMobileJobConfig(jobId);
+  const udid = getMobileJobUdid(jobId);
+  if (!mobileCfg?.appPackage || !udid) {
+    throw new ToolError("Tidak bisa memulihkan sesi mobile: konteks job hilang.");
+  }
+
+  return openAppiumSession(jobId, udid, mobileCfg);
+}
+
+/**
+ * Runs `fn` against the current driver; if it fails with an instrumentation-crash
+ * signature, recreates the Appium session once and retries `fn` against the fresh driver.
+ * Use this for tool operations instead of calling getDriver() directly.
+ */
+export async function withInstrumentationRecovery<T>(
+  fn: (driver: Browser) => Promise<T>
+): Promise<T> {
+  const driver = await getDriver();
+  try {
+    return await fn(driver);
+  } catch (error) {
+    const jobId = getAutomationJobId();
+    if (!jobId || !isInstrumentationCrash(error)) throw error;
+    const recovered = await recreateSessionAfterCrash(jobId);
+    return await fn(recovered);
   }
 }
 
@@ -160,21 +269,22 @@ export async function launchApp(): Promise<{
     throw new ToolError("mobileConfig belum diset — pilih package di UI.");
   }
 
-  const driver = await getDriver();
   const udid = getMobileJobUdid(jobId) ?? mobileCfg.udid ?? "";
 
-  if (mobileCfg.deepLink) {
-    await driver.execute("mobile: deepLink", {
-      url: mobileCfg.deepLink,
-      package: mobileCfg.appPackage,
-    });
-  } else {
-    await driver.activateApp(mobileCfg.appPackage);
-  }
+  await withInstrumentationRecovery(async (driver) => {
+    if (mobileCfg.deepLink) {
+      await driver.execute("mobile: deepLink", {
+        url: mobileCfg.deepLink,
+        package: mobileCfg.appPackage,
+      });
+    } else {
+      await driver.activateApp(mobileCfg.appPackage);
+    }
+  });
 
   let activity: string | undefined = mobileCfg.appActivity;
   try {
-    activity = (await driver.getCurrentActivity()) ?? activity;
+    activity = (await getActiveDriver(jobId)?.getCurrentActivity()) ?? activity;
   } catch {
     // ignore
   }

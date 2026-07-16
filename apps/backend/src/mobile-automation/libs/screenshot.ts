@@ -7,7 +7,7 @@ import {
   getActiveTestCaseId,
   isJobSegmentManaged,
 } from "../../services/shared/segment-context.js";
-import { getDriver } from "./driver/session.js";
+import { getDriver, withInstrumentationRecovery } from "./driver/session.js";
 
 function resolveMobileScreenshotFilename(path?: string): string {
   const jobId = getAutomationJobId();
@@ -29,8 +29,7 @@ export async function takeMobileScreenshot(path?: string): Promise<{
   base64: string;
   mimeType: "image/png";
 }> {
-  const driver = await getDriver();
-  const base64 = await driver.takeScreenshot();
+  const base64 = await withInstrumentationRecovery((driver) => driver.takeScreenshot());
   const dir = resolveAgentScreenshotDir(mobileConfig.screenshotDir);
   mkdirSync(dir, { recursive: true });
 

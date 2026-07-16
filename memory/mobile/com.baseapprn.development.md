@@ -36,3 +36,34 @@
 
 ### Handoff keluar
 - no_order=OH140726029
+
+
+## [sidebar-search-typing]
+
+## sidebar-search-typing
+- Status: BLOCKED (2026-07-16)
+- Package: com.baseapprn.development
+- Channel: automation-default1
+- Request: buka app RN → buka menu hamburger → pencarian ketik "button"
+- Hasil launch: BERHASIL — MainActivity di emulator-5554 setelah relaunch (sesi pertama jatuh ke BlueStacks HomeActivity, relaunch kedua sukses ke MainActivity)
+- Hasil interaksi: GAGAL — UiAutomator2 instrumentation process tidak berjalan (crashed)
+- Error: snapshot, screenshot, tap_at semua gagal — "cannot be proxied to UiAutomator2 server because the instrumentation process is not running"
+- Pemulihan dicoba: close_app → relaunch (2x) → wait 3s — masih gagal
+- Alur belum dijalankan: snapshot → tap hamburger → field search → input "button" → verifikasi hasil
+- Perbaikan disarankan: restart emulator/BlueStacks, reinstall Appium UiAutomator2 driver, cek logcat crash instrumentation
+- Tip dari memori: RN snapshot sering kosong saat sehat; gunakan interactiveOnly=false atau locator text
+
+
+## [hamburger-menu-button-search]
+
+## hamburger-menu-button-search
+- Status: BLOCKED (2026-07-16, percobaan ke-2)
+- Package: com.baseapprn.development
+- Channel: automation-default1
+- Request: buka menu hamburger dan cari button
+- Hasil: TIDAK BISA MULAI — `mobile_launch_app` gagal karena Appium tidak reachable di http://127.0.0.1:4723
+- Error: "Unable to connect to http://127.0.0.1:4723/, make sure browser driver is running on that address. It seems like the service failed to start or is rejecting any connections."
+- Dampak: snapshot, tap hamburger, pencarian button, screenshot, dan verifikasi tidak dapat dieksekusi
+- Langkah yang dijalankan: `mobile_get_app_memory` (berhasil) → `mobile_launch_app` (gagal)
+- Rekomendasi: start Appium server di port 4723, pastikan emulator/device terhubung (adb devices), dan driver UiAutomator2 tidak crash
+- Riwayat: percobaan sebelumnya (sidebar-search-typing) juga gagal karena UiAutomator2 instrumentation crash setelah launch berhasil
