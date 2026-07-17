@@ -29,7 +29,7 @@ Panduan setup & menjalankan aplikasi: [README root](../README.md).
 | [features.md](features.md) | Kontrak fitur: UI, bridges, browser/mobile, hybrid, shortcuts, memory, evidence, file manager, Docker |
 | [hybrid.md](hybrid.md) | Orchestrator multi-TC, handoff, segment video, format baris TC, **contoh prompt** |
 | [browser.md](browser.md) | Lifecycle Puppeteer, semantic locator, recording, memory browser, cleanup |
-| [mobile.md](mobile.md) | Appium/ADB, device pool, tools mobile, recording, cleanup tanpa relaunch |
+| [mobile.md](mobile.md) | Appium/ADB, device pool, tools mobile, recording, cleanup tanpa relaunch, stabilitas & recovery BlueStacks |
 
 ### Protokol & integrasi
 

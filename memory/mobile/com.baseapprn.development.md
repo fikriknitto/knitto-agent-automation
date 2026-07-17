@@ -67,3 +67,14 @@
 - Langkah yang dijalankan: `mobile_get_app_memory` (berhasil) → `mobile_launch_app` (gagal)
 - Rekomendasi: start Appium server di port 4723, pastikan emulator/device terhubung (adb devices), dan driver UiAutomator2 tidak crash
 - Riwayat: percobaan sebelumnya (sidebar-search-typing) juga gagal karena UiAutomator2 instrumentation crash setelah launch berhasil
+
+
+## [login-hamburger-search-button]
+
+## login-hamburger-search-button
+- Status: PASS (2026-07-16, channel automation-default)
+- Package: com.baseapprn.development — MainActivity di 127.0.0.1:5555
+- Login: Username/Password locator text → value "test"/"test" → tap "Login" → Dashboard
+- Hamburger: snapshot RN sering kosong (interactiveOnly=false tetap elements hampir kosong); gunakan tap_at pada pusat ikon ~ (30, 50) di layar 720x1280 (header ungu y≈25–75). Koordinat y≥70 sering mengenai item Color.
+- Drawer: field pencarian placeholder "Cari Menu"; input "button" → filter COMPONENTS menampilkan item "Button"
+- Tips: assert "Dashboard" setelah login; assert "Button" setelah search; screenshot bukti: 01-after-launch, 02-after-login, 06-hamburger-opened, 07-search-button-result

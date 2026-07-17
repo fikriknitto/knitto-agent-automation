@@ -1,6 +1,6 @@
 import { remote, type Browser } from "webdriverio";
 import type { MobileConfig } from "@knitto/shared";
-import { ToolError } from "../../../automation/core/index.js";
+import { createLogger, ToolError } from "../../../automation/core/index.js";
 import mobileConfig from "../config.js";
 import { getAutomationJobId } from "../job-context.js";
 import {
@@ -33,6 +33,8 @@ import {
   terminateMobileAppBestEffort,
 } from "../mobile-session-cleanup.js";
 
+const logger = createLogger("mobile-session");
+
 const sessions = new Map<string, Browser>();
 
 export function hasActiveSession(jobId: string): boolean {
@@ -61,6 +63,7 @@ function parseAppiumUrl(url: string): {
 async function tryRecoverOfflineDevice(udid: string): Promise<void> {
   // Best-effort: restart adb server and reconnect target.
   // This is mainly for BlueStacks where ADB endpoints can flip to "offline".
+  logger.warn(`Device ${udid} offline — attempting adb recovery (kill-server/start-server/reconnect)`);
   await adbKillServer();
   await adbStartServer();
   await reconnectOffline();
@@ -186,6 +189,8 @@ export function isInstrumentationCrash(error: unknown): boolean {
 
 /** Drops the broken Appium session and opens a fresh one on the same device, without releasing it back to the pool (the job still owns it). */
 export async function recreateSessionAfterCrash(jobId: string): Promise<Browser> {
+  logger.warn(`Recreating Appium session after instrumentation crash: job=${jobId}`);
+
   const broken = sessions.get(jobId);
   if (broken) {
     try {
@@ -202,7 +207,9 @@ export async function recreateSessionAfterCrash(jobId: string): Promise<Browser>
     throw new ToolError("Tidak bisa memulihkan sesi mobile: konteks job hilang.");
   }
 
-  return openAppiumSession(jobId, udid, mobileCfg);
+  const driver = await openAppiumSession(jobId, udid, mobileCfg);
+  logger.info(`Session recreated after crash: job=${jobId} udid=${udid}`);
+  return driver;
 }
 
 /**
@@ -219,6 +226,8 @@ export async function withInstrumentationRecovery<T>(
   } catch (error) {
     const jobId = getAutomationJobId();
     if (!jobId || !isInstrumentationCrash(error)) throw error;
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.warn(`Instrumentation crash detected, retrying once: job=${jobId} error=${msg}`);
     const recovered = await recreateSessionAfterCrash(jobId);
     return await fn(recovered);
   }

@@ -70,6 +70,7 @@ BlueStacks (Windows): `pnpm instances:up` / scripts di `scripts/bluestacks/`.
 - `GET /api/mobile/devices` + SSE `/stream`
 - Package list per UDID
 - Pool acquire/release per `jobId`
+- **Health check saat acquire**: sebelum device diserahkan ke job, `device-pool.ts` reservasi dulu (`markBusy`, sinkron — tidak ada race antar job) lalu ping `adb shell echo ok` (`pingDevice`, timeout 5s terpisah dari timeout ADB umum 30s). Device yang muncul "device" di `adb devices` tapi tidak merespons shell (gejala umum BlueStacks) di-reject, bukan diserahkan ke job lalu baru ketahuan rusak setelah sesi jalan.
 
 ---
 
@@ -96,3 +97,23 @@ Flag: `MOBILE_RECORD_VIDEO` (default true).
 End-of-job cleanup spawn MCP dengan `FORCE_CLOSE=1` **dan** `MOBILE_MULTI_TC=1` agar close guard terbuka tetapi **early `createSession` di-skip**. App di-force-stop lewat state/ADB tanpa membuat session Appium baru yang akan me-launch `appPackage` lagi.
 
 Detail: [mcp.md](mcp.md) § Cursor stdio.
+
+---
+
+## 8. Stabilitas & recovery (BlueStacks)
+
+BlueStacks lebih rapuh untuk UiAutomator2 dibanding AVD/device fisik (bukan target resmi Appium). Tiga lapis mitigasi di `driver/session.ts`:
+
+| Gejala | Mitigasi |
+|--------|----------|
+| Device ADB "offline" (`state: offline`) saat `createSession` | `tryRecoverOfflineDevice`: `adb kill-server` → `start-server` → `reconnect offline`, plus `disconnect`/`connect` eksplisit untuk udid `host:port` (BlueStacks) |
+| UiAutomator2 instrumentation crash di tengah sesi (`instrumentation process is not running`, dll.) | `withInstrumentationRecovery`: setiap tool call (tap, snapshot, scroll, input, screenshot, launch, wait) lewat wrapper ini — kalau errornya cocok pola crash, sesi Appium di-buang & dibuat ulang di device yang sama (device **tidak** dilepas ke pool), lalu operasi di-retry sekali |
+| Device "device" di ADB tapi shell tidak merespons (lihat troubleshooting.md) | Health check `pingDevice` di device pool (§4) — device di-reject sebelum diserahkan ke job, bukan gagal di tengah sesi |
+
+Semua jalur ini logging ke `[mobile-session]` / `[device-pool]` (level `warn` saat recovery terpicu). Cek log itu dulu sebelum menyimpulkan bug baru.
+
+Capability tambahan di `capabilities.ts` untuk kurangi kemungkinan crash: `uiautomator2ServerLaunchTimeout`/`uiautomator2ServerInstallTimeout` (60s), `adbExecTimeout` (60s), `disableWindowAnimation: true`.
+
+**Bukan bug kode — cek dulu manual kalau masih gagal setelah restart backend:**
+- Setting **Android Debug Bridge** di dalam Android BlueStacks bisa ter-reset setelah update BlueStacks (device terlihat "device" tapi semua `adb shell` gagal `error: closed`) — restart adb server **tidak** memperbaiki ini, harus toggle manual di Settings Android-nya.
+- RAM sistem — BlueStacks + Appium + `pnpm dev` + Cursor SDK job bisa memicu OOM diam-diam (proses mati tanpa error di log) di mesin dengan RAM terbatas; pastikan beberapa GB free sebelum test mobile.

@@ -1,6 +1,8 @@
-import { ToolError } from "../../../automation/core/index.js";
+import { createLogger, ToolError } from "../../../automation/core/index.js";
 import { listDevices, pingDevice } from "../adb/adb-client.js";
 import config from "../config.js";
+
+const logger = createLogger("device-pool");
 
 export type DeviceState = "idle" | "busy";
 
@@ -141,6 +143,7 @@ class DevicePool {
             return pinned;
           }
           this.release(jobId);
+          logger.warn(`Device ${pinned} listed as "device" but did not respond to shell ping`);
           throw new ToolError(
             `Device ${pinned} terlihat "device" di adb tapi tidak merespons shell. Coba: adb kill-server && adb start-server, atau restart BlueStacks/emulator.`
           );
@@ -153,6 +156,7 @@ class DevicePool {
             return udid;
           }
           // Unresponsive device — release and let the next loop iteration try again.
+          logger.warn(`Device ${udid} listed as "device" but did not respond to shell ping — skipping`);
           this.release(jobId);
         }
       }
