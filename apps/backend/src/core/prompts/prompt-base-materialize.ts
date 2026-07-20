@@ -5,13 +5,13 @@ import {
   getAgentPromptShortcut,
   type ApiPromptShortcut,
 } from "../../infra/api-data/agent-memory-client.js";
-import { serializePromptShortcutMarkdown } from "../../services/prompt-shortcut-service.js";
+import { serializePromptShortcutMarkdown } from "../../modules/prompt-shortcut/prompt-shortcut-service.js";
 import {
   PromptBaseInvalidPathError,
   PromptBaseNotFoundError,
   resolvePromptBasePaths,
 } from "./prompt-base-resolver.js";
-import { promptShortcutIdSchema } from "../../validators/prompt-shortcut-schemas.js";
+import { promptShortcutIdSchema } from "../../modules/prompt-shortcut/prompt-shortcut-schemas.js";
 
 function normalizeShortcutId(input: string): string {
   const trimmed = input.trim().replace(/\\/g, "/");

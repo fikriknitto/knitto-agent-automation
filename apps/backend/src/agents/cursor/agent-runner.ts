@@ -7,7 +7,7 @@ import {
   resolveMcpPathForJob,
 } from "../../core/mcp/automation-mcp-config.js";
 import { buildCursorSdkMessage, buildPromptForJob } from "../../core/prompts/prompt-builder.js";
-import { resolveMemoryAppIdForJob } from "../../services/shared/resolve-memory-app-id-for-job.js";
+import { resolveMemoryAppIdForJob } from "../../core/memory/resolve-memory-app-id-for-job.js";
 import {
   cleanupJobAttachments,
   loadVisionAttachments,

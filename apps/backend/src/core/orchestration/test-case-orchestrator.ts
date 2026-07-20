@@ -37,13 +37,13 @@ import {
   connectAutomationMcp,
   setActiveTestCaseMobileConfig,
 } from "../mcp/automation-mcp-client.js";
-import { agentVideoServeUrl } from "../../services/agent-videos.js";
+import { agentVideoServeUrl } from "../../modules/evidence/agent-videos.js";
 import { jobMediaPayload } from "../evidence/job-media-payload.js";
 import { setAutomationJobId } from "../job-context.js";
 import { setApiDataJobToken } from "../../infra/api-data/api-data-job-context.js";
 import {
   listAgentScreenshotFiles,
-} from "../../services/agent-screenshots.js";
+} from "../../modules/evidence/agent-screenshots.js";
 import { sanitizeJobId } from "../job-context.js";
 
 export type TestCaseAgentResult = {

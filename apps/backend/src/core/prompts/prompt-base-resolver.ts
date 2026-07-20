@@ -1,7 +1,7 @@
 import { access } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
 import { resolvePromptShortcutsDir } from "../../config/paths.js";
-import { promptShortcutIdSchema } from "../../validators/prompt-shortcut-schemas.js";
+import { promptShortcutIdSchema } from "../../modules/prompt-shortcut/prompt-shortcut-schemas.js";
 
 export class PromptBaseNotFoundError extends Error {
   constructor(input: string) {

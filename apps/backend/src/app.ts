@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { errorHandler, notFoundHandler } from "./middlewares/error-handler.js";
-import { createApiRoutes } from "./routes/index.js";
+import { createApiRoutes } from "./modules/index.js";
 import type { AgentRegistryService } from "./agents/agent-registry.service.js";
 
 export function createApp(bridgeRegistry: AgentRegistryService): express.Application {

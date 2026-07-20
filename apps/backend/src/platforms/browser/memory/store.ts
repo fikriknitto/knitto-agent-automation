@@ -1,5 +1,5 @@
 import { resolveMemoryDir } from "../../../config/paths.js";
-import { createAppMemoryStore } from "../../../services/shared/app-memory-store.js";
+import { createAppMemoryStore } from "../../../core/memory/app-memory-store.js";
 
 const store = createAppMemoryStore(resolveMemoryDir());
 
@@ -9,4 +9,4 @@ export const readAppMemory = store.readAppMemory;
 export const writeAppMemory = store.writeAppMemory;
 export const deleteAppMemory = store.deleteAppMemory;
 
-export type { AppMemoryListItem } from "../../../services/shared/app-memory-store.js";
+export type { AppMemoryListItem } from "../../../core/memory/app-memory-store.js";

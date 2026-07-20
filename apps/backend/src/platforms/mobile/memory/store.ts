@@ -1,5 +1,5 @@
 import { resolveMobileMemoryDir } from "../../../config/paths.js";
-import { createAppMemoryStore } from "../../../services/shared/app-memory-store.js";
+import { createAppMemoryStore } from "../../../core/memory/app-memory-store.js";
 
 const store = createAppMemoryStore(resolveMobileMemoryDir());
 
