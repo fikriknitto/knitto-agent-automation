@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { resolveScreenshotDir } from "../../config/paths.js";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../../core/logging.js";
 import {
   EVIDENCE_MANIFEST_NAME,
   flushEvidenceManifestForJob,

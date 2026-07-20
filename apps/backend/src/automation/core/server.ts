@@ -12,12 +12,8 @@ import type {
   ZodRawShapeCompat,
 } from "./types.js";
 
-export class ToolError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ToolError";
-  }
-}
+export { ToolError } from "../../core/errors.js";
+import { ToolError } from "../../core/errors.js";
 
 function toJsonSafe(value: unknown): JsonValue {
   if (value === null || value === undefined) return null;

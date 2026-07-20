@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { BridgeJob } from "@knitto/shared";
 import { resolveAgentScreenshotDirForJob } from "../../automation/libs/job-context.js";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../../core/logging.js";
 import { jobMediaPayloadAsync } from "../../core/evidence/job-media-payload.js";
 import { logAgentRunEvent } from "../../core/orchestration/run-event-log.js";
 import {

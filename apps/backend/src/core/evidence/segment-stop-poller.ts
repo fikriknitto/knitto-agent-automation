@@ -1,5 +1,5 @@
 import { testCaseVideoFilenameForId } from "@knitto/shared";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../logging.js";
 import { getAutomationJobId } from "../../automation/libs/job-context.js";
 import {
   isJobRecording,

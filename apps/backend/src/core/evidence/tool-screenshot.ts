@@ -1,6 +1,6 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { saveAgentScreenshotBuffer } from "../../automation/libs/browser/screenshot.js";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../logging.js";
 import { captureScreenshotFromStateFile } from "../../automation/libs/browser/session.js";
 
 const logger = createLogger("bridge-screenshot");

@@ -1,4 +1,5 @@
-import { createLogger, ToolError } from "../../automation/core/index.js";
+import { createLogger } from "../logging.js";
+import { ToolError } from "../errors.js";
 
 const logger = createLogger("browser-lock");
 

@@ -1,4 +1,4 @@
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../logging.js";
 
 const logger = createLogger("host-job-gate");
 

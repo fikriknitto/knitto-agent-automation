@@ -13,7 +13,7 @@ import {
   syncAgentRunFromJobMessage,
 } from "../../infra/api-data/agent-run-sync.js";
 import { patchAgentRun } from "../../infra/api-data/agent-runs-client.js";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../logging.js";
 
 const logger = createLogger("job-queue");
 

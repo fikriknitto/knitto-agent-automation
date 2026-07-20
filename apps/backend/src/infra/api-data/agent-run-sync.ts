@@ -1,5 +1,5 @@
 import type { AgentJobMessage, BridgeJob, TestCaseResult } from "@knitto/shared";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../../core/logging.js";
 import { logAgentRunEvent } from "../../core/orchestration/run-event-log.js";
 import {
   getAgentRunByJobId,

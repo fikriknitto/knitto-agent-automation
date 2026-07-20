@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { Server as HttpServer } from "node:http";
 import type { AgentJobMessage, BridgeKind } from "@knitto/shared";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../../core/logging.js";
 import type { AgentRegistryService } from "../../services/agent-registry.service.js";
 import { WebSocketServer, type WebSocket } from "ws";
 

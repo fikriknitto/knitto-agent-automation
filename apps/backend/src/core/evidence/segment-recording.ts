@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import type { MobileConfig, TestCasePlatform } from "@knitto/shared";
 import { testCaseVideoFilenameForId } from "@knitto/shared";
 import type { Browser } from "webdriverio";
-import { createLogger } from "../../automation/core/index.js";
+import { createLogger } from "../logging.js";
 import {
   getOpenPage,
   isRecordablePageUrl,
