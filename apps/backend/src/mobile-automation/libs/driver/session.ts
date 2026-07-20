@@ -1,6 +1,6 @@
 import { remote, type Browser } from "webdriverio";
 import type { MobileConfig } from "@knitto/shared";
-import { createLogger, ToolError } from "../../../automation/core/index.js";
+import { createLogger, ToolError } from "../../../platforms/browser/core/index.js";
 import mobileConfig from "../config.js";
 import { getAutomationJobId } from "../job-context.js";
 import {

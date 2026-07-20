@@ -5,7 +5,7 @@ import {
   getAppMemoryOutputShape,
   updateAppMemoryInputSchema,
   updateAppMemoryOutputShape,
-} from "../../automation/libs/schema.js";
+} from "../../platforms/browser/schema.js";
 
 export {
   appIdSchema,

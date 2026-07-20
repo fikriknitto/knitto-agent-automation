@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../../../automation/core/index.js";
+import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
 import { tapElement } from "../interactions.js";
 import { interactionOutputShape, tapInputSchema } from "../schema.js";
 

@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import type { TestCasePlatform } from "@knitto/shared";
-import { resolveAgentScreenshotDirForJob } from "../../automation/libs/job-context.js";
+import { resolveAgentScreenshotDirForJob } from "../../platforms/browser/job-context.js";
 import type { PendingSegment } from "./segment-context.js";
 
 export type ActiveSegment = {

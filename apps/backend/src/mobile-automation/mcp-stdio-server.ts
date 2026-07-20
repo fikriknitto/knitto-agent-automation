@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { setAutomationJobId } from "../automation/libs/job-context.js";
-import { Server, logger } from "../automation/core/index.js";
+import { setAutomationJobId } from "../platforms/browser/job-context.js";
+import { Server, logger } from "../platforms/browser/core/index.js";
 import { createSession, closeSession } from "./libs/driver/session.js";
 import mobileConfig from "./libs/config.js";
 import { setMobileJobConfig } from "./libs/mobile-job-context.js";

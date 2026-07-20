@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { createReadStream } from "node:fs";
-import { sanitizeJobId } from "../automation/libs/job-context.js";
+import { sanitizeJobId } from "../platforms/browser/job-context.js";
 import { resolveAgentVideoFile } from "../services/agent-videos.js";
 
 export class AgentVideoController {

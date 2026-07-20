@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { defineTool, ToolError } from "../../../automation/core/index.js";
+import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
 import { getAutomationJobId } from "../job-context.js";
 import { getDriver, hasActiveSession } from "../driver/session.js";
 import {
@@ -19,7 +19,7 @@ import { testCaseVideoFilenameForId } from "@knitto/shared";
 import {
   stopTestCaseSegmentInputSchema,
   stopTestCaseSegmentOutputShape,
-} from "../../../automation/libs/schema.js";
+} from "../../../platforms/browser/schema.js";
 
 export const mobile_stop_test_case_segment = defineTool({
   name: "mobile_stop_test_case_segment",

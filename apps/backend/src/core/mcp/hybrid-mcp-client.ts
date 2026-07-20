@@ -1,6 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { createInProcessMcpClient } from "../../automation/in-process-mcp-client.js";
+import { createInProcessMcpClient } from "../../platforms/browser/in-process-mcp-client.js";
 import { createInProcessMobileMcpClient } from "../../mobile-automation/in-process-mcp-client.js";
 import type { MobileConfig } from "@knitto/shared";
 import { setMobileJobConfig } from "../../mobile-automation/libs/mobile-job-context.js";

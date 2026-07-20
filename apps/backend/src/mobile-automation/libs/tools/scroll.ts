@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../../../automation/core/index.js";
+import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
 import { scrollScreen } from "../interactions.js";
 import { scrollInputSchema, scrollOutputShape } from "../schema.js";
 

@@ -43,7 +43,7 @@ export function resolveMcpStdioEntry(root = resolveMonorepoRoot()): string {
   if (process.env.AUTOMATION_MCP_PATH?.trim()) {
     return resolve(root, process.env.AUTOMATION_MCP_PATH.trim());
   }
-  return join(root, "apps", "backend", "src", "automation", "mcp-stdio-server.ts");
+  return join(root, "apps", "backend", "src", "platforms", "browser", "mcp-stdio-server.ts");
 }
 
 export function resolveMobileMcpStdioEntry(root = resolveMonorepoRoot()): string {

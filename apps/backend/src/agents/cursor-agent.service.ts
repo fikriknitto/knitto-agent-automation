@@ -4,7 +4,7 @@ import type {
   BridgeModelOption,
   UserPromptMessage,
 } from "@knitto/shared";
-import { createLogger } from "../automation/core/index.js";
+import { createLogger } from "../platforms/browser/core/index.js";
 import { browserHeadedFromEnv } from "../core/evidence/browser-env.js";
 import { JobQueue } from "../core/orchestration/queue.js";
 import { startBridgeJob } from "./cursor/agent-runner.js";

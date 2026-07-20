@@ -7,15 +7,15 @@ import {
 } from "../orchestration/handoff.js";
 import {
   DROPDOWN_SELECTION_WORKFLOW,
-} from "../../automation/libs/prompts/dropdown-workflow.js";
+} from "../../platforms/browser/prompts/dropdown-workflow.js";
 import {
   MODAL_DISMISS_WORKFLOW,
   MODAL_FORM_SUBMIT_WORKFLOW,
-} from "../../automation/libs/prompts/modal-workflow.js";
+} from "../../platforms/browser/prompts/modal-workflow.js";
 import {
   AUTOMATION_PROMPT_STRATEGIES,
   type AutomationStrategyKey,
-} from "../../automation/libs/prompts/texts.js";
+} from "../../platforms/browser/prompts/texts.js";
 import type { SavedAttachment, VisionAttachment } from "../evidence/persist-attachments.js";
 
 export interface AgentPromptInput {

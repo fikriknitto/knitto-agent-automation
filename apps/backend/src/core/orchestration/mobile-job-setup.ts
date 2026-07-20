@@ -1,6 +1,6 @@
 import type { MobileConfig } from "@knitto/shared";
 import { createLogger } from "../logging.js";
-import { setAutomationJobId } from "../../automation/libs/job-context.js";
+import { setAutomationJobId } from "../../platforms/browser/job-context.js";
 import mobileConfig from "../../mobile-automation/libs/config.js";
 import { devicePool } from "../../mobile-automation/libs/driver/device-pool.js";
 import {

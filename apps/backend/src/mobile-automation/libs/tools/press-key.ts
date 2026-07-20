@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../../../automation/core/index.js";
+import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
 import { pressMobileKey } from "../interactions.js";
 import { pressKeyInputSchema, pressKeyOutputShape } from "../schema.js";
 

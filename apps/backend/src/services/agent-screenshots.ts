@@ -3,7 +3,7 @@ import { basename, join } from "node:path";
 import {
   resolveAgentScreenshotDirForJob,
   sanitizeJobId,
-} from "../automation/libs/job-context.js";
+} from "../platforms/browser/job-context.js";
 
 const PNG_EXT = /\.png$/i;
 

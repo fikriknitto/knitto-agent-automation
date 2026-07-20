@@ -5,7 +5,7 @@ import {
   readAppMemory,
   sanitizeAppId,
   writeAppMemory,
-} from "../automation/libs/memory/store.js";
+} from "../platforms/browser/memory/store.js";
 import type {
   CreateAppMemoryBody,
   UpdateAppMemoryBody,

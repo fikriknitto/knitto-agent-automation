@@ -2,7 +2,7 @@ import type { PromptAttachment } from "@knitto/shared";
 import { mkdir, readFile, writeFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveStorageRoot } from "../../config/paths.js";
-import { resolveAgentScreenshotDirForJob } from "../../automation/libs/job-context.js";
+import { resolveAgentScreenshotDirForJob } from "../../platforms/browser/job-context.js";
 import {
   assertAttachmentEligible,
   resolveMimeType,

@@ -1,12 +1,12 @@
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { AutomationPlatform } from "@knitto/shared";
-import config from "../automation/libs/config.js";
+import config from "../platforms/browser/config.js";
 import mobileConfig from "../mobile-automation/libs/config.js";
 import {
   resolveAgentScreenshotDirForJob,
   sanitizeJobId,
-} from "../automation/libs/job-context.js";
+} from "../platforms/browser/job-context.js";
 
 const MP4_EXT = /\.mp4$/i;
 const TC_VIDEO_RE = /^tc-\d+\.mp4$/i;

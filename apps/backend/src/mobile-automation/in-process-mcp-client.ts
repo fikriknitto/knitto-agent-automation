@@ -1,6 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { ToolError } from "../automation/core/index.js";
+import { ToolError } from "../platforms/browser/core/index.js";
 import {
   mobile_launch_app,
   mobile_get_screen_snapshot,

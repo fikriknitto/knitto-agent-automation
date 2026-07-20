@@ -4,4 +4,4 @@ export {
   sanitizeJobId,
   resolveAgentScreenshotDir,
   resolveAgentScreenshotDirForJob,
-} from "../../automation/libs/job-context.js";
+} from "../../platforms/browser/job-context.js";

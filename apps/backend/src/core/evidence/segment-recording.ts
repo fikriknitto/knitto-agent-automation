@@ -6,13 +6,13 @@ import { createLogger } from "../logging.js";
 import {
   getOpenPage,
   isRecordablePageUrl,
-} from "../../automation/libs/browser/session.js";
+} from "../../platforms/browser/driver/session.js";
 import {
   ensureBrowserSegmentRecording,
   resolveAgentVideoPath,
   stopBrowserSegment,
-} from "../../automation/libs/browser/recording.js";
-import config from "../../automation/libs/config.js";
+} from "../../platforms/browser/driver/recording.js";
+import config from "../../platforms/browser/config.js";
 import mobileConfig from "../../mobile-automation/libs/config.js";
 import {
   getDriver,
@@ -25,7 +25,7 @@ import {
   setSegmentRecordingManaged,
   stopMobileSegment,
 } from "../../mobile-automation/libs/recording.js";
-import { setAutomationJobId } from "../../automation/libs/job-context.js";
+import { setAutomationJobId } from "../../platforms/browser/job-context.js";
 import {
   clearJobSegmentManaged as clearSegmentContext,
   clearPendingSegment,

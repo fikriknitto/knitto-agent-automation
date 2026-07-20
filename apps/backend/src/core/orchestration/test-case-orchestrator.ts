@@ -39,12 +39,12 @@ import {
 } from "../mcp/automation-mcp-client.js";
 import { agentVideoServeUrl } from "../../services/agent-videos.js";
 import { jobMediaPayload } from "../evidence/job-media-payload.js";
-import { setAutomationJobId } from "../../automation/libs/job-context.js";
+import { setAutomationJobId } from "../../platforms/browser/job-context.js";
 import { setApiDataJobToken } from "../../infra/api-data/api-data-job-context.js";
 import {
   listAgentScreenshotFiles,
 } from "../../services/agent-screenshots.js";
-import { sanitizeJobId } from "../../automation/libs/job-context.js";
+import { sanitizeJobId } from "../../platforms/browser/job-context.js";
 
 export type TestCaseAgentResult = {
   summary: string;
