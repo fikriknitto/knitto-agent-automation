@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { resolveScreenshotDir } from "../../config/paths.js";
+import { resolveScreenshotDir } from "../config/paths.js";
 
 let currentJobId: string | null = null;
 

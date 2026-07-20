@@ -1,6 +1,6 @@
 import { testCaseVideoFilenameForId } from "@knitto/shared";
 import { createLogger } from "../logging.js";
-import { getAutomationJobId } from "../../platforms/browser/job-context.js";
+import { getAutomationJobId } from "../job-context.js";
 import {
   isJobRecording,
   stopBrowserSegment,

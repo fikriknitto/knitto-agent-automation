@@ -2,12 +2,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { randomBytes } from "node:crypto";
 import config from "../config.js";
-import { resolveAgentScreenshotDir } from "../job-context.js";
+import { resolveAgentScreenshotDir } from "../../../core/job-context.js";
 import {
   getActiveTestCaseId,
   isJobSegmentManaged,
 } from "../../../core/evidence/segment-context.js";
-import { getAutomationJobId } from "../job-context.js";
+import { getAutomationJobId } from "../../../core/job-context.js";
 import { getPage } from "./session.js";
 
 function resolveScreenshotFileName(customPath?: string): string {

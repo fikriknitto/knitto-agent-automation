@@ -2,7 +2,7 @@ import type { AgentJobMessage, BridgeJob, TestCaseSpec } from "@knitto/shared";
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
-import { setAutomationJobId } from "../../platforms/browser/job-context.js";
+import { setAutomationJobId } from "../job-context.js";
 import {
   connectAutomationMcp,
   disconnectAutomationMcpJobContext,

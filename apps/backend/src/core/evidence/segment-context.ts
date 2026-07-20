@@ -1,5 +1,5 @@
 import type { MobileConfig, TestCasePlatform } from "@knitto/shared";
-import { getAutomationJobId } from "../../platforms/browser/job-context.js";
+import { getAutomationJobId } from "../job-context.js";
 import {
   deleteSegmentStateFile,
   readSegmentStateFile,

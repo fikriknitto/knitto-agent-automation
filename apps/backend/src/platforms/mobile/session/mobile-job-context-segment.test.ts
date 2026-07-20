@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, it } from "node:test";
-import { setAutomationJobId } from "../../browser/job-context.js";
+import { setAutomationJobId } from "../../../core/job-context.js";
 import {
   clearJobSegmentManaged,
   markJobSegmentManaged,

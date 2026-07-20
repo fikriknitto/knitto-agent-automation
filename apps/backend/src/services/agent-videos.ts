@@ -6,7 +6,7 @@ import mobileConfig from "../platforms/mobile/config.js";
 import {
   resolveAgentScreenshotDirForJob,
   sanitizeJobId,
-} from "../platforms/browser/job-context.js";
+} from "../core/job-context.js";
 
 const MP4_EXT = /\.mp4$/i;
 const TC_VIDEO_RE = /^tc-\d+\.mp4$/i;

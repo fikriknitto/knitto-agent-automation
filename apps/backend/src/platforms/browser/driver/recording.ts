@@ -9,7 +9,7 @@ import {
   getAutomationJobId,
   resolveAgentScreenshotDir,
   resolveAgentScreenshotDirForJob,
-} from "../job-context.js";
+} from "../../../core/job-context.js";
 import {
   getPendingSegment,
   isJobSegmentManaged,

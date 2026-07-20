@@ -25,7 +25,7 @@ import {
   setSegmentRecordingManaged,
   stopMobileSegment,
 } from "../../platforms/mobile/session/recording.js";
-import { setAutomationJobId } from "../../platforms/browser/job-context.js";
+import { setAutomationJobId } from "../job-context.js";
 import {
   clearJobSegmentManaged as clearSegmentContext,
   clearPendingSegment,

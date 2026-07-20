@@ -4,7 +4,7 @@ import { agentVideoServeUrl, agentVideoServeUrls } from "../../services/agent-vi
 import { waitForJobVideoReady as waitForBrowserJobVideoReady } from "../../platforms/browser/driver/recording.js";
 import { waitForMobileJobVideoReady } from "../../platforms/mobile/session/recording.js";
 import { existsSync } from "node:fs";
-import { resolveAgentScreenshotDirForJob } from "../../platforms/browser/job-context.js";
+import { resolveAgentScreenshotDirForJob } from "../job-context.js";
 
 export function jobMediaPayload(
   jobId: string,

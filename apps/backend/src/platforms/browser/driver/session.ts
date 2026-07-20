@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import { ToolError } from "../../mcp-kit/core/index.js";
-import { getAutomationJobId } from "../job-context.js";
+import { getAutomationJobId } from "../../../core/job-context.js";
 import config from "../config.js";
 import { isJobSegmentManaged } from "../../../core/evidence/segment-context.js";
 import { ensureSegmentRecordingStarted } from "../../../core/evidence/segment-recording.js";

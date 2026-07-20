@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { setAutomationJobId } from "../browser/job-context.js";
+import { setAutomationJobId } from "../../core/job-context.js";
 import { logger } from "../mcp-kit/core/index.js";
 import {
   runMcpStdioServer,

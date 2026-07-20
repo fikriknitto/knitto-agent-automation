@@ -1,7 +1,7 @@
 import type { MobileConfig, TestCaseSpec } from "@knitto/shared";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { createLogger } from "../logging.js";
-import { setAutomationJobId } from "../../platforms/browser/job-context.js";
+import { setAutomationJobId } from "../job-context.js";
 import { callCursorSubprocessTool } from "../mcp/cursor-mcp-tool-runner.js";
 
 const logger = createLogger("test-case-cleanup");

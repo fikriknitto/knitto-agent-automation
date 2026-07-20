@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { resolveAgentScreenshotDirForJob } from "../../platforms/browser/job-context.js";
+import { resolveAgentScreenshotDirForJob } from "../job-context.js";
 import {
   getAgentPromptShortcut,
   type ApiPromptShortcut,

@@ -2,7 +2,7 @@ import type { MobileConfig } from "@knitto/shared";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { createLogger } from "../logging.js";
-import { setAutomationJobId } from "../../platforms/browser/job-context.js";
+import { setAutomationJobId } from "../job-context.js";
 import { resolveMonorepoRoot } from "../../config/paths.js";
 import config from "../../agents/cursor/config.js";
 import {

@@ -1,6 +1,6 @@
 import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { setAutomationJobId } from "../../platforms/browser/job-context.js";
+import { setAutomationJobId } from "../job-context.js";
 import { createInProcessMcpClient } from "../../platforms/browser/in-process-mcp-client.js";
 import { createInProcessMobileMcpClient } from "../../platforms/mobile/in-process-mcp-client.js";
 import { setMobileJobConfig } from "../../platforms/mobile/session/mobile-job-context.js";

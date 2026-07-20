@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { createReadStream } from "node:fs";
 import { resolveAgentScreenshotFile } from "../services/agent-screenshots.js";
-import { sanitizeJobId } from "../platforms/browser/job-context.js";
+import { sanitizeJobId } from "../core/job-context.js";
 
 export class AgentScreenshotController {
   serve(req: Request, res: Response): void {
