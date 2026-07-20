@@ -28,12 +28,12 @@ Schema input/output lengkap: sumber di `apps/backend/src/{automation,mobile-auto
 
 | Server | Entry | Registry export |
 |--------|-------|-----------------|
-| Browser | `apps/backend/src/automation/mcp-stdio-server.ts` | `automation/libs/registry.ts` |
-| Mobile | `apps/backend/src/mobile-automation/mcp-stdio-server.ts` | `mobile-automation/libs/registry.ts` |
+| Browser | `apps/backend/src/platforms/browser/mcp-stdio-server.ts` | `platforms/browser/registry.ts` |
+| Mobile | `apps/backend/src/platforms/mobile/mcp-stdio-server.ts` | `platforms/mobile/registry.ts` |
 
 Klien in-process memuat tool yang sama lewat `in-process-mcp-client.ts` (browser / mobile).
 
-Env builder: `services/shared/automation-mcp-config.ts` (`automationMcpEnv`, `mobileMcpEnv`).
+Env builder: `core/automation-mcp-config.ts` (`automationMcpEnv`, `mobileMcpEnv`).
 
 Urutan di stdio server = urutan `server.registerTool(...)`.
 

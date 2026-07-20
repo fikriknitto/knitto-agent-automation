@@ -28,8 +28,8 @@ Tidak mencakup Compose detail (`docker.md`) atau hybrid (`hybrid.md`).
 
 | Komponen | Path |
 |----------|------|
-| Session / caps | `mobile-automation/libs/driver/` |
-| Tools | `mobile-automation/libs/tools/` |
+| Session / caps | `platforms/mobile/driver/` |
+| Tools | `platforms/mobile/tools/` |
 | Cleanup ADB/state | `mobile-session-cleanup.ts` |
 | MCP stdio | `mobile-automation/mcp-stdio-server.ts` |
 

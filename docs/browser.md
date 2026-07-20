@@ -28,10 +28,10 @@ Tidak mencakup hybrid orchestrator (`hybrid.md`) atau MCP transport (`mcp.md`).
 
 | Komponen | Path |
 |----------|------|
-| Session / interactions | `apps/backend/src/automation/libs/browser/` |
-| MCP tools | `apps/backend/src/automation/libs/tools/` |
-| MCP stdio entry | `apps/backend/src/automation/mcp-stdio-server.ts` |
-| Config | `apps/backend/src/automation/libs/config.ts` |
+| Session / interactions | `apps/backend/src/platforms/browser/driver/` |
+| MCP tools | `apps/backend/src/platforms/browser/tools/` |
+| MCP stdio entry | `apps/backend/src/platforms/browser/mcp-stdio-server.ts` |
+| Config | `apps/backend/src/platforms/browser/config.ts` |
 
 ---
 

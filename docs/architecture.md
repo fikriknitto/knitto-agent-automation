@@ -33,7 +33,7 @@ graph TB
       Cursor[Cursor]
       OpenAI[OpenAI-compatible]
     end
-    ORCH[Test Case Orchestrator<br/>services/shared/]
+    ORCH[Test Case Orchestrator<br/>core/]
     subgraph MCP["MCP Servers"]
       BMCP[browser_* tools<br/>20 tools]
       MMCP[mobile_* tools<br/>16 tools]
@@ -107,11 +107,11 @@ Entry: `src/server.ts` → `src/app.ts` (HTTP `:3080` + WS hub dalam satu proses
 | 2 | Routing + controller | `src/routes/index.ts` (+11 route), `src/controllers/*` | REST per resource (lihat §3.3) |
 | 3 | WebSocket hub | `src/websocket/ws-hub.ts` | Channel join, terima `user_prompt`/`cancel`/`credentials`, broadcast status bridge & progres job |
 | 4 | Agent registry & runners | `src/services/bridge-registry.service.ts`, `src/services/bridge-runners/{cursor,ninerouter}/` | 2 runtime: Cursor + OpenAI-compatible (knitto-agent); tiap runtime punya `*-bridge.service.ts` + `agent-runner.ts` |
-| 5 | Orkestrasi bersama | `src/services/shared/` | `queue.ts` (JobQueue), `prompt-builder.ts`, `test-case-orchestrator.ts` + `test-case-parser.ts` (multi-TC/hybrid), `automation-mcp-client.ts`/`automation-mcp-config.ts` (transport MCP), `segment-recording.ts`, `handoff.ts`, `persist-attachments.ts`, cleanup mobile/browser |
-| 6 | Browser automation | `src/automation/` | MCP server (stdio `mcp-stdio-server.ts` + `in-process-mcp-client.ts`), registry tools (`libs/registry.ts`), Puppeteer (`libs/browser/{session,snapshot,interactions,locators,screenshot,recording}.ts`) |
-| 7 | Mobile automation | `src/mobile-automation/` | MCP server (stdio + in-process), Appium driver (`libs/driver/session.ts`), ADB (`libs/adb/*`), recovery instrumentation-crash/device-offline |
-| 8 | Device pool | `src/mobile-automation/libs/driver/device-pool.ts` | Singleton pool di atas `adb devices`: acquire/release per job, allowlist, round-robin, health check (`pingDevice`) |
-| 9 | Evidence | `src/services/agent-screenshots.ts`, `agent-videos.ts`, `services/shared/tool-screenshot.ts`, `segment-recording.ts` | Tulis & serve `screenshoot/agents/{jobId}/` (PNG + `recording.mp4` atau `tc-NN.mp4`) |
+| 5 | Orkestrasi bersama | `src/core/` | `queue.ts` (JobQueue), `prompt-builder.ts`, `test-case-orchestrator.ts` + `test-case-parser.ts` (multi-TC/hybrid), `automation-mcp-client.ts`/`automation-mcp-config.ts` (transport MCP), `segment-recording.ts`, `handoff.ts`, `persist-attachments.ts`, cleanup mobile/browser |
+| 6 | Browser automation | `src/platforms/browser/` | MCP server (stdio `mcp-stdio-server.ts` + `in-process-mcp-client.ts`), registry tools (`libs/registry.ts`), Puppeteer (`driver/{session,snapshot,interactions,locators,screenshot,recording}.ts`) |
+| 7 | Mobile automation | `src/platforms/mobile/` | MCP server (stdio + in-process), Appium driver (`driver/session.ts`), ADB (`adb/*`), recovery instrumentation-crash/device-offline |
+| 8 | Device pool | `src/platforms/mobile/driver/device-pool.ts` | Singleton pool di atas `adb devices`: acquire/release per job, allowlist, round-robin, health check (`pingDevice`) |
+| 9 | Evidence | `src/modules/evidence/agent-screenshots.ts`, `agent-videos.ts`, `core/tool-screenshot.ts`, `segment-recording.ts` | Tulis & serve `screenshoot/agents/{jobId}/` (PNG + `recording.mp4` atau `tc-NN.mp4`) |
 | 10 | Live device snapshot | `src/services/mobile-device-snapshot-hub.ts` | SSE streaming daftar/status device ke UI |
 | 11 | Storage / file manager | `src/services/storage/*` (`local-storage-adapter.ts`, `file-manager-service.ts`) | CRUD file `storage/`, eligibility attachment |
 | 12 | App memory | `src/services/app-memory-service.ts`, `mobile-app-memory-service.ts` | Memory markdown per app: `memory/{appId}.md` (browser), `memory/mobile/{package}.md` |
@@ -148,12 +148,12 @@ sequenceDiagram
 Detail per langkah:
 
 1. **Entry**: `WsHub.handleAgentFromWeb` validasi bridge → `bridge.handleUserPrompt(msg)`.
-2. **Queue**: `services/shared/queue.ts`, konkurensi `KNITTO_BRIDGE_MAX_CONCURRENT` (default 1).
+2. **Queue**: `core/queue.ts`, konkurensi `KNITTO_BRIDGE_MAX_CONCURRENT` (default 1).
 3. **Runner**: `bridge-runners/{cursor,ninerouter}/agent-runner.ts` — resolve attachment (`persist-attachments.ts`), memory, build prompt (`prompt-builder.ts`); prompt multi-TC (`## Test Case N`) diarahkan ke `executeMultiTestBridgeJob` (`multi-test-bridge.ts` + `test-case-orchestrator.ts`).
 4. **Transport MCP** — perbedaan penting per runtime:
    - **Cursor**: MCP **stdio** (`automation-mcp-config.ts` → spawn `mcp-stdio-server.ts`; `@cursor/sdk` men-drive loop).
    - **OpenAI-compatible**: MCP **in-process** (`automation-mcp-client.ts` → `in-process-mcp-client.ts`) + knitto-agent `Agent` loop.
-5. **Driver**: handler tool memanggil `automation/libs/browser/*` (Puppeteer) atau `mobile-automation/libs/driver/*` (Appium) + `libs/adb/*`.
+5. **Driver**: handler tool memanggil `platforms/browser/driver/*` (Puppeteer) atau `platforms/mobile/driver/*` (Appium) + `adb/*`.
 6. **Evidence**: screenshot & video ke `screenshoot/agents/{jobId}/`; segmen per-TC dihentikan lewat tool `*_stop_test_case_segment` + `segment-stop-poller.ts`.
 7. **Cleanup**: `mcp-browser.ts#closeAutomationBrowser`, `mobile-job-cleanup.ts`, release device pool, `cleanupJobAttachments`.
 
@@ -194,7 +194,7 @@ Dua MCP server, keduanya dibangun via `automation/core/server.ts` (`registerTool
 
 ### 4.1 Browser tools (prefix `browser_*`) — 20 tools
 
-Registrasi: `automation/mcp-stdio-server.ts` (stdio, Cursor) & `automation/libs/registry.ts` / `in-process-mcp-client.ts` (OpenAI-compatible). Sumber tiap tool di `automation/libs/tools/`. Nama publik tool = `browser_*` (W6).
+Registrasi: `automation/mcp-stdio-server.ts` (stdio, Cursor) & `platforms/browser/registry.ts` / `in-process-mcp-client.ts` (OpenAI-compatible). Sumber tiap tool di `automation/libs/tools/`. Nama publik tool = `browser_*` (W6).
 
 Bentuk **locator** (semua field opsional, minimal satu): `{ ref, role, name, label, placeholder, text }` — strategi semantik (snapshot ref / role+name / teks), **bukan** CSS selector. Alur idiomatis: `get_page_snapshot` dulu → pakai `ref` hasilnya. Default snapshot: `interactiveOnly=true`, `maxDepth=6`, `maxElements=200`.
 
@@ -222,7 +222,7 @@ Bentuk **locator** (semua field opsional, minimal satu): `{ ref, role, name, lab
 
 ### 4.2 Mobile tools (prefix `mobile_*`) — 16 tools
 
-Registrasi: `mobile-automation/mcp-stdio-server.ts` & `mobile-automation/libs/registry.ts`. Locator mobile: `{ ref, accessibilityId, text, name }`. Alur idiomatis: `mobile_launch_app` → `mobile_get_screen_snapshot` → interaksi via `ref`.
+Registrasi: `mobile-automation/mcp-stdio-server.ts` & `platforms/mobile/registry.ts`. Locator mobile: `{ ref, accessibilityId, text, name }`. Alur idiomatis: `mobile_launch_app` → `mobile_get_screen_snapshot` → interaksi via `ref`.
 
 | Tool | Parameter | Kegunaan |
 |---|---|---|
@@ -255,7 +255,7 @@ Perilaku multi-TC/cleanup dikendalikan env job: `AUTOMATION_MULTI_TC` / `MOBILE_
 
 - **Sebagai pengguna (QA)**: tidak memanggil tool langsung — tulis prompt di UI (mis. "buka situs X, login, assert dashboard tampil"), agent yang memilih & memanggil tools. Untuk multi-TC gunakan format `## Test Case N` + `Platform:` + `App:`/`Url:` + `[HANDOFF] KEY=value` ([hybrid.md](hybrid.md); maks 5 TC/prompt).
 - **Sebagai developer, menambah tool baru**:
-  1. Buat file di `automation/libs/tools/` atau `mobile-automation/libs/tools/` dengan `defineTool` (schema Zod di `libs/schema.ts`).
+  1. Buat file di `automation/libs/tools/` atau `platforms/mobile/tools/` dengan `defineTool` (schema Zod di `libs/schema.ts`).
   2. Daftarkan di `libs/registry.ts`, `mcp-stdio-server.ts`, **dan** `in-process-mcp-client.ts` (dua transport — jangan lupa keduanya, ini sumber drift yang sudah terjadi).
   3. Perbarui katalog di [mcp.md](mcp.md).
 

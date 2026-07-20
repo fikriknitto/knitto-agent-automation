@@ -53,7 +53,7 @@ flowchart TD
     I --> J[cleanupJobPlatforms]
 ```
 
-Implementasi utama: `services/shared/test-case-orchestrator.ts`, `multi-test-bridge.ts`, `segment-*.ts`.
+Implementasi utama: `core/test-case-orchestrator.ts`, `multi-test-bridge.ts`, `segment-*.ts`.
 
 ---
 

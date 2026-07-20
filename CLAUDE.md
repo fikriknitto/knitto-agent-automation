@@ -19,7 +19,7 @@ Monorepo Turborepo + pnpm: React frontend + Express backend, otomasi browser (Pu
 BlueStacks bukan target resmi UiAutomator2 — lebih rapuh dari AVD/device fisik. Kalau otomasi mobile gagal aneh setelah update BlueStacks atau device terlihat "device" di `adb devices` tapi semua `adb shell` gagal (`error: closed`):
 
 1. **Bukan bug kode.** Ini biasanya setting **Android Debug Bridge** di dalam Settings Android BlueStacks (bukan setting BlueStacks itu sendiri) yang ter-reset. Restart adb server tidak memperbaiki ini — harus toggle manual di dalam UI Android-nya.
-2. Backend punya recovery otomatis untuk instrumentation crash & device offline (`apps/backend/src/mobile-automation/libs/driver/session.ts`, `device-pool.ts`) — cek log `[mobile-session]` / `[device-pool]` dulu sebelum menyimpulkan ada bug baru.
+2. Backend punya recovery otomatis untuk instrumentation crash & device offline (`apps/backend/src/platforms/mobile/driver/session.ts`, `device-pool.ts`) — cek log `[mobile-session]` / `[device-pool]` dulu sebelum menyimpulkan ada bug baru.
 3. Kalau job mobile via Cursor gagal dengan pesan "MCP server `mobile` tidak ada" / "`mcp_auth` ditolak" — itu **hampir selalu** gejala device/ADB putus di tengah run, bukan masalah konfigurasi Cursor SDK.
 
 Detail lengkap & tabel gejala: [docs/mobile.md](docs/mobile.md) §8 "Stabilitas & recovery", [docs/troubleshooting.md](docs/troubleshooting.md).
@@ -30,4 +30,4 @@ Ikuti [README root § Prinsip Pengembangan](README.md#prinsip-pengembangan): sha
 
 ## Sebelum melapor "berhasil" pada perubahan mobile automation
 
-Jalankan end-to-end lewat UI sungguhan (bukan cuma typecheck/build) kalau perubahan menyentuh `mobile-automation/`. Typecheck yang hijau tidak menjamin device/Appium/BlueStacks-nya bekerja — banyak kegagalan di area ini murni infrastruktur (BlueStacks/ADB/RAM), bukan kena dari test otomatis.
+Jalankan end-to-end lewat UI sungguhan (bukan cuma typecheck/build) kalau perubahan menyentuh `platforms/mobile/`. Typecheck yang hijau tidak menjamin device/Appium/BlueStacks-nya bekerja — banyak kegagalan di area ini murni infrastruktur (BlueStacks/ADB/RAM), bukan kena dari test otomatis.
