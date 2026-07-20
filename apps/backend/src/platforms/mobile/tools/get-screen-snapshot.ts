@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
+import { defineTool, ToolError } from "../../../platforms/mcp-kit/core/index.js";
 import { captureScreenSnapshot } from "../driver/snapshot.js";
 import { withInstrumentationRecovery } from "../driver/session.js";
 import {

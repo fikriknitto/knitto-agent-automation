@@ -1,6 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { basename, extname, resolve } from "node:path";
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { resolveLocator } from "../driver/locators.js";
 import { getPage } from "../driver/session.js";
 import config from "../config.js";

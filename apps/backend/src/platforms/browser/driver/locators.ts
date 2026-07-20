@@ -1,5 +1,5 @@
 import type { ElementHandle, Page } from "puppeteer";
-import { ToolError } from "../core/index.js";
+import { ToolError } from "../../mcp-kit/core/index.js";
 import type { SemanticLocator } from "../schema.js";
 
 export type RefEntry = {

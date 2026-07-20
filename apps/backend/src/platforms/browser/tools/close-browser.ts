@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { getAutomationJobId } from "../job-context.js";
 import { isMultiTcCloseBlocked } from "../../../core/evidence/segment-context.js";
 import { closeBrowser } from "../driver/session.js";

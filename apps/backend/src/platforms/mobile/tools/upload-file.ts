@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
+import { defineTool, ToolError } from "../../../platforms/mcp-kit/core/index.js";
 import { uploadFileToInput } from "../driver/interactions.js";
 import { uploadFileInputSchema, uploadFileOutputShape } from "../schema.js";
 

@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { createLogger } from "../../browser/core/index.js";
+import { createLogger } from "../../mcp-kit/core/index.js";
 import mobileConfig from "../config.js";
 import { devicePool } from "../driver/device-pool.js";
 import { clearMobileJobContext } from "./mobile-job-context.js";

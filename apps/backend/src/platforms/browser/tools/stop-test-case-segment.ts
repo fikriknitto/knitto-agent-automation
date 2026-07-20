@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { getAutomationJobId } from "../job-context.js";
 import { stopBrowserSegment, resolveAgentVideoPath } from "../driver/recording.js";
 import { getActiveTestCaseId } from "../../../core/evidence/segment-context.js";

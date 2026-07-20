@@ -1,7 +1,7 @@
 import { basename, extname, resolve } from "node:path";
 import { existsSync, statSync } from "node:fs";
 import type { Browser } from "webdriverio";
-import { ToolError } from "../../browser/core/index.js";
+import { ToolError } from "../../mcp-kit/core/index.js";
 import { pushFile } from "../adb/adb-client.js";
 import mobileConfig from "../config.js";
 import { getAutomationJobId } from "../job-context.js";

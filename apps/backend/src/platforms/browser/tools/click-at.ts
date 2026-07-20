@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { clickAt } from "../driver/interactions.js";
 import { clickAtInputSchema, clickAtOutputShape } from "../schema.js";
 

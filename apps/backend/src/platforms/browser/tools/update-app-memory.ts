@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { writeAppMemory as writeDisk, sanitizeAppId } from "../memory/store.js";
 import { updateAppMemoryInputSchema, updateAppMemoryOutputShape } from "../schema.js";
 import { putAgentAppMemory } from "../../../infra/api-data/agent-memory-client.js";

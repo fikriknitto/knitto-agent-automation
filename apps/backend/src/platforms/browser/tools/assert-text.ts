@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { getPageText } from "../driver/session.js";
 import { assertTextInputSchema, assertTextOutputShape } from "../schema.js";
 

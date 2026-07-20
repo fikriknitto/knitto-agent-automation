@@ -1,5 +1,5 @@
 import { Agent, CursorAgentError } from "@cursor/sdk";
-import { createLogger } from "../../platforms/browser/core/index.js";
+import { createLogger } from "../../platforms/mcp-kit/core/index.js";
 import { resolveMonorepoRoot } from "../../config/paths.js";
 import {
   automationMcpSpawnArgs,

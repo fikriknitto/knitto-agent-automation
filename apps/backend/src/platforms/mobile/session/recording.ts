@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Browser } from "webdriverio";
-import { createLogger } from "../../browser/core/index.js";
+import { createLogger } from "../../mcp-kit/core/index.js";
 import { getAutomationJobId, resolveAgentScreenshotDirForJob } from "../job-context.js";
 import mobileConfig from "../config.js";
 import {

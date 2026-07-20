@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { waitForCondition } from "../driver/interactions.js";
 import { waitForInputSchema, waitForOutputShape } from "../schema.js";
 

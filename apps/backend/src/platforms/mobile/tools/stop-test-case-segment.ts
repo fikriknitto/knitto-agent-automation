@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
+import { defineTool, ToolError } from "../../../platforms/mcp-kit/core/index.js";
 import { getAutomationJobId } from "../job-context.js";
 import { getDriver, hasActiveSession } from "../driver/session.js";
 import {

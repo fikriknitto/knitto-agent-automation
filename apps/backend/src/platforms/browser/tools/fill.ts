@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { resolveLocator } from "../driver/locators.js";
 import { getPage } from "../driver/session.js";
 import { fillInputSchema, interactionOutputShape } from "../schema.js";

@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { BridgeKind, BridgeInfo } from "@knitto/shared";
-import { createLogger } from "../platforms/browser/core/index.js";
+import { createLogger } from "../platforms/mcp-kit/core/index.js";
 import { CursorAgentService } from "./cursor-agent.service.js";
 import { OpenaiAgentService } from "./openai-agent.service.js";
 import type {

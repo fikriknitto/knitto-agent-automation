@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
-import { ToolError } from "../core/index.js";
+import { ToolError } from "../../mcp-kit/core/index.js";
 import { getAutomationJobId } from "../job-context.js";
 import config from "../config.js";
 import { isJobSegmentManaged } from "../../../core/evidence/segment-context.js";

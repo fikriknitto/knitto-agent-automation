@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { goBack } from "../driver/session.js";
 import { historyOutputShape } from "../schema.js";
 

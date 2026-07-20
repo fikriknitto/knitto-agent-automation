@@ -1,5 +1,5 @@
 import type { Browser, ChainablePromiseElement } from "webdriverio";
-import { ToolError } from "../../browser/core/index.js";
+import { ToolError } from "../../mcp-kit/core/index.js";
 import { getRefXpath } from "./snapshot.js";
 import type { MobileLocator } from "../schema.js";
 

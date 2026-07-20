@@ -1,5 +1,5 @@
 import type { Page } from "puppeteer";
-import { ToolError } from "../core/index.js";
+import { ToolError } from "../../mcp-kit/core/index.js";
 import { resolveLocator, resolveOptionByText } from "./locators.js";
 import type { SemanticLocator } from "../schema.js";
 import { getPage } from "./session.js";

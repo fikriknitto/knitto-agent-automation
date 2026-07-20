@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { takePageScreenshot } from "../driver/screenshot.js";
 import { takeScreenshotInputSchema, takeScreenshotOutputShape } from "../schema.js";
 

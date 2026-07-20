@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { platform as osPlatform } from "node:os";
 import type { Page } from "puppeteer";
 import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
-import { createLogger } from "../core/index.js";
+import { createLogger } from "../../mcp-kit/core/index.js";
 import {
   getAutomationJobId,
   resolveAgentScreenshotDir,

@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AgentJobMessage, BridgeKind } from "@knitto/shared";
-import { createLogger } from "./platforms/browser/core/index.js";
+import { createLogger } from "./platforms/mcp-kit/core/index.js";
 import { createApp } from "./app.js";
 import { loadEnv, resolveHttpHost, resolveHttpPort } from "./config/env.js";
 import { AgentRegistryService } from "./agents/agent-registry.service.js";

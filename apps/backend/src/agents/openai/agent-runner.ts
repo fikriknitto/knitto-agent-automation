@@ -1,4 +1,4 @@
-import { createLogger } from "../../platforms/browser/core/index.js";
+import { createLogger } from "../../platforms/mcp-kit/core/index.js";
 import {
   connectAutomationMcp,
   disconnectAutomationMcpJobContext,

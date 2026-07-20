@@ -1,4 +1,4 @@
-import { defineTool, ToolError } from "../core/index.js";
+import { defineTool, ToolError } from "../../mcp-kit/core/index.js";
 import { navigatePage } from "../driver/session.js";
 import { navigateInputSchema, navigateOutputShape } from "../schema.js";
 

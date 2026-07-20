@@ -1,4 +1,4 @@
-import { createLogger, ToolError } from "../../../platforms/browser/core/index.js";
+import { createLogger, ToolError } from "../../../platforms/mcp-kit/core/index.js";
 import { listDevices, pingDevice } from "../adb/adb-client.js";
 import config from "../config.js";
 

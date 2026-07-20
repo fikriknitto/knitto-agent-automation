@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { upsertMemorySection } from "./app-memory-sections.js";
-import { ToolError } from "../../platforms/browser/core/index.js";
+import { ToolError } from "../../platforms/mcp-kit/core/index.js";
 
 export type AppMemoryWriteMode = "replace" | "upsert_section";
 
