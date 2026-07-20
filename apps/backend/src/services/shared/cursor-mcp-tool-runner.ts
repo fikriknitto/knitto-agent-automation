@@ -4,7 +4,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { createLogger } from "../../automation/core/index.js";
 import { setAutomationJobId } from "../../automation/libs/job-context.js";
 import { resolveMonorepoRoot } from "../../config/paths.js";
-import config from "../bridge-runners/cursor/config.js";
+import config from "../agent-runners/cursor/config.js";
 import {
   automationMcpEnv,
   automationMcpSpawnArgs,

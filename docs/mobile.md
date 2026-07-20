@@ -55,7 +55,9 @@ Appium **tidak** di-bundle di monorepo. Di host:
 ```bash
 npm i -g appium@3.1.0
 appium driver install uiautomator2@4.2.3
-# set ANDROID_HOME
+# set ANDROID_HOME (User env) — terminal yang sudah terbuka sebelum setx tidak otomatis dapat nilai baru.
+# Dari repo: pnpm appium  (script set ANDROID_HOME lalu start Appium)
+# Atau manual: export ANDROID_HOME / ANDROID_SDK_ROOT lalu appium ...
 appium --address 127.0.0.1 --port 4723 --relaxed-security --allow-insecure adb_shell
 ```
 

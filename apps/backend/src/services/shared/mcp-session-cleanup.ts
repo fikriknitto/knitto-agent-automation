@@ -11,7 +11,7 @@ export async function closeMcpSession(
     await cleanupMobileJob(jobId);
     if (platform === "hybrid") {
       try {
-        await client.callTool({ name: "automation_close_browser", arguments: {} });
+        await client.callTool({ name: "browser_close_browser", arguments: {} });
       } catch {
         // best-effort
       }
@@ -20,7 +20,7 @@ export async function closeMcpSession(
   }
 
   const toolName =
-    platform === "mobile" ? "mobile_close_session" : "automation_close_browser";
+    platform === "mobile" ? "mobile_close_session" : "browser_close_browser";
   try {
     await client.callTool({ name: toolName, arguments: {} });
   } catch {

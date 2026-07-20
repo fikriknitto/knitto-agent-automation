@@ -2,6 +2,7 @@ import type { AgentJobMessage, BridgeInfo, TestCaseResult } from "@knitto/shared
 import type { PromptAttachment } from "@knitto/shared";
 import type { AutomationPlatform } from "@knitto/shared";
 import type { ChatPromptBase } from "./prompt-compose";
+import type { RunEvidenceItem } from "./run-evidence";
 
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "error";
 
@@ -20,6 +21,8 @@ export type ChatLine = {
   status?: AgentJobMessage["status"];
   progress?: number;
   result?: string;
+  /** Typed run evidence from API Data results. */
+  evidence?: RunEvidenceItem[];
   screenshots?: string[];
   videoUrl?: string;
   videoUrls?: string[];
@@ -32,4 +35,6 @@ export type ChatLine = {
   testCaseStatus?: AgentJobMessage["testCaseStatus"];
   testCases?: AgentJobMessage["testCases"];
   toolName?: string;
+  /** API Data agent_runs.id (W2) */
+  runId?: number;
 };

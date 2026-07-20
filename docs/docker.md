@@ -119,10 +119,7 @@ pnpm instances:down
 FRONTEND_PORT=3000
 BACKEND_PORT=3080
 APPIUM_PORT=4723
-GEMINI_API_KEY=
-CURSOR_API_KEY=
-NINEROUTER_API_KEY=
-NINEROUTER_BASE_URL=http://host.docker.internal:20128
+# Agent API keys: set in Web UI (Settings → Agent credentials), not Compose env
 APPIUM_SERVER_URL=http://appium:4723
 ADB_SERVER_SOCKET=tcp:host.docker.internal:5037
 ADB_CONNECT_TARGETS=host.docker.internal:5555

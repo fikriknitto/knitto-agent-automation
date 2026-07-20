@@ -1,7 +1,8 @@
 import { PaperclipIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   attachmentExtension,
-  promptAttachmentImageSrc,
+  ensurePromptAttachmentImageSrc,
   promptAttachmentTitle,
   type PromptAttachment,
 } from "../lib/prompt-attachment";
@@ -12,6 +13,36 @@ type PromptAttachmentChipProps = {
   disabled?: boolean;
   onRemove: () => void;
 };
+
+function attachmentKey(attachment: PromptAttachment, index: number): string {
+  return attachment.mediaId != null
+    ? `m-${attachment.mediaId}-${index}`
+    : `${attachment.storagePath ?? "x"}-${index}`;
+}
+
+function AttachmentImage({ attachment }: { attachment: PromptAttachment }) {
+  const [src, setSrc] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    void ensurePromptAttachmentImageSrc(attachment).then((url) => {
+      if (!cancelled) setSrc(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [attachment.mediaId, attachment.name, attachment.kind]);
+
+  if (!src) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-[0.6rem] text-slate-500">
+        …
+      </div>
+    );
+  }
+  return (
+    <img className="block h-full w-full object-cover" src={src} alt={attachment.name} />
+  );
+}
 
 export function PromptAttachmentChip({
   attachment,
@@ -31,11 +62,7 @@ export function PromptAttachmentChip({
         {index + 1}
       </span>
       {attachment.kind === "image" ? (
-        <img
-          className="block h-full w-full object-cover"
-          src={promptAttachmentImageSrc(attachment)}
-          alt={attachment.name}
-        />
+        <AttachmentImage attachment={attachment} />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 p-1.5">
           <span className="text-[0.7rem] font-bold tracking-wide text-blue-300">
@@ -67,7 +94,7 @@ export function ChatAttachments({ attachments }: { attachments: PromptAttachment
     <div className="flex flex-wrap gap-2" aria-label="Lampiran">
       {attachments.map((attachment, index) => (
         <figure
-          key={`${attachment.storagePath}-${index}`}
+          key={attachmentKey(attachment, index)}
           className="relative m-0 h-[4.5rem] w-[4.5rem] overflow-hidden rounded-xl border border-blue-400/30 bg-black/30 shadow-sm"
           title={promptAttachmentTitle(attachment)}
         >
@@ -78,11 +105,7 @@ export function ChatAttachments({ attachments }: { attachments: PromptAttachment
             {index + 1}
           </span>
           {attachment.kind === "image" ? (
-            <img
-              className="block h-full w-full object-cover"
-              src={promptAttachmentImageSrc(attachment)}
-              alt={attachment.name}
-            />
+            <AttachmentImage attachment={attachment} />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 p-1.5">
               <span className="text-[0.7rem] font-bold tracking-wide text-blue-300">
@@ -111,12 +134,13 @@ export function PromptAttachments({ attachments, disabled, onRemove }: PromptAtt
   return (
     <div className="w-full">
       <div className="mb-2.5 flex flex-col flex-wrap gap-2 bg-black/50 rounded-xl p-2" aria-label="Lampiran">
-        <div className="flex items-center text-sm font-medium text-gray-500"><PaperclipIcon className="size-4 mr-1" /> Attachments</div>
+        <div className="flex items-center text-sm font-medium text-gray-500">
+          <PaperclipIcon className="size-4 mr-1" /> Attachments
+        </div>
         <div className="flex flex-wrap gap-2">
-
           {attachments.map((attachment, index) => (
             <PromptAttachmentChip
-              key={`${attachment.storagePath}-${index}`}
+              key={attachmentKey(attachment, index)}
               attachment={attachment}
               index={index}
               disabled={disabled}

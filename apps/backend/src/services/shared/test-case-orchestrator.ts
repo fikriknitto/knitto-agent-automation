@@ -40,6 +40,7 @@ import {
 import { agentVideoServeUrl } from "../agent-videos.js";
 import { jobMediaPayload } from "./job-media-payload.js";
 import { setAutomationJobId } from "../../automation/libs/job-context.js";
+import { setApiDataJobToken } from "../api-data/api-data-job-context.js";
 import {
   listAgentScreenshotFiles,
 } from "../agent-screenshots.js";
@@ -226,10 +227,11 @@ export async function runMultiTestCaseJob(ctx: {
 
   markJobSegmentManaged(job.id);
   setAutomationJobId(job.id);
+  setApiDataJobToken(job.apiDataToken);
 
   const mcpClient =
     ctx.mcpClient ??
-    (await connectAutomationMcp(job.id, "hybrid", job.mobileConfig));
+    (await connectAutomationMcp(job.id, "hybrid", job.mobileConfig, job.apiDataToken));
 
   const overview = buildHybridOverviewPrompt(testCases);
 

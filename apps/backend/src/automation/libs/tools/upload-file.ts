@@ -44,9 +44,9 @@ function assertSafeUploadPath(filePath: string): string {
 }
 
 export const automation_upload_file = defineTool({
-  name: "automation_upload_file",
+  name: "browser_upload_file",
   description:
-    "Upload a file to an HTML file input using a semantic locator. Use absolute filePath from Attached files in the prompt. Do not use automation_fill for file inputs.",
+    "Upload a file to an HTML file input using a semantic locator. Use absolute filePath from Attached files in the prompt. Do not use browser_fill for file inputs.",
   inputSchema: uploadFileInputSchema,
   outputSchema: uploadFileOutputShape,
   handler: async (args) => {
@@ -61,7 +61,7 @@ export const automation_upload_file = defineTool({
 
       if (!isFileInput) {
         throw new ToolError(
-          "Target element is not an input[type=file]. Use automation_get_page_snapshot to find a file input (inputType=file)."
+          "Target element is not an input[type=file]. Use browser_get_page_snapshot to find a file input (inputType=file)."
         );
       }
 

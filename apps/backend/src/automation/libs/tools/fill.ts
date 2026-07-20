@@ -4,7 +4,7 @@ import { getPage } from "../browser/session.js";
 import { fillInputSchema, interactionOutputShape } from "../schema.js";
 
 export const automation_fill = defineTool({
-  name: "automation_fill",
+  name: "browser_fill",
   description:
     "Fill an input using a semantic locator. Clears the field first unless clear=false.",
   inputSchema: fillInputSchema,

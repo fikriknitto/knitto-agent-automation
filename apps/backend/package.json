@@ -13,9 +13,11 @@
   "dependencies": {
     "@connectrpc/connect-node": "^1.6.1",
     "@cursor/sdk": "^1.0.19",
-    "@google/genai": "^2.8.0",
     "@knitto/shared": "workspace:*",
+    "@knittotextile/knitto-agent-core": "1.1.0",
+    "@knittotextile/knitto-agent-providers": "2.0.1",
     "@modelcontextprotocol/sdk": "^1.0.1",
+    "ai": "6.0.97",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.21.2",

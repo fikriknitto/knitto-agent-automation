@@ -43,7 +43,7 @@ export async function cleanupJobPlatforms(args: {
       await callCursorSubprocessTool({
         jobId,
         server: "browser",
-        toolName: "automation_close_browser",
+        toolName: "browser_close_browser",
         segmentManaged: false,
         forceClose: true,
       });
@@ -71,7 +71,7 @@ export async function cleanupJobPlatforms(args: {
   }
 
   if (usedBrowser) {
-    await callInProcessTool(mcpClient, "automation_close_browser");
+    await callInProcessTool(mcpClient, "browser_close_browser");
   }
   if (usedMobile) {
     await callInProcessTool(mcpClient, "mobile_close_app");

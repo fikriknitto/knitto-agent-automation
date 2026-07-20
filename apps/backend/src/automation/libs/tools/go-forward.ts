@@ -3,7 +3,7 @@ import { goForward } from "../browser/session.js";
 import { historyOutputShape } from "../schema.js";
 
 export const automation_go_forward = defineTool({
-  name: "automation_go_forward",
+  name: "browser_go_forward",
   description: "Navigate forward in browser history.",
   inputSchema: {},
   outputSchema: historyOutputShape,

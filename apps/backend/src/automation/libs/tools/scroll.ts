@@ -3,7 +3,7 @@ import { scrollPage } from "../browser/interactions.js";
 import { scrollInputSchema, scrollOutputShape } from "../schema.js";
 
 export const automation_scroll = defineTool({
-  name: "automation_scroll",
+  name: "browser_scroll",
   description:
     "Scroll the page or a specific element (up/down/top/bottom). Use after snapshot when content is below the fold.",
   inputSchema: scrollInputSchema,

@@ -47,7 +47,7 @@ export async function resolveJobTestCasesAsync(job: BridgeJob): Promise<Resolved
     };
   }
 
-  const registry = await loadShortcutRegistry();
+  const registry = await loadShortcutRegistry(job.apiDataToken);
   const platform = job.platform ?? "browser";
   const parsed =
     platform === "hybrid"

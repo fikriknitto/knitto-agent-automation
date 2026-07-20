@@ -1,7 +1,7 @@
 import { Agent } from "@cursor/sdk";
 import type { TestCaseAgentRunner } from "./test-case-orchestrator.js";
 import { buildCursorSdkMessage } from "./prompt-builder.js";
-import config from "../bridge-runners/cursor/config.js";
+import config from "../agent-runners/cursor/config.js";
 import { resolveMonorepoRoot } from "../../config/paths.js";
 import {
   automationMcpSpawnArgs,
@@ -25,7 +25,8 @@ export function createCursorTestCaseRunner(
   jobId: string,
   modelId: string,
   acquiredUdid?: string,
-  mobileConfig?: MobileConfig
+  mobileConfig?: MobileConfig,
+  apiDataToken?: string
 ): CursorTestCaseRunnerHandle {
   const browserMcpPath = resolveAutomationMcpPath();
   const mobileMcpPath = resolveMobileMcpPath();
@@ -55,6 +56,7 @@ export function createCursorTestCaseRunner(
     jobId,
     mobileConfig: resolvedMobile,
     segmentManaged: true,
+    apiDataToken,
   });
 
   let agent: Awaited<ReturnType<typeof Agent.create>> | null = null;

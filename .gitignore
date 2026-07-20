@@ -8,10 +8,10 @@ dist/
 .DS_Store
 .bluestacks/
 package-lock.json
-screenshoot/*
-!screenshoot/.gitkeep
-!screenshoot/agents/
-screenshoot/agents/**
-!screenshoot/agents/.gitkeep
+# Legacy / fallback disk trees (SoT = API Data). Ignore if Worker recreates them.
+memory/
+prompt-shortcuts/
+# Legacy root evidence dir (now storage/agents/)
+screenshoot/
 storage/*
 !storage/**/.gitkeep

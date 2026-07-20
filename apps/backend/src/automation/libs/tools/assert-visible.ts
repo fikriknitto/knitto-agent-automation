@@ -4,7 +4,7 @@ import { getPage } from "../browser/session.js";
 import { assertVisibleInputSchema, assertVisibleOutputShape } from "../schema.js";
 
 export const automation_assert_visible = defineTool({
-  name: "automation_assert_visible",
+  name: "browser_assert_visible",
   description: "Assert that an element resolved by semantic locator is visible on the page.",
   inputSchema: assertVisibleInputSchema,
   outputSchema: assertVisibleOutputShape,

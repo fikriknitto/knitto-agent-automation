@@ -3,7 +3,7 @@ import { selectOption } from "../browser/interactions.js";
 import { selectOptionInputSchema, selectOptionOutputShape } from "../schema.js";
 
 export const automation_select_option = defineTool({
-  name: "automation_select_option",
+  name: "browser_select_option",
   description:
     "Select an option in a native <select> or combobox/listbox by value or visible label text.",
   inputSchema: selectOptionInputSchema,

@@ -30,6 +30,7 @@ type ChatMainProps = {
   onMobileConfigChange: (config: MobileConfig) => void;
   onSend: () => void;
   onCancel: () => void;
+  onOpenHistory?: (runId: number) => void;
 };
 
 export function ChatMain({
@@ -55,6 +56,7 @@ export function ChatMain({
   onMobileConfigChange,
   onSend,
   onCancel,
+  onOpenHistory,
 }: ChatMainProps) {
   const hasHistory = chatLines.length > 0;
 
@@ -108,7 +110,7 @@ export function ChatMain({
       {/* Full viewport width → scrollbar sits on the right edge */}
       <div className="chat-main-scroll h-full overflow-y-auto overflow-x-hidden">
         <div className="chat-column mx-auto w-full px-3 pb-52 pt-2 sm:px-4">
-          <ChatHistory lines={chatLines} />
+          <ChatHistory lines={chatLines} onOpenHistory={onOpenHistory} />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import type { StorageEntry } from "@knitto/shared";
 import { useCallback, useEffect, useState, type DragEvent } from "react";
-import { useFileManager } from "../../hooks/use-file-manager";
+import { useMediaLibrary } from "../../hooks/use-media-library";
 import { formatBytes, formatItemCount } from "../../lib/file-utils";
 import { storagePathAffectsPaths } from "../../lib/prompt-attachment";
 import { BreadcrumbNav } from "./breadcrumb-nav";
@@ -33,7 +33,7 @@ export function FileManagerPanel({
   onEntryDeleted,
   onEntryRenamed,
 }: FileManagerPanelProps) {
-  const fm = useFileManager({ enabled });
+  const fm = useMediaLibrary({ enabled });
   const [dragOver, setDragOver] = useState(false);
   const [manageEntry, setManageEntry] = useState<StorageEntry | null>(null);
   const [renameTarget, setRenameTarget] = useState<StorageEntry | null>(null);

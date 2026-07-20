@@ -1,11 +1,17 @@
 export type LogLevel = "debug" | "info" | "warn" | "error" | "log";
 
+export type LogContext = {
+  agentJobId?: string;
+  runId?: number | string;
+};
+
 export interface Logger {
   debug(message: string): void;
   info(message: string): void;
   warn(message: string): void;
   error(message: string | Error): void;
   log(message: string): void;
+  child(ctx: LogContext): Logger;
 }
 
 const LEVEL_PRIORITY: Record<LogLevel, number> = {
@@ -24,8 +30,24 @@ function resolveMinLevel(): LogLevel {
   return "info";
 }
 
-function formatMessage(level: LogLevel, scope: string | undefined, message: string): string {
-  const prefix = scope ? `[${level.toUpperCase()}][${scope}]` : `[${level.toUpperCase()}]`;
+function formatContext(ctx?: LogContext): string {
+  if (!ctx) return "";
+  const parts: string[] = [];
+  if (ctx.agentJobId) parts.push(`job=${ctx.agentJobId}`);
+  if (ctx.runId != null && ctx.runId !== "") parts.push(`run=${ctx.runId}`);
+  return parts.length ? `[${parts.join(" ")}]` : "";
+}
+
+function formatMessage(
+  level: LogLevel,
+  scope: string | undefined,
+  message: string,
+  ctx?: LogContext
+): string {
+  const ctxPart = formatContext(ctx);
+  const prefix = scope
+    ? `[${level.toUpperCase()}][${scope}]${ctxPart}`
+    : `[${level.toUpperCase()}]${ctxPart}`;
   return `${prefix} ${message}\n`;
 }
 
@@ -33,12 +55,13 @@ function shouldLog(level: LogLevel, minLevel: LogLevel): boolean {
   return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[minLevel];
 }
 
-export function createLogger(scope?: string): Logger {
+export function createLogger(scope?: string, baseCtx?: LogContext): Logger {
   const minLevel = resolveMinLevel();
 
-  const write = (level: LogLevel, message: string): void => {
+  const write = (level: LogLevel, message: string, ctx?: LogContext): void => {
     if (!shouldLog(level, minLevel)) return;
-    process.stderr.write(formatMessage(level, scope, message));
+    const merged = { ...baseCtx, ...ctx };
+    process.stderr.write(formatMessage(level, scope, message, merged));
   };
 
   return {
@@ -48,6 +71,7 @@ export function createLogger(scope?: string): Logger {
     error: (message) =>
       write("error", message instanceof Error ? message.message : message),
     log: (message) => write("log", message),
+    child: (ctx) => createLogger(scope, { ...baseCtx, ...ctx }),
   };
 }
 

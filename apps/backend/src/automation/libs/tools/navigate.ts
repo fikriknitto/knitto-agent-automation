@@ -3,7 +3,7 @@ import { navigatePage } from "../browser/session.js";
 import { navigateInputSchema, navigateOutputShape } from "../schema.js";
 
 export const automation_navigate = defineTool({
-  name: "automation_navigate",
+  name: "browser_navigate",
   description: "Open a URL in the browser session.",
   inputSchema: navigateInputSchema,
   outputSchema: navigateOutputShape,

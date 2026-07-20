@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { BridgeRegistryService } from "../services/bridge-registry.service.js";
+import type { AgentRegistryService } from "../services/agent-registry.service.js";
 import { createAgentScreenshotRoutes } from "./agent-screenshot-routes.js";
 import { createAgentVideoRoutes } from "./agent-video-routes.js";
 import { createAppMemoryRoutes } from "./app-memory-routes.js";
@@ -11,7 +11,7 @@ import { createPromptShortcutRoutes } from "./prompt-shortcut-routes.js";
 import { createMobileDeviceRoutes } from "./mobile-device-routes.js";
 import { createMobileAppMemoryRoutes } from "./mobile-app-memory-routes.js";
 
-export function createApiRoutes(bridgeRegistry: BridgeRegistryService): Router {
+export function createApiRoutes(bridgeRegistry: AgentRegistryService): Router {
   const router = Router();
 
   router.use(createHealthRoutes());

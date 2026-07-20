@@ -6,6 +6,7 @@ import { resolveApiUrl } from "@/lib/api/config";
 import { modalBackdrop, modalRoot } from "../lib/ui";
 import { Button } from "./ui";
 
+/** URLs may be Worker `/api/agent-screenshots/...` or absolute API Data / MinIO presigned. */
 type AgentScreenshotsProps = {
   urls: string[];
 };

@@ -3,7 +3,7 @@ import { waitForCondition } from "../browser/interactions.js";
 import { waitForInputSchema, waitForOutputShape } from "../schema.js";
 
 export const automation_wait_for = defineTool({
-  name: "automation_wait_for",
+  name: "browser_wait_for",
   description:
     "Wait for text on page, an element to appear, network idle (SPA loads), or a fixed delay.",
   inputSchema: waitForInputSchema,

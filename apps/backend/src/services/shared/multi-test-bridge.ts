@@ -3,8 +3,10 @@ import type { AgentJobMessage, BridgeJob, TestCaseSpec } from "@knitto/shared";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 import { setAutomationJobId } from "../../automation/libs/job-context.js";
-
-import { connectAutomationMcp } from "./automation-mcp-client.js";
+import {
+  connectAutomationMcp,
+  disconnectAutomationMcpJobContext,
+} from "./automation-mcp-client.js";
 
 import { cleanupJobAttachments } from "./persist-attachments.js";
 
@@ -96,7 +98,12 @@ export async function executeMultiTestBridgeJob(ctx: {
 
   setAutomationJobId(job.id);
 
-  const mcpClient = await connectAutomationMcp(job.id, "hybrid", job.mobileConfig);
+  const mcpClient = await connectAutomationMcp(
+    job.id,
+    "hybrid",
+    job.mobileConfig,
+    job.apiDataToken
+  );
 
   const runner = normalizeRunner(createRunner(mcpClient));
 
@@ -240,7 +247,7 @@ export async function executeMultiTestBridgeJob(ctx: {
 
     await runner.dispose?.().catch(() => undefined);
 
-    setAutomationJobId(null);
+    disconnectAutomationMcpJobContext();
 
     await mcpClient.close().catch(() => undefined);
 

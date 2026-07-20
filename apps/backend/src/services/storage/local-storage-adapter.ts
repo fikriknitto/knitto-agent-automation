@@ -16,6 +16,7 @@ import {
   normalizeRelativePath,
   resolveSafePath,
   sanitizeEntryName,
+  StoragePathError,
 } from "./path-utils.js";
 import type { FileContentResult, FileServeResult, ListEntriesResult, StorageAdapter, UploadFileInput } from "./storage-adapter.interface.js";
 
@@ -42,6 +43,9 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async list(relativePath: string): Promise<ListEntriesResult> {
     const normalized = normalizeRelativePath(relativePath);
+    if (normalized === "agents" || normalized.startsWith("agents/")) {
+      throw new StoragePathError("Reserved path: agents (Worker evidence workspace)");
+    }
     const absolute = resolveSafePath(this.root, normalized);
 
     await mkdir(absolute, { recursive: true });
@@ -51,6 +55,10 @@ export class LocalStorageAdapter implements StorageAdapter {
     let totalBytes = 0;
 
     for (const dirent of dirents) {
+      // Reserved: Worker job evidence workspace (not part of Media library / file manager).
+      if (!normalized && (dirent.name === "agents" || dirent.name === ".agents")) {
+        continue;
+      }
       const entryPath = normalized ? `${normalized}/${dirent.name}` : dirent.name;
       const entryAbsolute = join(absolute, dirent.name);
       const stats = await stat(entryAbsolute);

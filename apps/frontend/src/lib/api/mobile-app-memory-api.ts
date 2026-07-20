@@ -1,4 +1,9 @@
-import { request, requestVoid } from "../http/client";
+import {
+  deleteAppMemoryByScope,
+  getAppMemoryByScope,
+  listAppMemoriesByScope,
+  putAppMemoryByScope,
+} from "./app-memory-api";
 import type {
   AppMemory,
   AppMemorySummary,
@@ -6,46 +11,26 @@ import type {
   AppMemoryWriteInput,
 } from "../app-memory/types";
 
-const API_BASE = "/api/mobile/app-memory";
-
+/** Mobile scope — API Data `/agent/app-memory?scope=mobile` */
 export async function listMobileAppMemories(): Promise<AppMemorySummary[]> {
-  const data = await request<{ appMemories: AppMemorySummary[] }>(API_BASE);
-  return data.appMemories;
+  return listAppMemoriesByScope("mobile");
 }
 
 export async function getMobileAppMemory(appId: string): Promise<AppMemory> {
-  const data = await request<{ appMemory: AppMemory }>(
-    `${API_BASE}/${encodeURIComponent(appId)}`
-  );
-  return data.appMemory;
+  return getAppMemoryByScope("mobile", appId);
 }
 
 export async function createMobileAppMemory(input: AppMemoryWriteInput): Promise<AppMemory> {
-  const data = await request<{ appMemory: AppMemory }>(API_BASE, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  return data.appMemory;
+  return putAppMemoryByScope("mobile", input.appId, input.content);
 }
 
 export async function updateMobileAppMemory(
   appId: string,
   input: AppMemoryUpdateInput
 ): Promise<AppMemory> {
-  const data = await request<{ appMemory: AppMemory }>(
-    `${API_BASE}/${encodeURIComponent(appId)}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    }
-  );
-  return data.appMemory;
+  return putAppMemoryByScope("mobile", appId, input.content);
 }
 
 export async function deleteMobileAppMemory(appId: string): Promise<void> {
-  await requestVoid(`${API_BASE}/${encodeURIComponent(appId)}`, {
-    method: "DELETE",
-  });
+  return deleteAppMemoryByScope("mobile", appId);
 }

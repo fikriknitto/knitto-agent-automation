@@ -33,7 +33,7 @@ function escapeXPathText(text: string): string {
 async function resolveByRef(page: Page, ref: string) {
   const entry = refMap.get(ref);
   if (!entry) {
-    throw new ToolError(`Unknown ref "${ref}". Call automation_get_page_snapshot first.`);
+    throw new ToolError(`Unknown ref "${ref}". Call browser_get_page_snapshot first.`);
   }
   const handles = await page.$$(entry.selector);
   const handle = handles[entry.index];

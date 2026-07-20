@@ -6,7 +6,8 @@ import type { AgentJobMessage, BridgeKind } from "@knitto/shared";
 import { createLogger } from "./automation/core/index.js";
 import { createApp } from "./app.js";
 import { loadEnv, resolveHttpHost, resolveHttpPort } from "./config/env.js";
-import { BridgeRegistryService } from "./services/bridge-registry.service.js";
+import { AgentRegistryService } from "./services/agent-registry.service.js";
+import { startEvidenceUploadFlusher } from "./services/api-data/evidence-upload-flush.js";
 import { WsHub } from "./websocket/ws-hub.js";
 
 const backendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,7 +22,7 @@ async function main(): Promise<void> {
 
   let wsHub: WsHub;
 
-  const bridgeRegistry = new BridgeRegistryService(
+  const bridgeRegistry = new AgentRegistryService(
     (msg: AgentJobMessage) => {
       wsHub.emitAgentJob(msg);
     },
@@ -69,9 +70,10 @@ async function main(): Promise<void> {
   try {
     await bridgeRegistry.startAll();
     wsHub.broadcastBridgeUpdates();
+    startEvidenceUploadFlusher();
   } catch (error) {
     logger.error(
-      `Bridge startup failed: ${error instanceof Error ? error.message : String(error)}`
+      `Agent runtime startup failed: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

@@ -53,7 +53,13 @@ function isAgentResult(status: string | undefined): boolean {
   return status === "completed" || status === "error" || status === "cancelled";
 }
 
-function AgentJobInlineProgress({ line }: { line: ChatLine }) {
+function AgentJobInlineProgress({
+  line,
+  onOpenHistory,
+}: {
+  line: ChatLine;
+  onOpenHistory?: (runId: number) => void;
+}) {
   return (
     <div className="rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3">
       {line.testCases?.length ? <TestCaseProgress line={line} /> : null}
@@ -63,6 +69,18 @@ function AgentJobInlineProgress({ line }: { line: ChatLine }) {
         {line.status && (
           <Badge variant={line.status === "queued" ? "default" : "warning"}>{line.status}</Badge>
         )}
+        {line.runId != null ? (
+          <Badge
+            variant="info"
+            role={onOpenHistory ? "button" : undefined}
+            className={onOpenHistory ? "cursor-pointer hover:opacity-80" : undefined}
+            onClick={
+              onOpenHistory ? () => onOpenHistory(line.runId!) : undefined
+            }
+          >
+            runId {line.runId}
+          </Badge>
+        ) : null}
         {line.testCaseTotal ? (
           <span className="text-xs text-slate-500">
             TC {(line.testCaseIndex ?? 0) + 1} dari {line.testCaseTotal}
@@ -149,7 +167,13 @@ function TestCaseProgress({ line }: { line: ChatLine }) {
   );
 }
 
-export function ChatHistory({ lines }: { lines: ChatLine[] }) {
+export function ChatHistory({
+  lines,
+  onOpenHistory,
+}: {
+  lines: ChatLine[];
+  onOpenHistory?: (runId: number) => void;
+}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [previewBaseId, setPreviewBaseId] = useState<string | null>(null);
 
@@ -205,6 +229,22 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
               <div className="min-w-0 flex-1 text-sm leading-relaxed text-slate-200">
                 {isAgentResult(line.status) ? (
                   <div className="rounded-xl px-4 pt-3 pb-28">
+                    {line.runId != null ? (
+                      <div className="mb-2">
+                        <Badge
+                          variant="info"
+                          role={onOpenHistory ? "button" : undefined}
+                          className={onOpenHistory ? "cursor-pointer hover:opacity-80" : undefined}
+                          onClick={
+                            onOpenHistory
+                              ? () => onOpenHistory(line.runId!)
+                              : undefined
+                          }
+                        >
+                          runId {line.runId}
+                        </Badge>
+                      </div>
+                    ) : null}
                     {line.testCaseResults?.length ? (
                       <>
                         <TestCaseResultStack testCaseResults={line.testCaseResults} />
@@ -220,7 +260,7 @@ export function ChatHistory({ lines }: { lines: ChatLine[] }) {
                     )}
                   </div>
                 ) : (
-                  <AgentJobInlineProgress line={line} />
+                  <AgentJobInlineProgress line={line} onOpenHistory={onOpenHistory} />
                 )}
               </div>
             </div>

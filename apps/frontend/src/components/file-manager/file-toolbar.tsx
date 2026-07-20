@@ -2,7 +2,7 @@ import { PlusIcon, PencilIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-reac
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { StorageEntry } from "@knitto/shared";
-import type { SortDirection, SortField, ViewMode } from "../../hooks/use-file-manager";
+import type { SortDirection, SortField, ViewMode } from "../../hooks/use-media-library";
 import { modalBackdrop, modalHeader, modalTitle } from "../../lib/ui";
 import { Button, Input, Label, Select } from "../ui";
 

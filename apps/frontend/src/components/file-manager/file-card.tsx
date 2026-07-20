@@ -1,6 +1,6 @@
 import type { StorageEntry } from "@knitto/shared";
 import { PencilIcon, Trash2Icon } from "lucide-react";
-import { useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { cn } from "../../lib/cn";
 import {
   ENTRY_ICON_LABEL,
@@ -8,7 +8,10 @@ import {
   resolveEntryIcon,
   type EntryIconKind,
 } from "../../lib/file-utils";
-import { isAcceptedStorageEntry, storageEntryImageSrc } from "../../lib/prompt-attachment";
+import {
+  ensureLibraryEntryImageSrc,
+  isAcceptedStorageEntry,
+} from "../../lib/prompt-attachment";
 import { Button } from "../ui";
 
 export type FileSelectModifiers = {
@@ -59,7 +62,22 @@ function FileEntryIcon({
   variant: "grid" | "list";
 }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [imageSrc, setImageSrc] = useState("");
   const showImage = entry.type === "file" && iconKind === "image" && !imageFailed;
+
+  useEffect(() => {
+    if (!showImage) {
+      setImageSrc("");
+      return;
+    }
+    let cancelled = false;
+    void ensureLibraryEntryImageSrc(entry.path).then((url) => {
+      if (!cancelled) setImageSrc(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [entry.path, showImage]);
 
   const isList = variant === "list";
   const emojiBoxClass = isList
@@ -69,7 +87,7 @@ function FileEntryIcon({
     ? "h-8 w-8 overflow-hidden rounded-md border border-white/8 bg-black/25"
     : "h-14 w-14 overflow-hidden rounded-lg border border-white/8 bg-black/25";
 
-  if (!showImage) {
+  if (!showImage || !imageSrc) {
     return (
       <div className={emojiBoxClass} aria-hidden="true">
         {icon}
@@ -81,7 +99,7 @@ function FileEntryIcon({
     <div className={imageBoxClass} aria-hidden="true">
       <img
         className="h-full w-full object-cover"
-        src={storageEntryImageSrc(entry.path)}
+        src={imageSrc}
         alt=""
         loading="lazy"
         decoding="async"

@@ -4,10 +4,15 @@ export const queryKeys = {
     list: () => [...queryKeys.promptShortcuts.all, "list"] as const,
     detail: (id: string) => [...queryKeys.promptShortcuts.all, "detail", id] as const,
   },
+  mediaLibrary: {
+    all: ["media-library"] as const,
+    entries: (path: string) => [...queryKeys.mediaLibrary.all, "entries", path] as const,
+  },
+  /** @deprecated Use mediaLibrary */
   fileManager: {
-    all: ["file-manager"] as const,
-    entries: (path: string) => [...queryKeys.fileManager.all, "entries", path] as const,
-    fileContent: (path: string) => [...queryKeys.fileManager.all, "content", path] as const,
+    all: ["media-library"] as const,
+    entries: (path: string) => [...queryKeys.mediaLibrary.all, "entries", path] as const,
+    fileContent: (path: string) => [...queryKeys.mediaLibrary.all, "content", path] as const,
   },
   appMemory: {
     all: ["app-memory"] as const,

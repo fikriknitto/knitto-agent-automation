@@ -4,7 +4,7 @@ import { closeBrowserFromStateFile } from "../../automation/libs/browser/session
 
 const logger = createLogger("bridge-mcp-browser");
 
-export const AUTOMATION_CLOSE_BROWSER_TOOL = "automation_close_browser";
+export const AUTOMATION_CLOSE_BROWSER_TOOL = "browser_close_browser";
 
 export async function closeAutomationBrowser(
   client?: Client | null,

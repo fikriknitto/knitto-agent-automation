@@ -97,7 +97,7 @@ export function ConnectionPanel({
                   Disconnect
                 </Button>
                 <Button variant="outline" onClick={onRefresh}>
-                  Refresh bridges
+                  Refresh agents
                 </Button>
               </>
             )}
@@ -107,14 +107,14 @@ export function ConnectionPanel({
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Badge variant={connected ? "success" : "default"}>{connectionState}</Badge>
             <Badge variant={bridgeAvailable ? "success" : "default"}>
-              {bridgeAvailable ? "Bridge online" : "Bridge offline"}
+              {bridgeAvailable ? "Agent online" : "Agent offline"}
             </Badge>
           </div>
         </SettingsRow>
         {bridgeAvailable && typeof browserHeaded === "boolean" && (
           <SettingsRow
             label="Browser mode"
-            description="Set AUTOMATION_HEADLESS=false on bridge for headed mode."
+            description="Set AUTOMATION_HEADLESS=false on the agent worker for headed mode."
           >
             <Badge variant={browserHeaded ? "success" : "default"}>
               {browserHeaded ? "Headed (visible)" : "Headless"}
@@ -178,7 +178,7 @@ export function ConnectionPanel({
               Disconnect
             </Button>
             <Button variant="outline" onClick={onRefresh}>
-              Refresh bridges
+              Refresh agents
             </Button>
           </>
         )}
@@ -186,7 +186,7 @@ export function ConnectionPanel({
       <p className={statusLine}>
         Socket:{" "}
         <Badge variant={connected ? "success" : "default"}>{connectionState}</Badge>
-        Bridge:{" "}
+        Agent:{" "}
         <Badge variant={bridgeAvailable ? "success" : "default"}>
           {bridgeAvailable ? "Online" : "Offline"}
         </Badge>
@@ -198,7 +198,7 @@ export function ConnectionPanel({
             {browserHeaded ? "Headed (visible)" : "Headless"}
           </Badge>
           <br />
-          <span className={hint}>Set AUTOMATION_HEADLESS=false on bridge for headed mode.</span>
+          <span className={hint}>Set AUTOMATION_HEADLESS=false on the agent worker for headed mode.</span>
         </p>
       )}
     </Card>

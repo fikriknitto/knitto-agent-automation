@@ -3,7 +3,7 @@ import { capturePageSnapshot } from "../browser/snapshot.js";
 import { getPageSnapshotInputSchema, getPageSnapshotOutputShape } from "../schema.js";
 
 export const automation_get_page_snapshot = defineTool({
-  name: "automation_get_page_snapshot",
+  name: "browser_get_page_snapshot",
   description:
     "Discover the current page UI as semantic elements with refs (e1, e2, …). Detects hamburger/menu toggles (div>svg, aria-expanded, aria-haspopup, menuitem). Use refs or role/name/label/placeholder/text for interactions — not data-testid.",
   inputSchema: getPageSnapshotInputSchema,

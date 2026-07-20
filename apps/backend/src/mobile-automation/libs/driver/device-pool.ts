@@ -88,11 +88,13 @@ class DevicePool {
         jobId,
         acquiredAt: Date.now(),
       });
+      logger.child({ agentJobId: jobId }).info(`Device lock acquired udid=${udid}`);
       return;
     }
     entry.state = "busy";
     entry.jobId = jobId;
     entry.acquiredAt = Date.now();
+    logger.child({ agentJobId: jobId }).info(`Device lock acquired udid=${udid}`);
   }
 
   private flushWaiters(): void {
@@ -178,6 +180,7 @@ class DevicePool {
   release(jobId: string): void {
     for (const entry of this.pool.values()) {
       if (entry.jobId === jobId) {
+        logger.child({ agentJobId: jobId }).info(`Device lock released udid=${entry.udid}`);
         entry.state = "idle";
         entry.jobId = undefined;
         entry.acquiredAt = undefined;

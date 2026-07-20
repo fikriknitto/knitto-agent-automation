@@ -1,4 +1,5 @@
-import { request, requestVoid } from "../http/client";
+import { apiDataJsonAuthed, getStoredApiDataToken } from "./api-data-client";
+import { request } from "../http/client";
 import type {
   GeneratePromptShortcutInput,
   GeneratePromptShortcutResult,
@@ -7,7 +8,6 @@ import type {
   PromptShortcutWriteInput,
 } from "../prompt-shortcuts/types";
 
-const API_BASE = "/api/prompt-shortcuts";
 const VARIANTS = new Set<PromptShortcutVariant>(["blue", "green", "amber", "neutral"]);
 
 function resolveVariant(value?: string): PromptShortcutVariant {
@@ -22,57 +22,70 @@ function normalizePromptShortcut(item: PromptShortcut): PromptShortcut {
     ...item,
     variant: resolveVariant(item.variant),
     platform: item.platform === "mobile" ? "mobile" : "browser",
+    icon: item.icon ?? "",
+    defaults: item.defaults ?? {},
   };
 }
 
+function requireToken(): void {
+  if (!getStoredApiDataToken()) {
+    throw new Error("Login API Data dulu untuk prompt shortcuts.");
+  }
+}
+
+/** CRUD via API Data; generate remains on Worker (LLM). */
 export async function listPromptShortcuts(): Promise<PromptShortcut[]> {
-  const data = await request<{ promptShortcuts: PromptShortcut[] }>(API_BASE);
-  return data.promptShortcuts.map(normalizePromptShortcut);
+  requireToken();
+  const rows = await apiDataJsonAuthed<PromptShortcut[]>("/agent/prompt-shortcuts");
+  return (rows ?? []).map(normalizePromptShortcut);
 }
 
 export async function getPromptShortcut(id: string): Promise<PromptShortcut> {
-  const data = await request<{ promptShortcut: PromptShortcut }>(
-    `${API_BASE}/${encodeURIComponent(id)}`
+  requireToken();
+  const row = await apiDataJsonAuthed<PromptShortcut>(
+    `/agent/prompt-shortcuts/${encodeURIComponent(id)}`
   );
-  return normalizePromptShortcut(data.promptShortcut);
+  return normalizePromptShortcut(row);
 }
 
 export async function createPromptShortcut(
   input: PromptShortcutWriteInput
 ): Promise<PromptShortcut> {
-  const data = await request<{ promptShortcut: PromptShortcut }>(API_BASE, {
+  requireToken();
+  const row = await apiDataJsonAuthed<PromptShortcut>("/agent/prompt-shortcuts", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body: input,
   });
-  return normalizePromptShortcut(data.promptShortcut);
+  return normalizePromptShortcut(row);
 }
 
 export async function updatePromptShortcut(
   id: string,
   input: PromptShortcutWriteInput
 ): Promise<PromptShortcut> {
-  const data = await request<{ promptShortcut: PromptShortcut }>(
-    `${API_BASE}/${encodeURIComponent(id)}`,
+  requireToken();
+  const row = await apiDataJsonAuthed<PromptShortcut>(
+    `/agent/prompt-shortcuts/${encodeURIComponent(id)}`,
     {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: input,
     }
   );
-  return normalizePromptShortcut(data.promptShortcut);
+  return normalizePromptShortcut(row);
 }
 
 export async function deletePromptShortcut(id: string): Promise<void> {
-  await requestVoid(`${API_BASE}/${encodeURIComponent(id)}`, {
+  requireToken();
+  await apiDataJsonAuthed(`/agent/prompt-shortcuts/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
 }
 
+/** Still Worker — AI generate template (not SoT storage). */
 export async function generatePromptShortcutTemplate(
   input: GeneratePromptShortcutInput
 ): Promise<GeneratePromptShortcutResult> {
-  return request<GeneratePromptShortcutResult>(`${API_BASE}/generate`, {
+  return request<GeneratePromptShortcutResult>("/api/prompt-shortcuts/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),

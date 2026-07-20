@@ -3,7 +3,7 @@ import { takePageScreenshot } from "../browser/screenshot.js";
 import { takeScreenshotInputSchema, takeScreenshotOutputShape } from "../schema.js";
 
 export const automation_take_screenshot = defineTool({
-  name: "automation_take_screenshot",
+  name: "browser_take_screenshot",
   description:
     "Capture a PNG screenshot as evidence. Optional path is a filename only — file is written to screenshoot/agents/{jobId}/. Returns path and base64 for vision models and the web app.",
   inputSchema: takeScreenshotInputSchema,

@@ -4,7 +4,7 @@
 
 ## Pendahuluan
 
-Dokumen ini menjelaskan bagaimana bridge AI memanggil tool automation lewat **MCP**: in-process (Gemini/9Router) vs stdio subprocess (Cursor), plus **katalog tool** yang di-`registerTool` untuk browser dan mobile.
+Dokumen ini menjelaskan bagaimana agent runtime memanggil tool automation lewat **MCP**: in-process (OpenAI-compatible / knitto-agent) vs stdio subprocess (Cursor), plus **katalog tool** yang di-`registerTool` untuk browser dan mobile.
 
 ---
 
@@ -41,30 +41,30 @@ Urutan di stdio server = urutan `server.registerTool(...)`.
 
 ## 2. Browser MCP — tools terdaftar
 
-Prefix: `automation_*`. Total **20** tool.
+Prefix: **`browser_*`** (W6 cutover; sebelumnya `automation_*`). Total **20** tool.
 
 | Tool | Fungsi ringkas |
 |------|----------------|
-| `automation_get_app_memory` | Baca memory web (`memory/{appId}.md`) |
-| `automation_update_app_memory` | Tulis/update memory (prefer upsert section) |
-| `automation_navigate` | Buka URL di sesi browser |
-| `automation_get_page_snapshot` | Snapshot aksesibilitas + ref elemen (`e12`, …) |
-| `automation_click` | Klik via semantic locator |
-| `automation_click_at` | Klik koordinat (x, y) |
-| `automation_fill` | Isi input via locator |
-| `automation_assert_text` | Assert teks di body (contains / exact / regex) |
-| `automation_assert_visible` | Assert elemen locator terlihat |
-| `automation_take_screenshot` | Screenshot PNG bukti |
-| `automation_scroll` | Scroll halaman / ke elemen |
-| `automation_press_key` | Kirim key (Enter, Tab, dll.) |
-| `automation_hover` | Hover elemen |
-| `automation_select_option` | Pilih opsi `<select>` / combo |
-| `automation_wait_for` | Tunggu locator / teks / timeout |
-| `automation_go_back` | History back |
-| `automation_go_forward` | History forward |
-| `automation_upload_file` | Upload file ke input (dari storage) |
-| `automation_close_browser` | Tutup sesi Puppeteer |
-| `automation_stop_test_case_segment` | Stop video segment multi-TC (orchestrator / Cursor) |
+| `browser_get_app_memory` | Baca memory web (`memory/{appId}.md`) |
+| `browser_update_app_memory` | Tulis/update memory (prefer upsert section) |
+| `browser_navigate` | Buka URL di sesi browser |
+| `browser_get_page_snapshot` | Snapshot aksesibilitas + ref elemen (`e12`, …) |
+| `browser_click` | Klik via semantic locator |
+| `browser_click_at` | Klik koordinat (x, y) |
+| `browser_fill` | Isi input via locator |
+| `browser_assert_text` | Assert teks di body (contains / exact / regex) |
+| `browser_assert_visible` | Assert elemen locator terlihat |
+| `browser_take_screenshot` | Screenshot PNG bukti |
+| `browser_scroll` | Scroll halaman / ke elemen |
+| `browser_press_key` | Kirim key (Enter, Tab, dll.) |
+| `browser_hover` | Hover elemen |
+| `browser_select_option` | Pilih opsi `<select>` / combo |
+| `browser_wait_for` | Tunggu locator / teks / timeout |
+| `browser_go_back` | History back |
+| `browser_go_forward` | History forward |
+| `browser_upload_file` | Upload file ke input (dari storage) |
+| `browser_close_browser` | Tutup sesi Puppeteer |
+| `browser_stop_test_case_segment` | Stop video segment multi-TC (orchestrator / Cursor) |
 
 Locator: ref snapshot, `role`+`name`, label/placeholder/teks — lihat [browser.md](browser.md).
 
@@ -101,14 +101,14 @@ Urutan close single-TC: **`mobile_close_app` → `mobile_close_session`**. Multi
 
 | Area | Browser | Mobile |
 |------|---------|--------|
-| Buka konteks | `automation_navigate` | `mobile_launch_app` |
-| Snapshot | `automation_get_page_snapshot` | `mobile_get_screen_snapshot` |
+| Buka konteks | `browser_navigate` | `mobile_launch_app` |
+| Snapshot | `browser_get_page_snapshot` | `mobile_get_screen_snapshot` |
 | Interaksi utama | click / fill / select / hover | tap / input_text / scroll |
 | Assert | text + visible | visible |
 | Navigasi history | go_back / go_forward | — (pakai `press_key` BACK) |
 | Tutup | `close_browser` | `close_app` lalu `close_session` |
-| Segment multi-TC | `automation_stop_test_case_segment` | `mobile_stop_test_case_segment` |
-| Memory | `automation_*_app_memory` | `mobile_*_app_memory` |
+| Segment multi-TC | `browser_stop_test_case_segment` | `mobile_stop_test_case_segment` |
+| Memory | `browser_*_app_memory` | `mobile_*_app_memory` |
 
 Hybrid (browser + mobile dalam satu job): agent memakai **kedua** set tool sesuai platform TC — bridged lewat composite / orchestrator, bukan satu MCP server gabungan.
 
@@ -116,7 +116,7 @@ Hybrid (browser + mobile dalam satu job): agent memakai **kedua** set tool sesua
 
 ## 5. In-process
 
-Client MCP di process backend yang sama dengan map session Puppeteer/Appium. Cocok untuk Gemini/9Router dan cleanup `cleanupMode: "in-process"`.
+Client MCP di process backend yang sama dengan map session Puppeteer/Appium. Cocok untuk OpenAI-compatible (knitto-agent) dan cleanup `cleanupMode: "in-process"`. Stdio (Cursor) dan in-process mendaftarkan **set tool yang sama** (termasuk `*_stop_test_case_segment`).
 
 ---
 
@@ -150,7 +150,7 @@ Close tool tetap jalan lewat state file / ADB (`terminateMobileAppFromState`, `c
 
 ## 7. Close guard
 
-`isMultiTcCloseBlocked(jobId)` — block `automation_close_browser` / `mobile_close_app` / `mobile_close_session` selama job multi-TC managed, kecuali `FORCE_CLOSE`.
+`isMultiTcCloseBlocked(jobId)` — block `browser_close_browser` / `mobile_close_app` / `mobile_close_session` selama job multi-TC managed, kecuali `FORCE_CLOSE`.
 
 ---
 

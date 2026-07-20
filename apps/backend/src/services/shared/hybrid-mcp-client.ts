@@ -36,7 +36,7 @@ export async function createHybridMcpClient(
       if (name.startsWith("mobile_")) {
         return mobileClient.callTool(params, ...rest) as Promise<CallToolResult>;
       }
-      if (name.startsWith("automation_")) {
+      if (name.startsWith("browser_") || name.startsWith("automation_")) {
         return browserClient.callTool(params, ...rest) as Promise<CallToolResult>;
       }
       return browserClient.callTool(params, ...rest) as Promise<CallToolResult>;

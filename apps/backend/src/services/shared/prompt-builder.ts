@@ -28,7 +28,7 @@ function memoryAppIdBlock(memoryAppId: string | undefined): string {
   return `
 Memory appId (WAJIB — jangan invent nama lain seperti knitto-cms):
 - Gunakan appId tepat: "${memoryAppId.trim()}"
-- automation_get_app_memory / automation_update_app_memory selalu dengan appId ini
+- browser_get_app_memory / browser_update_app_memory selalu dengan appId ini
 - File memory = host:port untuk IP (contoh 192.168.20.27:5420), bukan nama produk
 `;
 }
@@ -64,7 +64,7 @@ function buildAttachedFilesBlock(saved: SavedAttachment[]): string {
       `${file.index}. [${file.kind}] ${file.name} (storage/${file.storagePath}) → ${file.absolutePath}`
   );
   return `
-Attached files (absolute paths for automation_upload_file):
+Attached files (absolute paths for browser_upload_file):
 ${lines.join("\n")}
 Use exact paths above; do not invent paths.
 Match each file to the correct input using user request + snapshot (inputType=file, label/name).
@@ -102,7 +102,7 @@ export function buildAgentPrompt(args: {
   const strategyBody =
     strategyKey && strategyKey in AUTOMATION_PROMPT_STRATEGIES
       ? AUTOMATION_PROMPT_STRATEGIES[strategyKey].body
-      : AUTOMATION_PROMPT_STRATEGIES.automation_human_strategy.body;
+      : AUTOMATION_PROMPT_STRATEGIES.browser_human_strategy.body;
 
   const userText = args.text.trim();
   const memoryAppId =
@@ -110,22 +110,22 @@ export function buildAgentPrompt(args: {
     resolveMemoryAppId({ platform: "browser", text: userText });
 
   const navigateStep = args.reuseBrowserSession
-    ? "automation_navigate — hanya jika perlu pindah URL (skip jika halaman sudah benar)"
-    : "automation_navigate — open the target URL";
+    ? "browser_navigate — hanya jika perlu pindah URL (skip jika halaman sudah benar)"
+    : "browser_navigate — open the target URL";
 
   const closeInstructions = args.skipPlatformClose
-    ? "- JANGAN panggil automation_close_browser — orchestrator menutup browser sekali setelah semua TC selesai."
+    ? "- JANGAN panggil browser_close_browser — orchestrator menutup browser sekali setelah semua TC selesai."
     : "";
 
   const memoryStep = memoryAppId
-    ? `1. automation_get_app_memory — appId = "${memoryAppId}" (wajib; jangan invent appId lain)`
-    : `1. automation_get_app_memory — appId dari host:port URL target (IPv4 + port), jangan invent nama produk`;
+    ? `1. browser_get_app_memory — appId = "${memoryAppId}" (wajib; jangan invent appId lain)`
+    : `1. browser_get_app_memory — appId dari host:port URL target (IPv4 + port), jangan invent nama produk`;
 
   const memoryUpdateStep = memoryAppId
-    ? `8. automation_update_app_memory — appId = "${memoryAppId}", mode upsert_section + sectionKey (replace section; jangan append)`
-    : `8. automation_update_app_memory — upsert_section + sectionKey; appId = host:port dari URL (jangan invent nama seperti knitto-cms)`;
+    ? `8. browser_update_app_memory — appId = "${memoryAppId}", mode upsert_section + sectionKey (replace section; jangan append)`
+    : `8. browser_update_app_memory — upsert_section + sectionKey; appId = host:port dari URL (jangan invent nama seperti knitto-cms)`;
 
-  const text = `You are a web automation tester. Use only MCP tools with the automation_ prefix.
+  const text = `You are a web automation tester. Use only MCP tools with the browser_ prefix.
 
 Channel (for logging): ${args.channel}
 
@@ -133,36 +133,36 @@ Strategy:
 ${strategyBody}
 ${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!) : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}${memoryAppIdBlock(memoryAppId)}
 Behave like a human tester:
-${closeInstructions ? `${closeInstructions}\n` : ""}- Observe the page (automation_get_page_snapshot; elements include bbox, inViewport, disabled, inputType for inputs; div>svg menu icons appear as role=button; div cursor-pointer menu rows appear as role=menuitem)
-- Call automation_take_screenshot when the snapshot is ambiguous or you need visual confirmation (optional path = filename only; files are saved under screenshoot/agents/{jobId}/)
-- Scroll to reveal off-screen content (automation_scroll)
-- Wait for dynamic loads (automation_wait_for with network_idle or locator)
-- Use automation_hover before dropdowns/menus; automation_press_key (Enter/Tab/ArrowUp/ArrowDown) for forms and open dropdown lists — never Escape (blocked by tool)
-- automation_select_option for native selects; for custom dropdowns snapshot open list, find option text match/contains target, click to select (see dropdown workflow below)
-- automation_upload_file for input[type=file] — do NOT use automation_fill or type a path manually
-- automation_go_back / automation_go_forward for history navigation
-- Verify with automation_assert_text / automation_assert_visible
-- Persist learnings via automation_get_app_memory / automation_update_app_memory (mode upsert_section + sectionKey; never append; appId = host:port untuk IP, bukan nama produk)
+${closeInstructions ? `${closeInstructions}\n` : ""}- Observe the page (browser_get_page_snapshot; elements include bbox, inViewport, disabled, inputType for inputs; div>svg menu icons appear as role=button; div cursor-pointer menu rows appear as role=menuitem)
+- Call browser_take_screenshot when the snapshot is ambiguous or you need visual confirmation (optional path = filename only; files are saved under screenshoot/agents/{jobId}/)
+- Scroll to reveal off-screen content (browser_scroll)
+- Wait for dynamic loads (browser_wait_for with network_idle or locator)
+- Use browser_hover before dropdowns/menus; browser_press_key (Enter/Tab/ArrowUp/ArrowDown) for forms and open dropdown lists — never Escape (blocked by tool)
+- browser_select_option for native selects; for custom dropdowns snapshot open list, find option text match/contains target, click to select (see dropdown workflow below)
+- browser_upload_file for input[type=file] — do NOT use browser_fill or type a path manually
+- browser_go_back / browser_go_forward for history navigation
+- Verify with browser_assert_text / browser_assert_visible
+- Persist learnings via browser_get_app_memory / browser_update_app_memory (mode upsert_section + sectionKey; never append; appId = host:port untuk IP, bukan nama produk)
 
 File upload workflow:
-1. automation_get_page_snapshot — find input with inputType=file (or label/name from user request)
-2. automation_upload_file with locator + filePath from Attached files list
-3. automation_wait_for — network_idle or locator after upload
-4. automation_take_screenshot — confirm file name/preview appears when applicable
+1. browser_get_page_snapshot — find input with inputType=file (or label/name from user request)
+2. browser_upload_file with locator + filePath from Attached files list
+3. browser_wait_for — network_idle or locator after upload
+4. browser_take_screenshot — confirm file name/preview appears when applicable
 Non-image files (PDF, CSV, etc.) cannot be read via vision — follow user instructions for any form fields after upload.
 
 Navigate to menu / page workflow (hamburger in top-right header when present):
-1. automation_get_page_snapshot — look for hamburger/menu icon in the top-right header (role=button, div+svg, name "Menu" or "Icon button")
-2. automation_take_screenshot if the trigger is unclear
-3. automation_click the hamburger icon (clickCenter:true for small SVG icons); automation_wait_for until menu items appear
-4. automation_get_page_snapshot again — read open menuitem/link list
+1. browser_get_page_snapshot — look for hamburger/menu icon in the top-right header (role=button, div+svg, name "Menu" or "Icon button")
+2. browser_take_screenshot if the trigger is unclear
+3. browser_click the hamburger icon (clickCenter:true for small SVG icons); browser_wait_for until menu items appear
+4. browser_get_page_snapshot again — read open menuitem/link list
 5. Find the target menuitem/link: exact name match or closest partial match to the user request
 6. Menu click retry (up to 3 attempts until navigation succeeds — URL/content changes):
-   - Attempt 1: automation_click the menu item (ref, or role+name / text locator); automation_wait_for network_idle; snapshot to verify navigation
-   - If page did NOT navigate: Attempt 2: automation_click the parent/wrapper element of that menu item (nearest containing li/div/link from snapshot); wait + verify again
-   - If still NOT navigated: Attempt 3: automation_click_at at the center of the menu item bbox (x + width/2, y + height/2 from snapshot); wait + verify again
+   - Attempt 1: browser_click the menu item (ref, or role+name / text locator); browser_wait_for network_idle; snapshot to verify navigation
+   - If page did NOT navigate: Attempt 2: browser_click the parent/wrapper element of that menu item (nearest containing li/div/link from snapshot); wait + verify again
+   - If still NOT navigated: Attempt 3: browser_click_at at the center of the menu item bbox (x + width/2, y + height/2 from snapshot); wait + verify again
    - Stop retrying as soon as navigation succeeds; do not exceed 3 attempts per menu item
-7. automation_get_page_snapshot again before the next interaction
+7. browser_get_page_snapshot again before the next interaction
 ${DROPDOWN_SELECTION_WORKFLOW}${MODAL_FORM_SUBMIT_WORKFLOW}${MODAL_DISMISS_WORKFLOW}
 User request:
 ${userText}
@@ -170,17 +170,17 @@ ${userText}
 Workflow:
 ${memoryStep}
 2. ${navigateStep}
-3. automation_get_page_snapshot — discover UI; prefer inViewport refs; no data-testid
-4. automation_scroll / automation_hover / automation_click / automation_click_at / automation_fill / automation_upload_file / automation_press_key
-5. automation_wait_for — after navigation, menu open, SPA actions, or file upload
-6. automation_assert_text / automation_assert_visible — validate
-7. automation_take_screenshot — capture evidence (vision models receive PNG in tool result)
+3. browser_get_page_snapshot — discover UI; prefer inViewport refs; no data-testid
+4. browser_scroll / browser_hover / browser_click / browser_click_at / browser_fill / browser_upload_file / browser_press_key
+5. browser_wait_for — after navigation, menu open, SPA actions, or file upload
+6. browser_assert_text / browser_assert_visible — validate
+7. browser_take_screenshot — capture evidence (vision models receive PNG in tool result)
 ${memoryUpdateStep}
 
 Ringkasan akhir:
 - Tulis seluruh ringkasan hasil dalam Bahasa Indonesia (formal, jelas, dan ringkas).
 - Jelaskan langkah yang dilakukan, hasil verifikasi, dan kesimpulan untuk user.
-- Nama tool teknis (automation_*) boleh tetap seperti aslinya jika perlu dirujuk.`;
+- Nama tool teknis (browser_*) boleh tetap seperti aslinya jika perlu dirujuk.`;
 
   return {
     text,
@@ -219,7 +219,7 @@ export function buildMobileAgentPrompt(args: {
 Channel (for logging): ${args.channel}
 Target app package: ${appPackage}
 ${args.mobileConfig?.deepLink ? `Deep link: ${args.mobileConfig.deepLink}` : ""}
-${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!).replace(/automation_upload_file/g, "mobile_upload_file") : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}
+${hasVision ? buildVisionBlock(visionCount) : ""}${hasSavedFiles ? buildAttachedFilesBlock(args.savedAttachments!).replace(/browser_upload_file/g, "mobile_upload_file") : ""}${hasPromptBasePaths ? buildPromptBasePathsBlock(args.promptBasePaths!) : ""}
 Behave like a human tester on Android:
 - Read mobile app memory first (mobile_get_app_memory with appId = "${appPackage}")
 - Launch app (mobile_launch_app)
@@ -229,7 +229,7 @@ Behave like a human tester on Android:
 - Persist learnings (mobile_update_app_memory with appId = "${appPackage}"; mode upsert_section + sectionKey; never append)
 ${closeInstructions}
 
-Do NOT use automation_* tools on mobile jobs.
+Do NOT use browser_* tools on mobile jobs.
 
 User request:
 ${userText}
@@ -355,7 +355,7 @@ ${lines.join("\n")}
 
 Aturan penting:
 - Fokus hanya pada test case yang sedang dijalankan.
-- Multi-TC: JANGAN panggil automation_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
+- Multi-TC: JANGAN panggil browser_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
 - ${serializeHandoffInstruction()}
 - Memory: baca get_app_memory dulu; update hanya dengan mode upsert_section + sectionKey (isi section diganti, bukan ditumpuk). Jangan append.`;
 }
@@ -383,7 +383,7 @@ export function buildTestCasePrompt(args: {
   const multiTestRules = args.isMultiTest
     ? `
 Multi-TC job (${args.testCaseIndex + 1}/${args.testCaseTotal}):
-- JANGAN panggil automation_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
+- JANGAN panggil browser_close_browser / mobile_close_app / mobile_close_session — orchestrator menutup browser/app/session sekali setelah semua TC selesai.
 ${sessionReuseRule ? `${sessionReuseRule}\n` : ""}- ${serializeHandoffInstruction()}
 - Memory: jika ada learning baru, panggil update_app_memory dengan mode upsert_section, sectionKey="${sectionKey}" (body section diganti). Jangan append / jangan buat heading bebas yang numpuk.
 `

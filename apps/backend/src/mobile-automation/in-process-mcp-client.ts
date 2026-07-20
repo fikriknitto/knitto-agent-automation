@@ -17,6 +17,7 @@ import {
   mobile_wait_for,
   mobile_close_app,
   mobile_close_session,
+  mobile_stop_test_case_segment,
 } from "./libs/registry.js";
 
 const ALL_TOOLS = [
@@ -35,6 +36,7 @@ const ALL_TOOLS = [
   mobile_wait_for,
   mobile_close_app,
   mobile_close_session,
+  mobile_stop_test_case_segment,
 ] as const;
 
 type AnyTool = (typeof ALL_TOOLS)[number];

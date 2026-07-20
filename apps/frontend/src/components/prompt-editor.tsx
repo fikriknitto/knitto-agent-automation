@@ -15,9 +15,11 @@ import {
 import { usePromptShortcuts } from "@/hooks/prompt-shortcuts/use-prompt-shortcuts";
 import {
   ACCEPTED_FILE_INPUT,
+  attachmentKey,
   filesToPromptAttachments,
   isAcceptedAttachment,
   isPasteableImage,
+  isSameAttachment,
   storageEntryToPromptAttachment,
   syncAttachmentsAfterDelete,
   syncAttachmentsAfterRename,
@@ -25,14 +27,14 @@ import {
 } from "../lib/prompt-attachment";
 import type { AppliedPromptShortcut } from "../lib/prompt-compose";
 import type { BridgeSummary, ConnectionState } from "../lib/types";
-import { BridgeAndModel } from "./bridge-and-model";
+import { AgentAndModel } from "./agent-and-model";
 import { PlatformSelector } from "./platform-selector";
 import { useMobileDevices } from "@/contexts/mobile-devices-context";
 import { PromptAttachments } from "./prompt-attachment-chip";
 import { PromptTemplateShortcut } from "./prompt-template-shortcut";
-import { StorageMediaModal } from "./storage-media-modal";
+import { MediaLibraryModal } from "./media-library-modal";
 import { Button } from "./ui";
-import { invalidateStorageEntries } from "@/query/invalidate-storage";
+import { invalidateMediaLibraryEntries } from "@/query/invalidate-media-library";
 import { createPromptEditorExtensions } from "@/lib/tiptap/prompt-editor-extensions";
 import {
   applyEditorMarkdown,
@@ -92,7 +94,7 @@ function resolveValidationMessage(
     return "Connect WebSocket terlebih dahulu di panel Connection.";
   }
   if (!selectedBridgeId) {
-    return "Pilih bridge terlebih dahulu.";
+    return "Pilih agent terlebih dahulu.";
   }
   if (!hasContent) {
     return "Tulis prompt atau lampirkan file sebelum mengirim.";
@@ -249,7 +251,7 @@ export function PromptEditor({
         }
         const next = await filesToPromptAttachments(accepted);
         onAttachmentsChange([...attachments, ...next]);
-        await invalidateStorageEntries(queryClient);
+        await invalidateMediaLibraryEntries(queryClient);
         setAttachError(null);
       } catch (error) {
         setAttachError(error instanceof Error ? error.message : String(error));
@@ -258,12 +260,12 @@ export function PromptEditor({
     [attachments, onAttachmentsChange, queryClient]
   );
 
-  const attachedStoragePaths = useMemo(
-    () => attachments.map((a) => a.storagePath),
+  const attachedLibraryKeys = useMemo(
+    () => attachments.map(attachmentKey).filter(Boolean),
     [attachments]
   );
 
-  const handleStorageApply = useCallback(
+  const handleLibraryApply = useCallback(
     async (entries: StorageEntry[]) => {
       if (!entries.length) return;
 
@@ -276,7 +278,7 @@ export function PromptEditor({
       const unique = entries.filter(
         (entry, index, list) =>
           list.findIndex((item) => item.path === entry.path) === index &&
-          !attachments.some((a) => a.storagePath === entry.path)
+          !attachments.some((a) => isSameAttachment(a, entry.path))
       );
 
       const toAdd = unique.slice(0, slotsLeft);
@@ -516,7 +518,7 @@ export function PromptEditor({
                 <p className="whitespace-pre-line px-1 text-xs text-slate-500">{hybridPreview}</p>
               )}
               <div className="flex items-center justify-between gap-2">
-              <BridgeAndModel
+              <AgentAndModel
                 bridges={bridges}
                 selectedBridgeId={selectedBridgeId}
                 selectedModel={selectedModel}
@@ -598,12 +600,12 @@ export function PromptEditor({
         </p>
       )}
 
-      <StorageMediaModal
+      <MediaLibraryModal
         open={storageModalOpen}
         slotsLeft={MAX_ATTACHMENTS - attachments.length}
-        attachedPaths={attachedStoragePaths}
+        attachedPaths={attachedLibraryKeys}
         onClose={() => setStorageModalOpen(false)}
-        onApply={handleStorageApply}
+        onApply={handleLibraryApply}
         onEntryDeleted={(path) => {
           onAttachmentsChange(syncAttachmentsAfterDelete(attachments, path));
         }}

@@ -19,7 +19,7 @@ export function resolveMobileMcpPath(): string {
 
 export function automationMcpEnv(
   jobId?: string,
-  opts?: { segmentManaged?: boolean }
+  opts?: { segmentManaged?: boolean; apiDataToken?: string }
 ): Record<string, string> {
   const root = resolveMonorepoRoot();
   const env: Record<string, string> = {
@@ -42,12 +42,16 @@ export function automationMcpEnv(
       ? resolve(root, process.env.AUTOMATION_UPLOAD_DIR.trim())
       : "",
     AUTOMATION_UPLOAD_MAX_BYTES: process.env.AUTOMATION_UPLOAD_MAX_BYTES ?? "",
+    API_DATA_BASE_URL: process.env.API_DATA_BASE_URL ?? "",
   };
   if (jobId?.trim()) {
     env.AUTOMATION_JOB_ID = jobId.trim();
   }
   if (opts?.segmentManaged) {
     env.AUTOMATION_MULTI_TC = "1";
+  }
+  if (opts?.apiDataToken?.trim()) {
+    env.API_DATA_TOKEN = opts.apiDataToken.trim();
   }
   return env;
 }
@@ -60,7 +64,7 @@ export function mobileMcpEnv(
     udid?: string;
     deepLink?: string;
   },
-  opts?: { segmentManaged?: boolean }
+  opts?: { segmentManaged?: boolean; apiDataToken?: string }
 ): Record<string, string> {
   const root = resolveMonorepoRoot();
   const env: Record<string, string> = {
@@ -82,6 +86,7 @@ export function mobileMcpEnv(
     MOBILE_RECORD_FPS: process.env.MOBILE_RECORD_FPS ?? "",
     MOBILE_RECORD_BIT_RATE: process.env.MOBILE_RECORD_BIT_RATE ?? "",
     MOBILE_VIDEO_FILENAME: process.env.MOBILE_VIDEO_FILENAME ?? "",
+    API_DATA_BASE_URL: process.env.API_DATA_BASE_URL ?? "",
   };
   if (jobId?.trim()) {
     env.AUTOMATION_JOB_ID = jobId.trim();
@@ -101,6 +106,9 @@ export function mobileMcpEnv(
   }
   if (opts?.segmentManaged) {
     env.MOBILE_MULTI_TC = "1";
+  }
+  if (opts?.apiDataToken?.trim()) {
+    env.API_DATA_TOKEN = opts.apiDataToken.trim();
   }
   return env;
 }
@@ -126,6 +134,7 @@ export function cursorMcpServerConfig(opts: {
   platform?: AutomationPlatform;
   mobileConfig?: BridgeJob["mobileConfig"];
   segmentManaged?: boolean;
+  apiDataToken?: string;
 }): Record<string, { command: string; args: string[]; env: Record<string, string>; cwd?: string }> {
   const platform = opts.platform ?? "browser";
   if (platform === "hybrid") {
@@ -138,11 +147,13 @@ export function cursorMcpServerConfig(opts: {
       jobId: opts.jobId,
       mobileConfig: opts.mobileConfig,
       segmentManaged: opts.segmentManaged,
+      apiDataToken: opts.apiDataToken,
     });
   }
   if (platform === "mobile") {
     const env = mobileMcpEnv(opts.jobId, opts.mobileConfig, {
       segmentManaged: opts.segmentManaged,
+      apiDataToken: opts.apiDataToken,
     });
     const filtered = Object.fromEntries(Object.entries(env).filter(([, v]) => v));
     return {
@@ -155,7 +166,10 @@ export function cursorMcpServerConfig(opts: {
     };
   }
 
-  const env = automationMcpEnv(opts.jobId, { segmentManaged: opts.segmentManaged });
+  const env = automationMcpEnv(opts.jobId, {
+    segmentManaged: opts.segmentManaged,
+    apiDataToken: opts.apiDataToken,
+  });
   const filtered = Object.fromEntries(Object.entries(env).filter(([, v]) => v));
   return {
     automation: {
@@ -181,15 +195,22 @@ export function cursorHybridMcpServerConfig(opts: {
   jobId?: string;
   mobileConfig?: BridgeJob["mobileConfig"];
   segmentManaged?: boolean;
+  apiDataToken?: string;
 }): Record<string, { command: string; args: string[]; env: Record<string, string>; cwd?: string }> {
   const browserEnv = Object.fromEntries(
-    Object.entries(automationMcpEnv(opts.jobId, { segmentManaged: opts.segmentManaged })).filter(
-      ([, v]) => v
-    )
+    Object.entries(
+      automationMcpEnv(opts.jobId, {
+        segmentManaged: opts.segmentManaged,
+        apiDataToken: opts.apiDataToken,
+      })
+    ).filter(([, v]) => v)
   );
   const mobileEnv = Object.fromEntries(
     Object.entries(
-      mobileMcpEnv(opts.jobId, opts.mobileConfig, { segmentManaged: opts.segmentManaged })
+      mobileMcpEnv(opts.jobId, opts.mobileConfig, {
+        segmentManaged: opts.segmentManaged,
+        apiDataToken: opts.apiDataToken,
+      })
     ).filter(([, v]) => v)
   );
   return {

@@ -6,8 +6,12 @@ import {
   type TestCaseSpec,
 } from "./test-case.js";
 
-export const bridgeKindSchema = z.enum(["cursor", "gemini", "openrouter", "ninerouter"]);
+/** Product kinds for agent runtimes — Cursor | OpenAI-compatible only. */
+export const bridgeKindSchema = z.enum(["cursor", "openai"]);
 export type BridgeKind = z.infer<typeof bridgeKindSchema>;
+
+export const agentRuntimeSchema = z.enum(["cursor", "openai"]);
+export type AgentRuntime = z.infer<typeof agentRuntimeSchema>;
 
 export const agentJobStatusSchema = z.enum([
   "queued",
@@ -24,12 +28,20 @@ export const bridgeModelOptionSchema = z.object({
   vision: z.boolean().optional(),
 });
 
-export const promptAttachmentSchema = z.object({
-  storagePath: z.string().min(1),
-  mimeType: z.string(),
-  name: z.string(),
-  kind: z.enum(["image", "file"]),
-});
+export const promptAttachmentSchema = z
+  .object({
+    /** @deprecated Prefer mediaId (API Data library). Kept for old clients. */
+    storagePath: z.string().optional().default(""),
+    /** API Data agent_media.id */
+    mediaId: z.number().int().positive().optional(),
+    mimeType: z.string(),
+    name: z.string(),
+    kind: z.enum(["image", "file"]),
+  })
+  .refine(
+    (a) => a.mediaId != null || (a.storagePath != null && a.storagePath.length > 0),
+    { message: "mediaId or storagePath required" }
+  );
 
 export type PromptAttachment = z.infer<typeof promptAttachmentSchema>;
 
@@ -50,6 +62,8 @@ export const userPromptMessageSchema = z.object({
   channel: z.string(),
   connectionId: z.string().optional(),
   bridgeId: z.string(),
+  /** Product runtime id (W6). Prefer over inferring from bridgeKind. */
+  agentRuntime: agentRuntimeSchema.optional(),
   text: z.string(),
   strategy: z.string().optional(),
   model: z.string().optional(),
@@ -59,6 +73,10 @@ export const userPromptMessageSchema = z.object({
   platform: automationPlatformSchema.optional(),
   mobileConfig: mobileConfigSchema.optional(),
   testCases: z.array(testCaseSpecSchema).optional(),
+  /** API Data agent_runs.id — set after FE POST /agent/runs (W2) */
+  runId: z.number().int().positive().optional(),
+  /** JWT user forwarded to Worker for API Data writes (AUTH MVP) */
+  apiDataToken: z.string().min(1).optional(),
 });
 
 export const agentJobCancelMessageSchema = z.object({
@@ -109,6 +127,7 @@ export const agentJobMessageSchema = z.object({
   testCases: z.array(testCaseSpecSchema).optional(),
   toolName: z.string().optional(),
   deviceUdid: z.string().optional(),
+  runId: z.number().int().positive().optional(),
 });
 
 export type BridgeModelOption = z.infer<typeof bridgeModelOptionSchema>;
@@ -129,8 +148,17 @@ export interface BridgeJob {
   platform?: AutomationPlatform;
   mobileConfig?: MobileConfig;
   testCases?: TestCaseSpec[];
+  /** API Data run id (W2) */
+  runId?: number;
+  /** JWT for Worker → API Data writes */
+  apiDataToken?: string;
 }
 
+/**
+ * Wire/API snapshot of an agent runtime.
+ * Field names keep `bridge*` for WS compatibility; UI should say "Agent".
+ * Display labels: "Cursor" | "OpenAI-compatible".
+ */
 export interface BridgeInfo {
   bridgeId: string;
   bridgeKind: BridgeKind;

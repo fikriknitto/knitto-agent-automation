@@ -29,8 +29,10 @@ export function resolveMemoryDir(root = resolveMonorepoRoot()): string {
 
 export function resolveScreenshotDir(root = resolveMonorepoRoot()): string {
   const fromEnv = process.env.AUTOMATION_SCREENSHOT_DIR?.trim();
-  if (!fromEnv) return join(root, "screenshoot");
-  return resolve(root, fromEnv);
+  if (fromEnv) return resolve(root, fromEnv);
+  // Ephemeral job evidence workspace — under STORAGE_ROOT to avoid a second root folder.
+  // Durable history lives in API Data / MinIO; this path is mid-job + upload buffer only.
+  return join(resolveStorageRoot(root), "agents");
 }
 
 export function resolvePromptShortcutsDir(root = resolveMonorepoRoot()): string {

@@ -225,7 +225,7 @@ async function stopSegmentViaCursorSubprocess(
   const toolName =
     platform === "mobile"
       ? "mobile_stop_test_case_segment"
-      : "automation_stop_test_case_segment";
+      : "browser_stop_test_case_segment";
 
   const result = await callCursorSubprocessTool({
     jobId,

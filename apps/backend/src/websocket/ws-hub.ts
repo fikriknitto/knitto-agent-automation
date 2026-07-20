@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import type { Server as HttpServer } from "node:http";
 import type { AgentJobMessage, BridgeKind } from "@knitto/shared";
 import { createLogger } from "../automation/core/index.js";
-import type { BridgeRegistryService } from "../services/bridge-registry.service.js";
+import type { AgentRegistryService } from "../services/agent-registry.service.js";
 import { WebSocketServer, type WebSocket } from "ws";
 
 const logger = createLogger("ws-hub");
@@ -27,17 +27,26 @@ function createConnectionId(): string {
 }
 
 function normalizeBridgeKind(kind?: string): BridgeKind {
-  if (kind === "gemini" || kind === "google") return "gemini";
-  if (kind === "openrouter" || kind === "sca") return "openrouter";
-  if (kind === "ninerouter" || kind === "9router") return "ninerouter";
+  const raw = String(kind ?? "").toLowerCase();
+  if (
+    raw === "openai" ||
+    raw === "ninerouter" ||
+    raw === "9router" ||
+    raw === "openrouter" ||
+    raw === "sca" ||
+    raw === "gemini" ||
+    raw === "google"
+  ) {
+    return "openai";
+  }
   return "cursor";
 }
 
-function parseNinerouterCredentials(data: Record<string, unknown>): {
+function parseOpenaiCredentials(data: Record<string, unknown>): {
   baseUrl: string;
   apiKey: string;
 } | null {
-  const nested = data.ninerouter;
+  const nested = data.openai;
   if (!nested || typeof nested !== "object") return null;
   const record = nested as Record<string, unknown>;
   const baseUrl = typeof record.baseUrl === "string" ? record.baseUrl.trim() : "";
@@ -56,7 +65,7 @@ export class WsHub {
 
   constructor(
     httpServer: HttpServer,
-    private readonly bridgeRegistry: BridgeRegistryService
+    private readonly bridgeRegistry: AgentRegistryService
   ) {
     this.wss = new WebSocketServer({ server: httpServer, path: "/ws" });
     this.wss.on("connection", (ws) => this.handleConnection(ws));
@@ -204,27 +213,19 @@ export class WsHub {
             channel,
             connectionId,
             status: "error",
-            message: "AI bridge offline.",
+            message: "AI agent offline.",
             progress: 100,
           })
         );
         return true;
       }
-      if (!data.bridgeId) {
-        ws.send(
-          JSON.stringify({
-            type: "agent_job",
-            id: data.id,
-            channel,
-            connectionId,
-            status: "error",
-            message: "bridgeId is required",
-            progress: 100,
-          })
-        );
-        return true;
-      }
-      const bridge = this.bridgeRegistry.get(String(data.bridgeId));
+      const agentRuntime =
+        data.agentRuntime === "cursor" || data.agentRuntime === "openai"
+          ? data.agentRuntime
+          : undefined;
+      let bridge =
+        (data.bridgeId ? this.bridgeRegistry.get(String(data.bridgeId)) : undefined) ??
+        (agentRuntime ? this.bridgeRegistry.findByKind(agentRuntime) : undefined);
       if (!bridge) {
         ws.send(
           JSON.stringify({
@@ -233,7 +234,9 @@ export class WsHub {
             channel,
             connectionId,
             status: "error",
-            message: "Selected bridge is offline or not found.",
+            message: data.bridgeId
+              ? "Selected agent is offline or not found."
+              : "bridgeId or agentRuntime is required",
             progress: 100,
           })
         );
@@ -258,12 +261,12 @@ export class WsHub {
         this.bridgeRegistry.findByKind(bridgeKind);
       if (!target) return true;
 
-      if (bridgeKind === "ninerouter") {
-        const ninerouter = parseNinerouterCredentials(data);
-        if (!ninerouter) return true;
+      if (bridgeKind === "openai") {
+        const openai = parseOpenaiCredentials(data);
+        if (!openai) return true;
         target.handleCredentials({
           bridgeId: target.bridgeId,
-          ninerouter,
+          openai,
         });
         return true;
       }

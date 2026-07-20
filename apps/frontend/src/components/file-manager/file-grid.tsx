@@ -1,6 +1,6 @@
 import type { DragEvent, MouseEvent } from "react";
 import type { StorageEntry } from "@knitto/shared";
-import type { ViewMode } from "../../hooks/use-file-manager";
+import type { ViewMode } from "../../hooks/use-media-library";
 import { cn } from "../../lib/cn";
 import { FileCard, type FileSelectModifiers } from "./file-card";
 

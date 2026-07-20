@@ -318,7 +318,7 @@ export function PromptShortcutFormModal({
                 </Button>
                 {!canGenerate && (
                   <span className="text-xs text-slate-500">
-                    Connect bridge dan pilih model di header chat
+                    Connect agent dan pilih model di header chat
                   </span>
                 )}
               </div>

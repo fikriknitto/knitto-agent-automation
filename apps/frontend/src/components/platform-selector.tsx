@@ -2,7 +2,7 @@ import { useMobileDevices } from "@/contexts/mobile-devices-context";
 import { useMobilePackages } from "@/hooks/mobile/use-mobile-packages";
 import { cn } from "@/lib/cn";
 import type { AutomationPlatform, MobileConfig } from "@knitto/shared";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "./ui/badge";
 import {
   Combobox,
@@ -48,14 +48,48 @@ export function PlatformSelector({
   const { devices, connected, error: streamError } = useMobileDevices();
   const packageUdid = mobileConfig.udid?.trim() || devices.find((d) => d.state === "idle")?.udid;
   const { data: packages = [], isLoading: packagesLoading } = useMobilePackages(packageUdid);
+  const [browserLockJobId, setBrowserLockJobId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (platform !== "browser") {
+      setBrowserLockJobId(null);
+      return;
+    }
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/health");
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          browserLock?: { busy?: boolean; jobId?: string | null };
+        };
+        if (cancelled) return;
+        setBrowserLockJobId(
+          json.browserLock?.busy && json.browserLock.jobId ? json.browserLock.jobId : null
+        );
+      } catch {
+        // ignore
+      }
+    };
+    void poll();
+    const timer = setInterval(() => void poll(), 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [platform]);
 
   const deviceItems = useMemo<ComboboxOption[]>(() => {
     const items: ComboboxOption[] = [{ value: AUTO_UDID, label: "Auto (pool)" }];
     for (const device of devices) {
       const status = device.state === "busy" ? "busy" : "idle";
+      const jobHint =
+        device.state === "busy" && device.jobId
+          ? ` job=${device.jobId.length > 18 ? `${device.jobId.slice(0, 18)}…` : device.jobId}`
+          : "";
       const label = device.model
-        ? `${device.udid} — ${device.model} (${status})`
-        : `${device.udid} (${status})`;
+        ? `${device.udid} — ${device.model} (${status}${jobHint})`
+        : `${device.udid} (${status}${jobHint})`;
       items.push({ value: device.udid, label });
     }
     return items;
@@ -109,6 +143,15 @@ export function PlatformSelector({
         {(showMobileFields || isHybrid) && connected && (
           <Badge variant="info" className="text-[10px]">
             {connected ? "SSE live" : "SSE offline"}
+          </Badge>
+        )}
+        {platform === "browser" && browserLockJobId && (
+          <Badge variant="warning" className="text-[10px] normal-case">
+            Browser locked (
+            {browserLockJobId.length > 14
+              ? `${browserLockJobId.slice(0, 14)}…`
+              : browserLockJobId}
+            )
           </Badge>
         )}
       </div>

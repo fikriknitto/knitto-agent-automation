@@ -1,12 +1,14 @@
 import { Agent } from "@cursor/sdk";
-import { GoogleGenAI } from "@google/genai";
+import { resolveModel } from "@knittotextile/knitto-agent-providers";
+import { generateText } from "ai";
 import type { BridgeKind } from "@knitto/shared";
 import type { GeneratePromptShortcutBody } from "../validators/prompt-shortcut-schemas.js";
-import type { BridgeRegistryService } from "./bridge-registry.service.js";
-import cursorConfig from "./bridge-runners/cursor/config.js";
-import geminiConfig from "./bridge-runners/gemini/config.js";
-import ninerouterConfig from "./bridge-runners/ninerouter/config.js";
-import { nineRouterChatCompletion } from "./bridge-runners/ninerouter/openai-agent.js";
+import type { AgentRegistryService } from "./agent-registry.service.js";
+import cursorConfig from "./agent-runners/cursor/config.js";
+import openaiConfig, {
+  openaiApiV1,
+  normalizeOpenaiBaseUrl,
+} from "./agent-runners/openai/config.js";
 
 const GENERATE_TIMEOUT_MS = 60_000;
 
@@ -178,47 +180,34 @@ function parseGeneratedText(raw: string): GeneratePromptShortcutResult {
   };
 }
 
-async function generateWithGemini(model: string, brief: string, label?: string): Promise<string> {
-  if (!geminiConfig.geminiApiKey) {
-    throw new Error("Gemini API key belum tersedia — simpan di panel Bridge credentials");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: geminiConfig.geminiApiKey });
-  const response = await ai.models.generateContent({
-    model,
-    contents: [{ role: "user", parts: [{ text: buildUserPrompt(brief, label) }] }],
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-    },
-  });
-
-  return response.text?.trim() ?? "";
-}
-
-async function generateWithNineRouter(model: string, brief: string, label?: string): Promise<string> {
-  const creds = ninerouterConfig.ninerouterCredentials;
+async function generateWithOpenai(model: string, brief: string, label?: string): Promise<string> {
+  const creds = openaiConfig.openaiCredentials;
   if (!creds.baseUrl.trim()) {
-    throw new Error("9Router belum dikonfigurasi — set base URL di panel Bridge credentials");
+    throw new Error(
+      "OpenAI-compatible belum dikonfigurasi — set Base URL di panel Agent credentials"
+    );
   }
 
-  const payload = await nineRouterChatCompletion(creds, {
+  const baseURL = openaiApiV1(normalizeOpenaiBaseUrl(creds.baseUrl));
+  const languageModel = resolveModel({
+    provider: "openai",
     model,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildUserPrompt(brief, label) },
-    ],
+    apiKey: creds.apiKey || undefined,
+    baseURL,
   });
 
-  const choice = (
-    payload.choices as Array<{ message?: { content?: string | null } }> | undefined
-  )?.[0];
-  const content = choice?.message?.content;
-  return typeof content === "string" ? content.trim() : "";
+  const { text } = await generateText({
+    model: languageModel,
+    system: SYSTEM_PROMPT,
+    prompt: buildUserPrompt(brief, label),
+  });
+
+  return text?.trim() ?? "";
 }
 
 async function generateWithCursor(model: string, brief: string, label?: string): Promise<string> {
   if (!cursorConfig.cursorApiKey) {
-    throw new Error("Cursor API key belum tersedia — simpan di panel Bridge credentials");
+    throw new Error("Cursor API key belum tersedia — simpan di panel Agent credentials");
   }
 
   const agent = await Agent.create({
@@ -262,21 +251,17 @@ async function generateByBridgeKind(
   label?: string
 ): Promise<string> {
   switch (kind) {
-    case "gemini":
-      return generateWithGemini(model, brief, label);
-    case "ninerouter":
-      return generateWithNineRouter(model, brief, label);
+    case "openai":
+      return generateWithOpenai(model, brief, label);
     case "cursor":
       return generateWithCursor(model, brief, label);
-    case "openrouter":
-      throw new Error("OpenRouter bridge belum didukung untuk generate prompt shortcut");
     default:
-      throw new Error(`Bridge kind tidak didukung: ${kind}`);
+      throw new Error(`Agent runtime tidak didukung: ${kind}`);
   }
 }
 
 export async function generatePromptShortcutTemplate(
-  bridgeRegistry: BridgeRegistryService,
+  bridgeRegistry: AgentRegistryService,
   body: GeneratePromptShortcutBody
 ): Promise<GeneratePromptShortcutResult> {
   const runner = bridgeRegistry.get(body.bridgeId);

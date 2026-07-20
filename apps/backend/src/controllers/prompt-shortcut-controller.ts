@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import type { BridgeRegistryService } from "../services/bridge-registry.service.js";
+import type { AgentRegistryService } from "../services/agent-registry.service.js";
 import { generatePromptShortcutTemplate } from "../services/prompt-shortcut-generate.service.js";
 import {
   PromptShortcutConflictError,
@@ -19,7 +19,7 @@ import {
 } from "../validators/prompt-shortcut-schemas.js";
 
 export class PromptShortcutController {
-  constructor(private readonly bridgeRegistry: BridgeRegistryService) {}
+  constructor(private readonly bridgeRegistry: AgentRegistryService) {}
 
   async list(_req: Request, res: Response): Promise<void> {
     try {

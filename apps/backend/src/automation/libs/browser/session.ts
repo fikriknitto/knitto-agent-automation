@@ -8,6 +8,11 @@ import config from "../config.js";
 import { isJobSegmentManaged } from "../../../services/shared/segment-context.js";
 import { ensureSegmentRecordingStarted } from "../../../services/shared/segment-recording.js";
 import {
+  acquireBrowserLock,
+  clearBrowserLock,
+  releaseBrowserLock,
+} from "../../../services/shared/browser-lock.js";
+import {
   ensureBrowserSegmentRecording,
   startJobRecording,
   stopJobRecording,
@@ -75,6 +80,11 @@ export async function connectBrowserFromStateFile(): Promise<Browser | null> {
 }
 
 async function launchBrowser(): Promise<Browser> {
+  const jobId = getAutomationJobId();
+  if (jobId) {
+    acquireBrowserLock(jobId);
+  }
+
   if (browser?.connected) return browser;
 
   const reconnected = await connectBrowserFromStateFile();
@@ -111,8 +121,13 @@ async function startRecordingForPage(page: Page): Promise<void> {
 }
 
 export async function getPage(): Promise<Page> {
+  const jobId = getAutomationJobId();
+  if (jobId) {
+    acquireBrowserLock(jobId);
+  }
+
   if (page && !page.isClosed()) {
-    if (getAutomationJobId()) {
+    if (jobId) {
       await startRecordingForPage(page);
     }
     return page;
@@ -125,7 +140,6 @@ export async function getPage(): Promise<Page> {
     height: config.viewportHeight,
   });
   page.setDefaultTimeout(config.browserTimeoutMs);
-  const jobId = getAutomationJobId();
   if (jobId && !isJobSegmentManaged(jobId)) {
     await startRecordingForPage(page);
   }
@@ -163,6 +177,7 @@ export async function goForward(): Promise<{ url: string; title: string }> {
 }
 
 export async function closeBrowser(): Promise<void> {
+  const jobId = getAutomationJobId();
   await stopJobRecording();
   if (page && !page.isClosed()) {
     await page.close().catch(() => undefined);
@@ -172,9 +187,13 @@ export async function closeBrowser(): Promise<void> {
     await browser.close().catch(() => undefined);
     browser = null;
     clearBrowserState();
+    if (jobId) releaseBrowserLock(jobId);
+    else clearBrowserLock();
     return;
   }
   await closeBrowserFromStateFile();
+  if (jobId) releaseBrowserLock(jobId);
+  else clearBrowserLock();
 }
 
 /** Capture PNG base64 from the live browser via saved WebSocket endpoint (Cursor SDK path). */
@@ -228,15 +247,17 @@ export async function closeBrowserFromStateFile(): Promise<boolean> {
       browser = null;
       page = null;
     }
+    clearBrowserLock();
     return true;
   } catch {
     clearBrowserState();
+    clearBrowserLock();
     return false;
   }
 }
 
 export function assertPageOpen(): void {
   if (!page || page.isClosed()) {
-    throw new ToolError("No browser page open. Call automation_navigate first.");
+    throw new ToolError("No browser page open. Call browser_navigate first.");
   }
 }

@@ -17,7 +17,7 @@ import {
 } from "../schema.js";
 
 export const automation_stop_test_case_segment = defineTool({
-  name: "automation_stop_test_case_segment",
+  name: "browser_stop_test_case_segment",
   description:
     "Stop the active per-test-case browser video segment (multi-TC orchestrator use).",
   inputSchema: stopTestCaseSegmentInputSchema,

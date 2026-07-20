@@ -5,15 +5,15 @@ import { captureScreenshotFromStateFile } from "../../automation/libs/browser/se
 
 const logger = createLogger("bridge-screenshot");
 
-export const AUTOMATION_TAKE_SCREENSHOT_TOOL = "automation_take_screenshot";
+export const AUTOMATION_TAKE_SCREENSHOT_TOOL = "browser_take_screenshot";
 
-/** Extract PNG base64 from automation_take_screenshot tool output (MCP / agent shapes). */
+/** Extract PNG base64 from browser_take_screenshot tool output (MCP / agent shapes). */
 export function extractScreenshotBase64(toolName: string, output: unknown): string | undefined {
   if (!toolName.includes("take_screenshot")) return undefined;
   return readBase64Field(output);
 }
 
-/** Capture a final screenshot when the agent skipped automation_take_screenshot. */
+/** Capture a final screenshot when the agent skipped browser_take_screenshot. */
 export async function ensureJobScreenshot(
   client: Client | null | undefined,
   existing?: string

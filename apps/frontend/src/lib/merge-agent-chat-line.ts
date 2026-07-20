@@ -41,5 +41,6 @@ export function mergeAgentChatLine(msg: AgentJobMessage, prevLine?: ChatLine): C
     testCases: msg.testCases ?? prevLine?.testCases,
     testCaseResults: msg.testCaseResults ?? prevLine?.testCaseResults,
     toolName: msg.toolName ?? prevLine?.toolName,
+    runId: msg.runId ?? prevLine?.runId,
   };
 }

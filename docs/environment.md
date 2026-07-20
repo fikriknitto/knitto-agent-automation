@@ -29,9 +29,7 @@ Salin dari `apps/backend/.env.example`.
 |----------|-----------|---------|
 | `BACKEND_HOST` | Bind HTTP + WS | `0.0.0.0` |
 | `BACKEND_PORT` | Port HTTP + WS | `3080` |
-| `GEMINI_API_KEY` | API key Gemini | — |
-| `CURSOR_API_KEY` | API key Cursor | — |
-| `KNITTO_BRIDGE_MODEL` | Model default | `gemini-2.5-flash` |
+| `KNITTO_BRIDGE_MODEL` | Preferred default model id | `composer-2.5` |
 | `KNITTO_BRIDGE_MAX_CONCURRENT` | Job paralel / channel | `1` |
 | `KNITTO_BRIDGE_JOB_TIMEOUT_MS` | Timeout job (ms) | `600000` |
 | `KNITTO_BRIDGE_MAX_TOOL_CALLS` | Maks tool call / job | `40` |
@@ -42,11 +40,10 @@ Salin dari `apps/backend/.env.example`.
 | `AUTOMATION_FFMPEG_PATH` | Path ffmpeg | PATH |
 | `STORAGE_ROOT` | File manager root | `./storage` |
 | `STORAGE_MAX_UPLOAD_BYTES` | Batas upload | `52428800` |
-| `NINEROUTER_BASE_URL` | Base 9Router | `http://localhost:20128` |
-| `NINEROUTER_API_KEY` | Key 9Router | — |
-| `NINEROUTER_MODEL` | Model 9Router | `KNITTO_BRIDGE_MODEL` |
-| `NINEROUTER_MAX_RETRIES` / `RETRY_DELAY_MS` | Retry | `5` / `2000` |
+| `OPENAI_COMPAT_MAX_RETRIES` / `RETRY_DELAY_MS` | Retry OpenAI-compatible | `5` / `2000` |
 | `KNITTO_MCP_LOG_LEVEL` | Log level | `info` |
+
+Agent API keys (Cursor / OpenAI-compatible Base URL + key) **bukan** env — input di Web UI → localStorage → WebSocket.
 
 Override jarang: `AUTOMATION_MCP_COMMAND`, `AUTOMATION_MCP_PATH`, `AUTOMATION_MEMORY_DIR`, `AUTOMATION_SCREENSHOT_DIR`, `AUTOMATION_SLOW_MO_MS`, `AUTOMATION_BROWSER_TIMEOUT_MS`, `AUTOMATION_UPLOAD_*`, `AUTOMATION_VIDEO_FILENAME`, `KNITTO_BRIDGE_CWD`.
 

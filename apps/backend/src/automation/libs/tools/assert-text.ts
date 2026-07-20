@@ -3,7 +3,7 @@ import { getPageText } from "../browser/session.js";
 import { assertTextInputSchema, assertTextOutputShape } from "../schema.js";
 
 export const automation_assert_text = defineTool({
-  name: "automation_assert_text",
+  name: "browser_assert_text",
   description: "Assert that the page body text matches the expected string (contains, exact, or regex).",
   inputSchema: assertTextInputSchema,
   outputSchema: assertTextOutputShape,

@@ -40,7 +40,7 @@ Gejala operasional. Jika app mobile masih relaunch setelah job: pastikan backend
 | Docker: Chromium tak terlihat | Headless container | Normal — pakai screenshot/video UI |
 | Docker: Appium error | Port / targets | `logs appium`; `curl :4723/status`; matikan Appium host |
 | Docker: device UI kosong, Appium OK | ADB hanya localhost | `adb -a nodaemon server start`; cek `ADB_SERVER_SOCKET` |
-| Docker: 9Router unreachable | URL dari container | `host.docker.internal` di `NINEROUTER_BASE_URL` |
+| Docker: OpenAI-compatible/LiteLLM unreachable | URL dari container | Di Web UI pakai `http://host.docker.internal:<port>` (bukan localhost) |
 | Compose build pnpm gagal | Node/pnpm mismatch | Node **24.16.0** + pnpm **11.5.2** |
 | Mobile: tidak ada device di UI | ADB kosong | `adb devices`; `pnpm connect:instances` |
 | Mobile: Send disabled | Package/device kosong | Pilih package; hubungkan device |

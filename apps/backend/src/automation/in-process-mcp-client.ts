@@ -21,8 +21,10 @@ import {
   automation_go_forward,
   automation_upload_file,
   automation_close_browser,
+  automation_stop_test_case_segment,
 } from "./libs/registry.js";
 
+/** Browser MCP tools — names are `browser_*` (W6 cutover). */
 const ALL_TOOLS = [
   automation_get_app_memory,
   automation_update_app_memory,
@@ -43,6 +45,7 @@ const ALL_TOOLS = [
   automation_go_forward,
   automation_upload_file,
   automation_close_browser,
+  automation_stop_test_case_segment,
 ] as const;
 
 type AnyTool = (typeof ALL_TOOLS)[number];
@@ -89,8 +92,11 @@ async function invokeTool(tool: AnyTool, args: Record<string, unknown>): Promise
           : JSON.stringify(toJsonSafe(result), null, 2);
     return { content: [{ type: "text", text }] };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return { isError: true, content: [{ type: "text", text: message }] };
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      content: [{ type: "text", text: message }],
+      isError: true,
+    };
   }
 }
 
@@ -107,18 +113,14 @@ export function createInProcessMcpClient(): Client {
       const tool = ALL_TOOLS.find((t) => t.name === params.name);
       if (!tool) {
         return {
-          isError: true,
           content: [{ type: "text", text: `Unknown tool: ${params.name}` }],
+          isError: true,
         };
       }
-      const args =
-        params.arguments && typeof params.arguments === "object"
-          ? (params.arguments as Record<string, unknown>)
-          : {};
-      return invokeTool(tool, args);
+      return invokeTool(tool, params.arguments ?? {});
     },
     close: async () => undefined,
-  } as unknown as Client;
+  } as Client;
 }
 
 export { ALL_TOOLS };

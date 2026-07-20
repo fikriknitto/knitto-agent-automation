@@ -33,11 +33,7 @@ services:
     env_file:
       - docker.env
     environment:
-      # Diisi/override dari root `.env` (lihat `.env.example`)
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      CURSOR_API_KEY: ${CURSOR_API_KEY:-}
-      NINEROUTER_API_KEY: ${NINEROUTER_API_KEY:-}
-      NINEROUTER_BASE_URL: ${NINEROUTER_BASE_URL:-http://host.docker.internal:20128}
+      # Agent API keys come from Web UI over WebSocket (not Compose env).
       # Appium service di Compose (bukan Appium di host)
       APPIUM_SERVER_URL: ${APPIUM_SERVER_URL:-http://appium:4723}
       ADB_SERVER_SOCKET: ${ADB_SERVER_SOCKET:-tcp:host.docker.internal:5037}

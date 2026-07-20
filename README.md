@@ -98,7 +98,7 @@ Variabel penting (lokal):
 | Variabel                            | Deskripsi              | Default                 |
 | ----------------------------------- | ---------------------- | ----------------------- |
 | `BACKEND_PORT`                      | Port HTTP + WS backend | `3080`                  |
-| `GEMINI_API_KEY` / `CURSOR_API_KEY` | Kredensial bridge      | —                       |
+| Agent API keys | Settings → Agent credentials (localStorage) | — |
 | `AUTOMATION_HEADLESS`               | Browser headless       | `false` (lokal)         |
 | `APPIUM_SERVER_URL`                 | Appium (host global)   | `http://127.0.0.1:4723` |
 

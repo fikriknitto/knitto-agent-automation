@@ -4,14 +4,20 @@ import { setAutomationJobId } from "../../automation/libs/job-context.js";
 import { createInProcessMcpClient } from "../../automation/in-process-mcp-client.js";
 import { createInProcessMobileMcpClient } from "../../mobile-automation/in-process-mcp-client.js";
 import { setMobileJobConfig } from "../../mobile-automation/libs/mobile-job-context.js";
+import {
+  clearApiDataJobToken,
+  setApiDataJobToken,
+} from "../api-data/api-data-job-context.js";
 import { createHybridMcpClient } from "./hybrid-mcp-client.js";
 
 export async function connectAutomationMcp(
   jobId?: string,
   platform: AutomationPlatform = "browser",
-  mobileConfig?: MobileConfig
+  mobileConfig?: MobileConfig,
+  apiDataToken?: string
 ): Promise<Client> {
   setAutomationJobId(jobId ?? null);
+  setApiDataJobToken(apiDataToken);
   if (platform === "hybrid") {
     if (!jobId) {
       throw new Error("Hybrid jobs require jobId for MCP client");
@@ -25,6 +31,11 @@ export async function connectAutomationMcp(
     return createInProcessMobileMcpClient();
   }
   return createInProcessMcpClient();
+}
+
+export function disconnectAutomationMcpJobContext(): void {
+  setAutomationJobId(null);
+  clearApiDataJobToken();
 }
 
 export { setActiveTestCaseMobileConfig } from "./hybrid-mcp-client.js";

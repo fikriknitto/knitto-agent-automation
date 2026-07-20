@@ -1,11 +1,21 @@
 import type { AgentJobMessage, BridgeJob, UserPromptMessage } from "@knitto/shared";
 import { agentMessages } from "./agent-messages.js";
+import { hostJobGate } from "./host-job-gate.js";
+import { logAgentRunEvent } from "./run-event-log.js";
 import { resolveJobTestCasesAsync } from "./test-case-parser.js";
 import {
   PromptBaseInvalidPathError,
   PromptBaseNotFoundError,
-  resolvePromptBasePaths,
 } from "../prompt-base-resolver.js";
+import { resolvePromptBasePathsForJob } from "../prompt-base-materialize.js";
+import {
+  syncAgentRunCancelled,
+  syncAgentRunFromJobMessage,
+} from "../api-data/agent-run-sync.js";
+import { patchAgentRun } from "../api-data/agent-runs-client.js";
+import { createLogger } from "../../automation/core/index.js";
+
+const logger = createLogger("job-queue");
 
 export type JobEmitter = (msg: AgentJobMessage) => void;
 
@@ -19,6 +29,11 @@ export type JobRunner = (job: BridgeJob, emit: JobEmitter) => BridgeJobHandle;
 function withConnectionId(msg: AgentJobMessage, connectionId?: string): AgentJobMessage {
   if (!connectionId) return msg;
   return { ...msg, connectionId };
+}
+
+function withRunId(msg: AgentJobMessage, runId?: number): AgentJobMessage {
+  if (runId == null) return msg;
+  return { ...msg, runId };
 }
 
 export class JobQueue {
@@ -39,65 +54,60 @@ export class JobQueue {
   private async enqueueFromMessageAsync(msg: UserPromptMessage): Promise<void> {
     const main = (msg.mainPrompt ?? msg.text).trim();
     const connectionId = msg.connectionId;
+    const emitEarlyError = (message: string) => {
+      const errMsg = withConnectionId(
+        withRunId(
+          {
+            type: "agent_job",
+            id: msg.id,
+            channel: msg.channel,
+            status: "error",
+            message,
+            progress: 100,
+          },
+          msg.runId
+        ),
+        connectionId
+      );
+      this.emit(errMsg);
+      void syncAgentRunFromJobMessage(
+        {
+          id: msg.id,
+          channel: msg.channel,
+          connectionId,
+          text: main,
+          runId: msg.runId,
+          apiDataToken: msg.apiDataToken,
+        },
+        errMsg
+      );
+    };
 
     let promptBasePaths: string[] | undefined;
     if (msg.promptBasePaths?.length) {
       try {
-        promptBasePaths = await resolvePromptBasePaths(msg.promptBasePaths);
+        promptBasePaths = await resolvePromptBasePathsForJob(msg.promptBasePaths, {
+          apiDataToken: msg.apiDataToken,
+          jobId: msg.id,
+        });
       } catch (error) {
         const message =
           error instanceof PromptBaseNotFoundError ||
           error instanceof PromptBaseInvalidPathError
             ? error.message
             : "Failed to resolve prompt base paths";
-        this.emit(
-          withConnectionId(
-            {
-              type: "agent_job",
-              id: msg.id,
-              channel: msg.channel,
-              status: "error",
-              message,
-              progress: 100,
-            },
-            connectionId
-          )
-        );
+        emitEarlyError(message);
         return;
       }
     }
 
     if (!main && !msg.attachments?.length && !promptBasePaths?.length) {
-      this.emit(
-        withConnectionId(
-          {
-            type: "agent_job",
-            id: msg.id,
-            channel: msg.channel,
-            status: "error",
-            message: "Prompt, attachment, or prompt base is required",
-            progress: 100,
-          },
-          connectionId
-        )
-      );
+      emitEarlyError("Prompt, attachment, or prompt base is required");
       return;
     }
 
     if (msg.platform === "mobile" && !msg.mobileConfig?.appPackage?.trim()) {
-      this.emit(
-        withConnectionId(
-          {
-            type: "agent_job",
-            id: msg.id,
-            channel: msg.channel,
-            status: "error",
-            message: "Mobile job requires appPackage — pilih package di UI",
-            progress: 100,
-          },
-          connectionId
-        )
-      );
+      emitEarlyError("Mobile job requires appPackage — pilih package di UI");
       return;
     }
 
@@ -111,34 +121,12 @@ export class JobQueue {
         mobileConfig: msg.mobileConfig,
       });
       if (resolved.errors.length) {
-        this.emit(
-          withConnectionId(
-            {
-              type: "agent_job",
-              id: msg.id,
-              channel: msg.channel,
-              status: "error",
-              message: resolved.errors.join(" "),
-              progress: 100,
-            },
-            connectionId
-          )
-        );
+        emitEarlyError(resolved.errors.join(" "));
         return;
       }
       if (!resolved.testCases.length) {
-        this.emit(
-          withConnectionId(
-            {
-              type: "agent_job",
-              id: msg.id,
-              channel: msg.channel,
-              status: "error",
-              message: "Prompt hybrid membutuhkan minimal satu heading ## Test Case.",
-              progress: 100,
-            },
-            connectionId
-          )
+        emitEarlyError(
+          "Prompt hybrid membutuhkan minimal satu heading ## Test Case."
         );
         return;
       }
@@ -158,20 +146,37 @@ export class JobQueue {
       platform: msg.platform,
       mobileConfig: msg.mobileConfig,
       testCases: resolvedTestCases,
+      runId: msg.runId,
+      apiDataToken: msg.apiDataToken,
     });
   }
 
   enqueue(job: BridgeJob): void {
+    const jobLog = logger.child({ agentJobId: job.id, runId: job.runId });
+    const hostBusy = hostJobGate.isBusy();
+    const queueMessage = hostBusy
+      ? agentMessages.waitingHostSlot
+      : agentMessages.waitingInQueue;
+
+    jobLog.info(
+      hostBusy
+        ? `Queued behind host slot (active=${hostJobGate.getActiveJobId()})`
+        : "Queued"
+    );
+
     this.emit(
       withConnectionId(
-        {
-          type: "agent_job",
-          id: job.id,
-          channel: job.channel,
-          status: "queued",
-          message: agentMessages.waitingInQueue,
-          progress: 0,
-        },
+        withRunId(
+          {
+            type: "agent_job",
+            id: job.id,
+            channel: job.channel,
+            status: "queued",
+            message: queueMessage,
+            progress: 0,
+          },
+          job.runId
+        ),
         job.connectionId
       )
     );
@@ -189,18 +194,30 @@ export class JobQueue {
       if (idx >= 0) {
         const job = list[idx]!;
         list.splice(idx, 1);
+        logger.child({ agentJobId: jobId, runId: job.runId }).info("Cancelled while queued");
         this.emit(
           withConnectionId(
-            {
-              type: "agent_job",
-              id: jobId,
-              channel,
-              status: "cancelled",
-              message: agentMessages.cancelledWhileQueued,
-            },
+            withRunId(
+              {
+                type: "agent_job",
+                id: jobId,
+                channel,
+                status: "cancelled",
+                message: agentMessages.cancelledWhileQueued,
+              },
+              job.runId
+            ),
             job.connectionId
           )
         );
+        void syncAgentRunCancelled(job);
+        void logAgentRunEvent({
+          agentJobId: jobId,
+          runId: job.runId,
+          apiDataToken: job.apiDataToken,
+          level: "INFO",
+          message: "Job cancelled while queued",
+        });
         return true;
       }
     }
@@ -227,18 +244,144 @@ export class JobQueue {
       if (!list.length) this.pending.delete(channel);
 
       this.runningCount.set(channel, this.getRunning(channel) + 1);
+      const jobLog = logger.child({ agentJobId: job.id, runId: job.runId });
+      const hostAbort = new AbortController();
+
+      this.activeCancels.set(job.id, async () => {
+        hostAbort.abort();
+        jobLog.info("Cancel requested (pre-start or running)");
+        const runningCancel = this.activeCancels.get(`run:${job.id}`);
+        if (runningCancel) await runningCancel();
+        void syncAgentRunCancelled(job);
+        void logAgentRunEvent({
+          agentJobId: job.id,
+          runId: job.runId,
+          apiDataToken: job.apiDataToken,
+          level: "INFO",
+          message: "Job cancel requested",
+        });
+      });
+
+      if (hostJobGate.isBusy() && hostJobGate.getActiveJobId() !== job.id) {
+        this.emit(
+          withConnectionId(
+            withRunId(
+              {
+                type: "agent_job",
+                id: job.id,
+                channel: job.channel,
+                status: "queued",
+                message: agentMessages.waitingHostSlot,
+                progress: 0,
+              },
+              job.runId
+            ),
+            job.connectionId
+          )
+        );
+      }
+
+      try {
+        await hostJobGate.acquire(job.id, hostAbort.signal);
+      } catch (error) {
+        this.activeCancels.delete(job.id);
+        this.runningCount.set(channel, Math.max(0, this.getRunning(channel) - 1));
+        const aborted =
+          (error instanceof Error && error.name === "AbortError") || hostAbort.signal.aborted;
+        if (aborted) {
+          jobLog.info("Cancelled while waiting for host slot");
+          this.emit(
+            withConnectionId(
+              withRunId(
+                {
+                  type: "agent_job",
+                  id: job.id,
+                  channel: job.channel,
+                  status: "cancelled",
+                  message: agentMessages.cancelledWhileQueued,
+                },
+                job.runId
+              ),
+              job.connectionId
+            )
+          );
+          void syncAgentRunCancelled(job);
+        } else {
+          jobLog.error(
+            `Host gate acquire failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+          this.emit(
+            withConnectionId(
+              withRunId(
+                {
+                  type: "agent_job",
+                  id: job.id,
+                  channel: job.channel,
+                  status: "error",
+                  message:
+                    error instanceof Error ? error.message : "Host job gate failed",
+                  progress: 100,
+                },
+                job.runId
+              ),
+              job.connectionId
+            )
+          );
+        }
+        void this.pump(channel);
+        return;
+      }
+
+      if (job.apiDataToken && job.runId != null) {
+        void patchAgentRun(job.apiDataToken, job.runId, { status: "RUNNING" }).catch(
+          (error) => {
+            jobLog.warn(
+              `API Data PATCH RUNNING failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          }
+        );
+      }
+
+      void logAgentRunEvent({
+        agentJobId: job.id,
+        runId: job.runId,
+        apiDataToken: job.apiDataToken,
+        level: "INFO",
+        message: "Job started on Worker",
+      });
 
       const emitForJob: JobEmitter = (msg) => {
-        this.emit(withConnectionId(msg, job.connectionId));
+        const enriched = withConnectionId(withRunId(msg, job.runId), job.connectionId);
+        this.emit(enriched);
+        void syncAgentRunFromJobMessage(job, enriched);
       };
       const handle = this.startJob(job, emitForJob);
-      this.activeCancels.set(job.id, handle.cancel);
+      this.activeCancels.set(`run:${job.id}`, async () => {
+        await handle.cancel();
+      });
+      this.activeCancels.set(job.id, async () => {
+        jobLog.info("Cancel requested for running job");
+        await handle.cancel();
+        void syncAgentRunCancelled(job);
+        void logAgentRunEvent({
+          agentJobId: job.id,
+          runId: job.runId,
+          apiDataToken: job.apiDataToken,
+          level: "INFO",
+          message: "Job cancel requested",
+        });
+      });
 
       try {
         await handle.promise;
       } finally {
         this.activeCancels.delete(job.id);
+        this.activeCancels.delete(`run:${job.id}`);
+        hostJobGate.release(job.id);
         this.runningCount.set(channel, Math.max(0, this.getRunning(channel) - 1));
+        jobLog.info("Job finished (slot released)");
         void this.pump(channel);
       }
     }

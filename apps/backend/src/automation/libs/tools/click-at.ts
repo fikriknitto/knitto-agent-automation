@@ -3,7 +3,7 @@ import { clickAt } from "../browser/interactions.js";
 import { clickAtInputSchema, clickAtOutputShape } from "../schema.js";
 
 export const automation_click_at = defineTool({
-  name: "automation_click_at",
+  name: "browser_click_at",
   description:
     "Click at viewport coordinates (x, y). Fallback after screenshot when snapshot has no ref — e.g. SVG icon not in DOM snapshot. Coordinates are CSS pixels from top-left of viewport.",
   inputSchema: clickAtInputSchema,

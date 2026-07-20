@@ -2,9 +2,9 @@ import cors from "cors";
 import express from "express";
 import { errorHandler, notFoundHandler } from "./middlewares/error-handler.js";
 import { createApiRoutes } from "./routes/index.js";
-import type { BridgeRegistryService } from "./services/bridge-registry.service.js";
+import type { AgentRegistryService } from "./services/agent-registry.service.js";
 
-export function createApp(bridgeRegistry: BridgeRegistryService): express.Application {
+export function createApp(bridgeRegistry: AgentRegistryService): express.Application {
   const app = express();
 
   app.use(cors());

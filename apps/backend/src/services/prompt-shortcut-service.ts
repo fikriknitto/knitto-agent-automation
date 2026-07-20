@@ -188,7 +188,15 @@ async function fileExists(path: string): Promise<boolean> {
 
 export async function listPromptShortcuts(): Promise<PromptShortcutDto[]> {
   const dir = resolveDir();
-  const entries = await readdir(dir);
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
   const shortcuts: PromptShortcutDto[] = [];
 
   for (const file of entries) {
