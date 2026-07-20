@@ -3,8 +3,8 @@ import { join } from "node:path";
 import type { BridgeJob } from "@knitto/shared";
 import { resolveAgentScreenshotDirForJob } from "../../automation/libs/job-context.js";
 import { createLogger } from "../../automation/core/index.js";
-import { jobMediaPayloadAsync } from "../shared/job-media-payload.js";
-import { logAgentRunEvent } from "../shared/run-event-log.js";
+import { jobMediaPayloadAsync } from "../../services/shared/job-media-payload.js";
+import { logAgentRunEvent } from "../../services/shared/run-event-log.js";
 import {
   getAgentRunByJobId,
   linkAgentRunMedia,

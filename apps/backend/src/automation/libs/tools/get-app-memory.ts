@@ -1,8 +1,8 @@
 import { defineTool, ToolError } from "../../core/index.js";
 import { readAppMemory as readDisk, sanitizeAppId } from "../memory/store.js";
 import { getAppMemoryInputSchema, getAppMemoryOutputShape } from "../schema.js";
-import { getAgentAppMemory } from "../../../services/api-data/agent-memory-client.js";
-import { getApiDataJobToken } from "../../../services/api-data/api-data-job-context.js";
+import { getAgentAppMemory } from "../../../infra/api-data/agent-memory-client.js";
+import { getApiDataJobToken } from "../../../infra/api-data/api-data-job-context.js";
 
 export const automation_get_app_memory = defineTool({
   name: "browser_get_app_memory",

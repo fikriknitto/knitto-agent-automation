@@ -11,8 +11,8 @@ import { resolvePromptBasePathsForJob } from "../prompt-base-materialize.js";
 import {
   syncAgentRunCancelled,
   syncAgentRunFromJobMessage,
-} from "../api-data/agent-run-sync.js";
-import { patchAgentRun } from "../api-data/agent-runs-client.js";
+} from "../../infra/api-data/agent-run-sync.js";
+import { patchAgentRun } from "../../infra/api-data/agent-runs-client.js";
 import { createLogger } from "../../automation/core/index.js";
 
 const logger = createLogger("job-queue");

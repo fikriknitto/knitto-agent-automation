@@ -40,7 +40,7 @@ import {
 import { agentVideoServeUrl } from "../agent-videos.js";
 import { jobMediaPayload } from "./job-media-payload.js";
 import { setAutomationJobId } from "../../automation/libs/job-context.js";
-import { setApiDataJobToken } from "../api-data/api-data-job-context.js";
+import { setApiDataJobToken } from "../../infra/api-data/api-data-job-context.js";
 import {
   listAgentScreenshotFiles,
 } from "../agent-screenshots.js";

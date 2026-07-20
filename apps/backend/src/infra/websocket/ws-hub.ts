@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import type { Server as HttpServer } from "node:http";
 import type { AgentJobMessage, BridgeKind } from "@knitto/shared";
-import { createLogger } from "../automation/core/index.js";
-import type { AgentRegistryService } from "../services/agent-registry.service.js";
+import { createLogger } from "../../automation/core/index.js";
+import type { AgentRegistryService } from "../../services/agent-registry.service.js";
 import { WebSocketServer, type WebSocket } from "ws";
 
 const logger = createLogger("ws-hub");

@@ -4,7 +4,7 @@ import { resolveAgentScreenshotDirForJob } from "../automation/libs/job-context.
 import {
   getAgentPromptShortcut,
   type ApiPromptShortcut,
-} from "./api-data/agent-memory-client.js";
+} from "../infra/api-data/agent-memory-client.js";
 import { serializePromptShortcutMarkdown } from "./prompt-shortcut-service.js";
 import {
   PromptBaseInvalidPathError,

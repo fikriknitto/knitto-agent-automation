@@ -1,6 +1,6 @@
 import type { ShortcutRegistryEntry } from "@knitto/shared";
 import { shortcutToRegistryEntry } from "@knitto/shared";
-import { listAgentPromptShortcuts } from "../api-data/agent-memory-client.js";
+import { listAgentPromptShortcuts } from "../../infra/api-data/agent-memory-client.js";
 import { listPromptShortcuts } from "../prompt-shortcut-service.js";
 
 function isEnoent(error: unknown): boolean {

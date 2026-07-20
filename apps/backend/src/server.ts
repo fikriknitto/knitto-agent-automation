@@ -7,8 +7,8 @@ import { createLogger } from "./automation/core/index.js";
 import { createApp } from "./app.js";
 import { loadEnv, resolveHttpHost, resolveHttpPort } from "./config/env.js";
 import { AgentRegistryService } from "./services/agent-registry.service.js";
-import { startEvidenceUploadFlusher } from "./services/api-data/evidence-upload-flush.js";
-import { WsHub } from "./websocket/ws-hub.js";
+import { startEvidenceUploadFlusher } from "./infra/api-data/evidence-upload-flush.js";
+import { WsHub } from "./infra/websocket/ws-hub.js";
 
 const backendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 loadDotenv({ path: join(backendRoot, ".env") });

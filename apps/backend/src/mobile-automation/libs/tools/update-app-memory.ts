@@ -1,8 +1,8 @@
 import { defineTool, ToolError } from "../../../automation/core/index.js";
 import { writeAppMemory as writeDisk, sanitizeAppId } from "../memory/store.js";
 import { updateAppMemoryInputSchema, updateAppMemoryOutputShape } from "../schema.js";
-import { putAgentAppMemory } from "../../../services/api-data/agent-memory-client.js";
-import { getApiDataJobToken } from "../../../services/api-data/api-data-job-context.js";
+import { putAgentAppMemory } from "../../../infra/api-data/agent-memory-client.js";
+import { getApiDataJobToken } from "../../../infra/api-data/api-data-job-context.js";
 
 export const mobile_update_app_memory = defineTool({
   name: "mobile_update_app_memory",

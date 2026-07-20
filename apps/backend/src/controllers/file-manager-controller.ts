@@ -5,7 +5,7 @@ import { loadStorageEnv } from "../config/storage-env.js";
 import {
   FileManagerService,
   isStoragePathError,
-} from "../services/storage/file-manager-service.js";
+} from "../infra/storage/file-manager-service.js";
 import { fileContentQuerySchema, listEntriesQuerySchema } from "../validators/file-manager-schemas.js";
 
 export class FileManagerController {

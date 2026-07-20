@@ -1,5 +1,5 @@
 import { createLogger } from "../../automation/core/index.js";
-import { appendAgentRunLogs } from "../api-data/agent-runs-client.js";
+import { appendAgentRunLogs } from "../../infra/api-data/agent-runs-client.js";
 
 const logger = createLogger("run-event");
 

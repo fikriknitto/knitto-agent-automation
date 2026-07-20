@@ -7,7 +7,7 @@ import { setMobileJobConfig } from "../../mobile-automation/libs/mobile-job-cont
 import {
   clearApiDataJobToken,
   setApiDataJobToken,
-} from "../api-data/api-data-job-context.js";
+} from "../../infra/api-data/api-data-job-context.js";
 import { createHybridMcpClient } from "./hybrid-mcp-client.js";
 
 export async function connectAutomationMcp(

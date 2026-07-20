@@ -6,9 +6,9 @@ import { resolveAgentScreenshotDirForJob } from "../../automation/libs/job-conte
 import {
   assertAttachmentEligible,
   resolveMimeType,
-} from "../storage/attachment-eligibility.js";
-import { resolveSafePath, StoragePathError } from "../storage/path-utils.js";
-import { getApiDataBaseUrl } from "../api-data/agent-runs-client.js";
+} from "../../infra/storage/attachment-eligibility.js";
+import { resolveSafePath, StoragePathError } from "../../infra/storage/path-utils.js";
+import { getApiDataBaseUrl } from "../../infra/api-data/agent-runs-client.js";
 
 export type SavedAttachment = {
   index: number;
