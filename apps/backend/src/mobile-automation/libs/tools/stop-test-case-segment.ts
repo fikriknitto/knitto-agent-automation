@@ -7,14 +7,14 @@ import {
   resolveMobileVideoPath,
   stopMobileSegment,
 } from "../recording.js";
-import { getActiveTestCaseId } from "../../../services/shared/segment-context.js";
+import { getActiveTestCaseId } from "../../../core/evidence/segment-context.js";
 import {
   clearActiveSegment,
   clearSegmentStopRequest,
   readSegmentStateFile,
   requestSegmentStop,
   waitForSegmentInactive,
-} from "../../../services/shared/segment-state-file.js";
+} from "../../../core/evidence/segment-state-file.js";
 import { testCaseVideoFilenameForId } from "@knitto/shared";
 import {
   stopTestCaseSegmentInputSchema,

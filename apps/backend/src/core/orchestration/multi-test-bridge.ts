@@ -6,11 +6,11 @@ import { setAutomationJobId } from "../../automation/libs/job-context.js";
 import {
   connectAutomationMcp,
   disconnectAutomationMcpJobContext,
-} from "./automation-mcp-client.js";
+} from "../mcp/automation-mcp-client.js";
 
-import { cleanupJobAttachments } from "./persist-attachments.js";
+import { cleanupJobAttachments } from "../evidence/persist-attachments.js";
 
-import { jobMediaPayloadAsync } from "./job-media-payload.js";
+import { jobMediaPayloadAsync } from "../evidence/job-media-payload.js";
 
 import { agentMessages } from "./agent-messages.js";
 

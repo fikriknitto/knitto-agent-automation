@@ -2,25 +2,25 @@ import { createLogger } from "../../../automation/core/index.js";
 import {
   connectAutomationMcp,
   disconnectAutomationMcpJobContext,
-} from "../../shared/automation-mcp-client.js";
-import { buildOpenAIUserContent, buildPromptForJob } from "../../shared/prompt-builder.js";
+} from "../../../core/mcp/automation-mcp-client.js";
+import { buildOpenAIUserContent, buildPromptForJob } from "../../../core/prompts/prompt-builder.js";
 import { resolveMemoryAppIdForJob } from "../../shared/resolve-memory-app-id-for-job.js";
 import {
   cleanupJobAttachments,
   loadVisionAttachments,
   resolveJobAttachments,
-} from "../../shared/persist-attachments.js";
-import { ensureJobScreenshot, extractScreenshotBase64 } from "../../shared/tool-screenshot.js";
-import { jobMediaPayload, jobMediaPayloadAsync } from "../../shared/job-media-payload.js";
-import { agentMessages } from "../../shared/agent-messages.js";
-import { closeMcpSession } from "../../shared/mcp-session-cleanup.js";
+} from "../../../core/evidence/persist-attachments.js";
+import { ensureJobScreenshot, extractScreenshotBase64 } from "../../../core/evidence/tool-screenshot.js";
+import { jobMediaPayload, jobMediaPayloadAsync } from "../../../core/evidence/job-media-payload.js";
+import { agentMessages } from "../../../core/orchestration/agent-messages.js";
+import { closeMcpSession } from "../../../core/mcp/mcp-session-cleanup.js";
 import {
   resolveHybridMobileConfig,
   resolveJobTestCasesAsync,
   shouldUseOrchestrator,
-} from "../../shared/test-case-parser.js";
-import { executeMultiTestBridgeJob } from "../../shared/multi-test-bridge.js";
-import { createOpenaiTestCaseRunner } from "../../shared/multi-test-openai.js";
+} from "../../../core/orchestration/test-case-parser.js";
+import { executeMultiTestBridgeJob } from "../../../core/orchestration/multi-test-bridge.js";
+import { createOpenaiTestCaseRunner } from "../../../core/orchestration/multi-test-openai.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
 import { runOpenAIAgentLoop, type ChatMessage } from "./openai-agent.js";
@@ -141,7 +141,7 @@ export function startBridgeJob(job: BridgeJob, emit: JobProgressEmitter): Bridge
     );
 
     if (platform === "mobile") {
-      const { prepareMobileJobSession } = await import("../../shared/mobile-job-setup.js");
+      const { prepareMobileJobSession } = await import("../../../core/orchestration/mobile-job-setup.js");
       await prepareMobileJobSession(job.id, job.mobileConfig);
     }
 

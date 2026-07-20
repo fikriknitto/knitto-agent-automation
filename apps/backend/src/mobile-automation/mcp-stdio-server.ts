@@ -22,7 +22,7 @@ import {
   mobile_close_session,
   mobile_stop_test_case_segment,
 } from "./libs/registry.js";
-import { startSegmentStopPoller } from "../services/shared/segment-stop-poller.js";
+import { startSegmentStopPoller } from "../core/evidence/segment-stop-poller.js";
 
 async function main(): Promise<void> {
   const jobId = process.env.MOBILE_JOB_ID?.trim() ?? process.env.AUTOMATION_JOB_ID?.trim();

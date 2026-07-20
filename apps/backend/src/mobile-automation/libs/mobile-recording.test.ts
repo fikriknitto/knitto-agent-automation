@@ -9,7 +9,7 @@ import {
   clearJobSegmentManaged,
   markJobSegmentManaged,
   setPendingSegment,
-} from "../../services/shared/segment-context.js";
+} from "../../core/evidence/segment-context.js";
 import {
   ensureMobileSegmentRecording,
   isMobileJobRecording,

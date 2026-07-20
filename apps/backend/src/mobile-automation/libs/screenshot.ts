@@ -6,7 +6,7 @@ import { getAutomationJobId } from "./job-context.js";
 import {
   getActiveTestCaseId,
   isJobSegmentManaged,
-} from "../../services/shared/segment-context.js";
+} from "../../core/evidence/segment-context.js";
 import { getDriver, withInstrumentationRecovery } from "./driver/session.js";
 
 function resolveMobileScreenshotFilename(path?: string): string {

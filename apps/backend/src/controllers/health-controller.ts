@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { getBrowserLockSnapshot } from "../services/shared/browser-lock.js";
-import { hostJobGate } from "../services/shared/host-job-gate.js";
+import { getBrowserLockSnapshot } from "../core/evidence/browser-lock.js";
+import { hostJobGate } from "../core/orchestration/host-job-gate.js";
 
 export class HealthController {
   get(_req: Request, res: Response): void {

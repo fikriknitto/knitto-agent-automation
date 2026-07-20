@@ -1,6 +1,6 @@
 import { defineTool, ToolError } from "../../../automation/core/index.js";
 import { getAutomationJobId } from "../job-context.js";
-import { isMultiTcCloseBlocked } from "../../../services/shared/segment-context.js";
+import { isMultiTcCloseBlocked } from "../../../core/evidence/segment-context.js";
 import { closeSession } from "../driver/session.js";
 import { closeSessionOutputShape } from "../schema.js";
 

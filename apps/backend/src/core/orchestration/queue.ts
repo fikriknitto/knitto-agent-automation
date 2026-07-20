@@ -6,8 +6,8 @@ import { resolveJobTestCasesAsync } from "./test-case-parser.js";
 import {
   PromptBaseInvalidPathError,
   PromptBaseNotFoundError,
-} from "../prompt-base-resolver.js";
-import { resolvePromptBasePathsForJob } from "../prompt-base-materialize.js";
+} from "../prompts/prompt-base-resolver.js";
+import { resolvePromptBasePathsForJob } from "../prompts/prompt-base-materialize.js";
 import {
   syncAgentRunCancelled,
   syncAgentRunFromJobMessage,

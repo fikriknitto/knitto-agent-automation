@@ -1,14 +1,14 @@
 import { Agent } from "@cursor/sdk";
 import type { TestCaseAgentRunner } from "./test-case-orchestrator.js";
-import { buildCursorSdkMessage } from "./prompt-builder.js";
-import config from "../agent-runners/cursor/config.js";
+import { buildCursorSdkMessage } from "../prompts/prompt-builder.js";
+import config from "../../services/agent-runners/cursor/config.js";
 import { resolveMonorepoRoot } from "../../config/paths.js";
 import {
   automationMcpSpawnArgs,
   cursorHybridMcpServerConfig,
   resolveAutomationMcpPath,
   resolveMobileMcpPath,
-} from "./automation-mcp-config.js";
+} from "../mcp/automation-mcp-config.js";
 import { devicePool } from "../../mobile-automation/libs/driver/device-pool.js";
 import {
   setMobileJobConfig,

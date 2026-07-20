@@ -4,7 +4,7 @@ import {
   formatHandoffForPrompt,
   serializeHandoffInstruction,
   type HandoffState,
-} from "./handoff.js";
+} from "../orchestration/handoff.js";
 import {
   DROPDOWN_SELECTION_WORKFLOW,
 } from "../../automation/libs/prompts/dropdown-workflow.js";
@@ -16,7 +16,7 @@ import {
   AUTOMATION_PROMPT_STRATEGIES,
   type AutomationStrategyKey,
 } from "../../automation/libs/prompts/texts.js";
-import type { SavedAttachment, VisionAttachment } from "./persist-attachments.js";
+import type { SavedAttachment, VisionAttachment } from "../evidence/persist-attachments.js";
 
 export interface AgentPromptInput {
   text: string;

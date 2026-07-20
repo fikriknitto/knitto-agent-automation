@@ -1,6 +1,6 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { AutomationPlatform } from "@knitto/shared";
-import { cleanupMobileJob } from "./mobile-job-cleanup.js";
+import { cleanupMobileJob } from "../orchestration/mobile-job-cleanup.js";
 
 export async function closeMcpSession(
   client: Client,

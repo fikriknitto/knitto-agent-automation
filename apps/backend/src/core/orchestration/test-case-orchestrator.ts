@@ -25,25 +25,25 @@ import {
   buildHybridOverviewPrompt,
   buildTestCasePrompt,
   type AgentPromptInput,
-} from "./prompt-builder.js";
+} from "../prompts/prompt-builder.js";
 import {
   clearJobSegmentManaged,
   ensureSegmentRecordingStarted,
   markJobSegmentManaged,
   startSegmentRecording,
   stopSegmentRecording,
-} from "./segment-recording.js";
+} from "../evidence/segment-recording.js";
 import {
   connectAutomationMcp,
   setActiveTestCaseMobileConfig,
-} from "./automation-mcp-client.js";
-import { agentVideoServeUrl } from "../agent-videos.js";
-import { jobMediaPayload } from "./job-media-payload.js";
+} from "../mcp/automation-mcp-client.js";
+import { agentVideoServeUrl } from "../../services/agent-videos.js";
+import { jobMediaPayload } from "../evidence/job-media-payload.js";
 import { setAutomationJobId } from "../../automation/libs/job-context.js";
 import { setApiDataJobToken } from "../../infra/api-data/api-data-job-context.js";
 import {
   listAgentScreenshotFiles,
-} from "../agent-screenshots.js";
+} from "../../services/agent-screenshots.js";
 import { sanitizeJobId } from "../../automation/libs/job-context.js";
 
 export type TestCaseAgentResult = {

@@ -25,8 +25,8 @@ import {
   stopMobileJobRecording,
   isSegmentRecordingManaged,
 } from "../recording.js";
-import { ensureSegmentRecordingStarted } from "../../../services/shared/segment-recording.js";
-import { getPendingSegment, isJobSegmentManaged } from "../../../services/shared/segment-context.js";
+import { ensureSegmentRecordingStarted } from "../../../core/evidence/segment-recording.js";
+import { getPendingSegment, isJobSegmentManaged } from "../../../core/evidence/segment-context.js";
 import { writeMobileSessionState, clearMobileSessionState } from "../mobile-session-state.js";
 import {
   closeMobileSessionFromState,

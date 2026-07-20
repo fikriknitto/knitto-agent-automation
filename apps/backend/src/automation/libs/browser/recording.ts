@@ -15,8 +15,8 @@ import {
   isJobSegmentManaged,
   isSegmentStarted,
   markSegmentStarted,
-} from "../../../services/shared/segment-context.js";
-import { setActiveSegment, clearActiveSegment } from "../../../services/shared/segment-state-file.js";
+} from "../../../core/evidence/segment-context.js";
+import { setActiveSegment, clearActiveSegment } from "../../../core/evidence/segment-state-file.js";
 import config from "../config.js";
 
 const logger = createLogger("browser-recording");

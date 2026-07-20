@@ -5,7 +5,7 @@ import {
   clearJobSegmentManaged,
   isJobSegmentManaged,
   isMultiTcCloseBlocked,
-} from "./segment-context.js";
+} from "../evidence/segment-context.js";
 
 describe("multi-TC close guard timing", () => {
   it("segment managed flag clears before end-of-job cleanup window", () => {

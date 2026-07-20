@@ -8,7 +8,7 @@ import {
   clearJobSegmentManaged,
   markJobSegmentManaged,
   setPendingSegment,
-} from "../../services/shared/segment-context.js";
+} from "../../core/evidence/segment-context.js";
 import { getMobileJobConfig } from "./mobile-job-context.js";
 
 describe("mobile job config from segment state", () => {

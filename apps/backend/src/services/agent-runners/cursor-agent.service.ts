@@ -5,8 +5,8 @@ import type {
   UserPromptMessage,
 } from "@knitto/shared";
 import { createLogger } from "../../automation/core/index.js";
-import { browserHeadedFromEnv } from "../shared/browser-env.js";
-import { JobQueue } from "../shared/queue.js";
+import { browserHeadedFromEnv } from "../../core/evidence/browser-env.js";
+import { JobQueue } from "../../core/orchestration/queue.js";
 import { startBridgeJob } from "./cursor/agent-runner.js";
 import config, { setCursorApiKey } from "./cursor/config.js";
 import {

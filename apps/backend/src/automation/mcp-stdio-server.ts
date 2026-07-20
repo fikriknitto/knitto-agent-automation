@@ -22,7 +22,7 @@ import {
   automation_close_browser,
   automation_stop_test_case_segment,
 } from "./libs/registry.js";
-import { startSegmentStopPoller } from "../services/shared/segment-stop-poller.js";
+import { startSegmentStopPoller } from "../core/evidence/segment-stop-poller.js";
 
 async function main(): Promise<void> {
   const server = new Server({

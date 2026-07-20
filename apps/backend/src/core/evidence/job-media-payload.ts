@@ -1,6 +1,6 @@
 import type { AutomationPlatform } from "@knitto/shared";
-import { agentScreenshotServeUrls } from "../agent-screenshots.js";
-import { agentVideoServeUrl, agentVideoServeUrls } from "../agent-videos.js";
+import { agentScreenshotServeUrls } from "../../services/agent-screenshots.js";
+import { agentVideoServeUrl, agentVideoServeUrls } from "../../services/agent-videos.js";
 import { waitForJobVideoReady as waitForBrowserJobVideoReady } from "../../automation/libs/browser/recording.js";
 import { waitForMobileJobVideoReady } from "../../mobile-automation/libs/recording.js";
 import { existsSync } from "node:fs";

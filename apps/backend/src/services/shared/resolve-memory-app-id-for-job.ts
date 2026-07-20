@@ -6,7 +6,7 @@ import {
   type MobileConfig,
 } from "@knitto/shared";
 import { getAgentPromptShortcut } from "../../infra/api-data/agent-memory-client.js";
-import { loadShortcutRegistry } from "./test-case-shortcut-resolver.js";
+import { loadShortcutRegistry } from "../../core/orchestration/test-case-shortcut-resolver.js";
 
 export async function resolveMemoryAppIdForJob(args: {
   platform?: AutomationPlatform;

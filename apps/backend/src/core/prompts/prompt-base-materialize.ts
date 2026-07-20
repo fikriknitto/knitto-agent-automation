@@ -1,17 +1,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { resolveAgentScreenshotDirForJob } from "../automation/libs/job-context.js";
+import { resolveAgentScreenshotDirForJob } from "../../automation/libs/job-context.js";
 import {
   getAgentPromptShortcut,
   type ApiPromptShortcut,
-} from "../infra/api-data/agent-memory-client.js";
-import { serializePromptShortcutMarkdown } from "./prompt-shortcut-service.js";
+} from "../../infra/api-data/agent-memory-client.js";
+import { serializePromptShortcutMarkdown } from "../../services/prompt-shortcut-service.js";
 import {
   PromptBaseInvalidPathError,
   PromptBaseNotFoundError,
   resolvePromptBasePaths,
 } from "./prompt-base-resolver.js";
-import { promptShortcutIdSchema } from "../validators/prompt-shortcut-schemas.js";
+import { promptShortcutIdSchema } from "../../validators/prompt-shortcut-schemas.js";
 
 function normalizeShortcutId(input: string): string {
   const trimmed = input.trim().replace(/\\/g, "/");

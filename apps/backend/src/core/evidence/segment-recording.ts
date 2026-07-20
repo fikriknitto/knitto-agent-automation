@@ -48,8 +48,8 @@ import {
 import {
   callCursorSubprocessTool,
   type CursorMcpToolResult,
-} from "./cursor-mcp-tool-runner.js";
-import type { TestCaseCleanupMode } from "./test-case-cleanup.js";
+} from "../mcp/cursor-mcp-tool-runner.js";
+import type { TestCaseCleanupMode } from "../orchestration/test-case-cleanup.js";
 
 const logger = createLogger("segment-recording");
 

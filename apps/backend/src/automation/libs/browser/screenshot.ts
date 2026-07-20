@@ -6,7 +6,7 @@ import { resolveAgentScreenshotDir } from "../job-context.js";
 import {
   getActiveTestCaseId,
   isJobSegmentManaged,
-} from "../../../services/shared/segment-context.js";
+} from "../../../core/evidence/segment-context.js";
 import { getAutomationJobId } from "../job-context.js";
 import { getPage } from "./session.js";
 
