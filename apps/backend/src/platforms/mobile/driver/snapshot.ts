@@ -2,7 +2,7 @@ import { XMLParser } from "fast-xml-parser";
 import type { Browser } from "webdriverio";
 import mobileConfig from "../config.js";
 import { getAutomationJobId } from "../job-context.js";
-import { getMobileJobUdid } from "../mobile-job-context.js";
+import { getMobileJobUdid } from "../session/mobile-job-context.js";
 
 export type SnapshotElement = {
   ref: string;

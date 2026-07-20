@@ -13,18 +13,18 @@ import {
   stopBrowserSegment,
 } from "../../platforms/browser/driver/recording.js";
 import config from "../../platforms/browser/config.js";
-import mobileConfig from "../../mobile-automation/libs/config.js";
+import mobileConfig from "../../platforms/mobile/config.js";
 import {
   getDriver,
   hasActiveSession,
   openDriver,
-} from "../../mobile-automation/libs/driver/session.js";
-import { getMobileJobConfig } from "../../mobile-automation/libs/mobile-job-context.js";
+} from "../../platforms/mobile/driver/session.js";
+import { getMobileJobConfig } from "../../platforms/mobile/session/mobile-job-context.js";
 import {
   ensureMobileSegmentRecording,
   setSegmentRecordingManaged,
   stopMobileSegment,
-} from "../../mobile-automation/libs/recording.js";
+} from "../../platforms/mobile/session/recording.js";
 import { setAutomationJobId } from "../../platforms/browser/job-context.js";
 import {
   clearJobSegmentManaged as clearSegmentContext,

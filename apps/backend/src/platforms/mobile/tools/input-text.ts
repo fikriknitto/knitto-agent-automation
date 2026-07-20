@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { inputText } from "../interactions.js";
+import { inputText } from "../driver/interactions.js";
 import { inputTextInputSchema, interactionOutputShape } from "../schema.js";
 
 export const mobile_input_text = defineTool({

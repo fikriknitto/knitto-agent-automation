@@ -18,12 +18,12 @@ import { jobMediaPayload, jobMediaPayloadAsync } from "../../core/evidence/job-m
 import { agentMessages } from "../../core/orchestration/agent-messages.js";
 import { releaseBrowserLock } from "../../core/evidence/browser-lock.js";
 import { logAgentRunEvent } from "../../core/orchestration/run-event-log.js";
-import { devicePool } from "../../mobile-automation/libs/driver/device-pool.js";
+import { devicePool } from "../../platforms/mobile/driver/device-pool.js";
 import { cleanupMobileJob } from "../../core/orchestration/mobile-job-cleanup.js";
 import {
   setMobileJobConfig,
   setMobileJobUdid,
-} from "../../mobile-automation/libs/mobile-job-context.js";
+} from "../../platforms/mobile/session/mobile-job-context.js";
 import {
   resolveHybridMobileConfig,
   resolveJobTestCasesAsync,

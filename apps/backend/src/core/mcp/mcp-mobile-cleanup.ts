@@ -2,7 +2,7 @@ import { createLogger } from "../logging.js";
 import {
   closeMobileSessionFromState,
   terminateMobileAppFromState,
-} from "../../mobile-automation/libs/mobile-session-cleanup.js";
+} from "../../platforms/mobile/session/mobile-session-cleanup.js";
 
 const logger = createLogger("mcp-mobile-cleanup");
 

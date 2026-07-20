@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { takeMobileScreenshot } from "../screenshot.js";
+import { takeMobileScreenshot } from "../driver/screenshot.js";
 import { takeScreenshotInputSchema, takeScreenshotOutputShape } from "../schema.js";
 
 export const mobile_take_screenshot = defineTool({

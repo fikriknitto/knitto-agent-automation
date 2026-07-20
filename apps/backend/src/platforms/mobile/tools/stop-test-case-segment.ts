@@ -6,7 +6,7 @@ import {
   isMobileSegmentRecording,
   resolveMobileVideoPath,
   stopMobileSegment,
-} from "../recording.js";
+} from "../session/recording.js";
 import { getActiveTestCaseId } from "../../../core/evidence/segment-context.js";
 import {
   clearActiveSegment,

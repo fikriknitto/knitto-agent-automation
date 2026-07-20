@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { assertVisible } from "../interactions.js";
+import { assertVisible } from "../driver/interactions.js";
 import { assertVisibleInputSchema, assertVisibleOutputShape } from "../schema.js";
 
 export const mobile_assert_visible = defineTool({

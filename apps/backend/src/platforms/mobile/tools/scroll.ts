@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { scrollScreen } from "../interactions.js";
+import { scrollScreen } from "../driver/interactions.js";
 import { scrollInputSchema, scrollOutputShape } from "../schema.js";
 
 export const mobile_scroll = defineTool({

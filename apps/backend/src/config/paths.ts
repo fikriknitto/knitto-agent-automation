@@ -50,7 +50,7 @@ export function resolveMobileMcpStdioEntry(root = resolveMonorepoRoot()): string
   if (process.env.MOBILE_MCP_PATH?.trim()) {
     return resolve(root, process.env.MOBILE_MCP_PATH.trim());
   }
-  return join(root, "apps", "backend", "src", "mobile-automation", "mcp-stdio-server.ts");
+  return join(root, "apps", "backend", "src", "platforms", "mobile", "mcp-stdio-server.ts");
 }
 
 export function resolveMobileMemoryDir(root = resolveMonorepoRoot()): string {

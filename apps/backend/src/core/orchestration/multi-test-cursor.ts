@@ -9,11 +9,11 @@ import {
   resolveAutomationMcpPath,
   resolveMobileMcpPath,
 } from "../mcp/automation-mcp-config.js";
-import { devicePool } from "../../mobile-automation/libs/driver/device-pool.js";
+import { devicePool } from "../../platforms/mobile/driver/device-pool.js";
 import {
   setMobileJobConfig,
   setMobileJobUdid,
-} from "../../mobile-automation/libs/mobile-job-context.js";
+} from "../../platforms/mobile/session/mobile-job-context.js";
 import type { MobileConfig } from "@knitto/shared";
 
 export type CursorTestCaseRunnerHandle = {

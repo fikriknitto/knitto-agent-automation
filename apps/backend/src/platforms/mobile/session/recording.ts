@@ -2,16 +2,16 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Browser } from "webdriverio";
-import { createLogger } from "../../platforms/browser/core/index.js";
-import { getAutomationJobId, resolveAgentScreenshotDirForJob } from "./job-context.js";
-import mobileConfig from "./config.js";
+import { createLogger } from "../../browser/core/index.js";
+import { getAutomationJobId, resolveAgentScreenshotDirForJob } from "../job-context.js";
+import mobileConfig from "../config.js";
 import {
   getPendingSegment,
   isJobSegmentManaged,
   isSegmentStarted,
   markSegmentStarted,
-} from "../../core/evidence/segment-context.js";
-import { setActiveSegment, clearActiveSegment } from "../../core/evidence/segment-state-file.js";
+} from "../../../core/evidence/segment-context.js";
+import { setActiveSegment, clearActiveSegment } from "../../../core/evidence/segment-state-file.js";
 
 const logger = createLogger("mobile-recording");
 

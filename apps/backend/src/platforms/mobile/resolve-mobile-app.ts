@@ -1,5 +1,5 @@
 import { resolveMainActivity } from "./adb/adb-client.js";
-import { getMobileJobConfig } from "./mobile-job-context.js";
+import { getMobileJobConfig } from "./session/mobile-job-context.js";
 
 export async function ensureAppActivity(
   jobId: string,

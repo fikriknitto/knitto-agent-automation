@@ -4,12 +4,12 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, it } from "node:test";
 import type { Browser } from "webdriverio";
-import { setAutomationJobId } from "../../platforms/browser/job-context.js";
+import { setAutomationJobId } from "../../browser/job-context.js";
 import {
   clearJobSegmentManaged,
   markJobSegmentManaged,
   setPendingSegment,
-} from "../../core/evidence/segment-context.js";
+} from "../../../core/evidence/segment-context.js";
 import {
   ensureMobileSegmentRecording,
   isMobileJobRecording,

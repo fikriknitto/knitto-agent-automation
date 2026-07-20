@@ -5,12 +5,12 @@ import {
   isJobRecording,
   stopBrowserSegment,
 } from "../../platforms/browser/driver/recording.js";
-import { hasActiveSession, getDriver } from "../../mobile-automation/libs/driver/session.js";
+import { hasActiveSession, getDriver } from "../../platforms/mobile/driver/session.js";
 import {
   isMobileJobRecording,
   isMobileSegmentRecording,
   stopMobileSegment,
-} from "../../mobile-automation/libs/recording.js";
+} from "../../platforms/mobile/session/recording.js";
 import {
   clearActiveSegment,
   clearSegmentStopRequest,

@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { tapElement } from "../interactions.js";
+import { tapElement } from "../driver/interactions.js";
 import { interactionOutputShape, tapInputSchema } from "../schema.js";
 
 export const mobile_tap = defineTool({

@@ -1,5 +1,5 @@
 import type { MobileConfig } from "@knitto/shared";
-import { readSegmentStateFile } from "../../core/evidence/segment-state-file.js";
+import { readSegmentStateFile } from "../../../core/evidence/segment-state-file.js";
 
 const configByJob = new Map<string, MobileConfig>();
 const udidByJob = new Map<string, string>();

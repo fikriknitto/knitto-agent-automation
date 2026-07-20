@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { setAutomationJobId } from "../platforms/browser/job-context.js";
-import { Server, logger } from "../platforms/browser/core/index.js";
-import { createSession, closeSession } from "./libs/driver/session.js";
-import mobileConfig from "./libs/config.js";
-import { setMobileJobConfig } from "./libs/mobile-job-context.js";
+import { setAutomationJobId } from "../browser/job-context.js";
+import { Server, logger } from "../browser/core/index.js";
+import { createSession, closeSession } from "./driver/session.js";
+import mobileConfig from "./config.js";
+import { setMobileJobConfig } from "./session/mobile-job-context.js";
 import {
   mobile_launch_app,
   mobile_get_screen_snapshot,
@@ -21,8 +21,8 @@ import {
   mobile_close_app,
   mobile_close_session,
   mobile_stop_test_case_segment,
-} from "./libs/registry.js";
-import { startSegmentStopPoller } from "../core/evidence/segment-stop-poller.js";
+} from "./registry.js";
+import { startSegmentStopPoller } from "../../core/evidence/segment-stop-poller.js";
 
 async function main(): Promise<void> {
   const jobId = process.env.MOBILE_JOB_ID?.trim() ?? process.env.AUTOMATION_JOB_ID?.trim();

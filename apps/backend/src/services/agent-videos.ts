@@ -2,7 +2,7 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { AutomationPlatform } from "@knitto/shared";
 import config from "../platforms/browser/config.js";
-import mobileConfig from "../mobile-automation/libs/config.js";
+import mobileConfig from "../platforms/mobile/config.js";
 import {
   resolveAgentScreenshotDirForJob,
   sanitizeJobId,

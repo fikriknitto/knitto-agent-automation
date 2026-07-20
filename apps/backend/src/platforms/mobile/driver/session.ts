@@ -9,7 +9,7 @@ import {
   getMobileJobUdid,
   setMobileJobConfig,
   setMobileJobUdid,
-} from "../mobile-job-context.js";
+} from "../session/mobile-job-context.js";
 import { buildAndroidCapabilities } from "./capabilities.js";
 import { devicePool } from "./device-pool.js";
 import {
@@ -24,14 +24,14 @@ import {
   startMobileJobRecording,
   stopMobileJobRecording,
   isSegmentRecordingManaged,
-} from "../recording.js";
+} from "../session/recording.js";
 import { ensureSegmentRecordingStarted } from "../../../core/evidence/segment-recording.js";
 import { getPendingSegment, isJobSegmentManaged } from "../../../core/evidence/segment-context.js";
-import { writeMobileSessionState, clearMobileSessionState } from "../mobile-session-state.js";
+import { writeMobileSessionState, clearMobileSessionState } from "../session/mobile-session-state.js";
 import {
   closeMobileSessionFromState,
   terminateMobileAppBestEffort,
-} from "../mobile-session-cleanup.js";
+} from "../session/mobile-session-cleanup.js";
 
 const logger = createLogger("mobile-session");
 

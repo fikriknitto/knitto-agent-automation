@@ -1,19 +1,19 @@
 import { basename, extname, resolve } from "node:path";
 import { existsSync, statSync } from "node:fs";
 import type { Browser } from "webdriverio";
-import { ToolError } from "../../platforms/browser/core/index.js";
-import { pushFile } from "./adb/adb-client.js";
-import mobileConfig from "./config.js";
-import { getAutomationJobId } from "./job-context.js";
-import { getMobileJobUdid } from "./mobile-job-context.js";
+import { ToolError } from "../../browser/core/index.js";
+import { pushFile } from "../adb/adb-client.js";
+import mobileConfig from "../config.js";
+import { getAutomationJobId } from "../job-context.js";
+import { getMobileJobUdid } from "../session/mobile-job-context.js";
 import { resolveLocator } from "./locators.js";
 import {
   getDriver,
   isInstrumentationCrash,
   recreateSessionAfterCrash,
   withInstrumentationRecovery,
-} from "./driver/session.js";
-import type { MobileLocator } from "./schema.js";
+} from "./session.js";
+import type { MobileLocator } from "../schema.js";
 import { assertPageOpen } from "./screenshot.js";
 
 const BLOCKED_EXTENSIONS = new Set([

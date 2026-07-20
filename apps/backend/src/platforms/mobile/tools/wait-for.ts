@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { waitFor } from "../interactions.js";
+import { waitFor } from "../driver/interactions.js";
 import { waitForInputSchema, waitForOutputShape } from "../schema.js";
 
 export const mobile_wait_for = defineTool({

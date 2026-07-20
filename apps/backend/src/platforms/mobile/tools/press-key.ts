@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { pressMobileKey } from "../interactions.js";
+import { pressMobileKey } from "../driver/interactions.js";
 import { pressKeyInputSchema, pressKeyOutputShape } from "../schema.js";
 
 export const mobile_press_key = defineTool({

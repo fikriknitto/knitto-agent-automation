@@ -1,15 +1,15 @@
 import type { MobileConfig } from "@knitto/shared";
 import { createLogger } from "../logging.js";
 import { setAutomationJobId } from "../../platforms/browser/job-context.js";
-import mobileConfig from "../../mobile-automation/libs/config.js";
-import { devicePool } from "../../mobile-automation/libs/driver/device-pool.js";
+import mobileConfig from "../../platforms/mobile/config.js";
+import { devicePool } from "../../platforms/mobile/driver/device-pool.js";
 import {
   closeApp,
   closeSession,
   createSession,
   hasActiveSession,
-} from "../../mobile-automation/libs/driver/session.js";
-import { setMobileJobConfig } from "../../mobile-automation/libs/mobile-job-context.js";
+} from "../../platforms/mobile/driver/session.js";
+import { setMobileJobConfig } from "../../platforms/mobile/session/mobile-job-context.js";
 
 const logger = createLogger("mobile-job-setup");
 

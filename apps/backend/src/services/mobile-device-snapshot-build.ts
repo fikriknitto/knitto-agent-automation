@@ -1,4 +1,4 @@
-import { devicePool } from "../mobile-automation/libs/driver/device-pool.js";
+import { devicePool } from "../platforms/mobile/driver/device-pool.js";
 import type { MobileDevicesSnapshot } from "./mobile-device-service.js";
 
 export async function buildDevicesSnapshot(): Promise<MobileDevicesSnapshot> {

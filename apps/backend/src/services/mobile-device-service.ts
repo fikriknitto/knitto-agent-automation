@@ -1,8 +1,8 @@
 import {
   listPackages,
   resolveMainActivity,
-} from "../mobile-automation/libs/adb/adb-client.js";
-import mobileConfig from "../mobile-automation/libs/config.js";
+} from "../platforms/mobile/adb/adb-client.js";
+import mobileConfig from "../platforms/mobile/config.js";
 import { deviceSnapshotHub } from "./mobile-device-snapshot-hub.js";
 
 export type MobileDeviceDto = {

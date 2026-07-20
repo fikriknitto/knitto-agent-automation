@@ -1,4 +1,4 @@
-import mobileConfig from "../mobile-automation/libs/config.js";
+import mobileConfig from "../platforms/mobile/config.js";
 import type { MobileDevicesSnapshot } from "./mobile-device-service.js";
 import { buildDevicesSnapshot } from "./mobile-device-snapshot-build.js";
 

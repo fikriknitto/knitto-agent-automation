@@ -1,7 +1,7 @@
 import type { Browser, ChainablePromiseElement } from "webdriverio";
-import { ToolError } from "../../platforms/browser/core/index.js";
-import { getRefXpath } from "./driver/snapshot.js";
-import type { MobileLocator } from "./schema.js";
+import { ToolError } from "../../browser/core/index.js";
+import { getRefXpath } from "./snapshot.js";
+import type { MobileLocator } from "../schema.js";
 
 function buildUiSelector(locator: MobileLocator): string {
   const parts: string[] = ["new UiSelector()"];

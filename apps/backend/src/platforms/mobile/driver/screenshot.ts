@@ -1,13 +1,13 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { resolveAgentScreenshotDir } from "./job-context.js";
-import mobileConfig from "./config.js";
-import { getAutomationJobId } from "./job-context.js";
+import { resolveAgentScreenshotDir } from "../job-context.js";
+import mobileConfig from "../config.js";
+import { getAutomationJobId } from "../job-context.js";
 import {
   getActiveTestCaseId,
   isJobSegmentManaged,
-} from "../../core/evidence/segment-context.js";
-import { getDriver, withInstrumentationRecovery } from "./driver/session.js";
+} from "../../../core/evidence/segment-context.js";
+import { getDriver, withInstrumentationRecovery } from "./session.js";
 
 function resolveMobileScreenshotFilename(path?: string): string {
   const jobId = getAutomationJobId();

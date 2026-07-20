@@ -1,5 +1,5 @@
 import { defineTool, ToolError } from "../../../platforms/browser/core/index.js";
-import { uploadFileToInput } from "../interactions.js";
+import { uploadFileToInput } from "../driver/interactions.js";
 import { uploadFileInputSchema, uploadFileOutputShape } from "../schema.js";
 
 export const mobile_upload_file = defineTool({

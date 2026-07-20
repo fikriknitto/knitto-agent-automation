@@ -2,7 +2,7 @@ import type { AutomationPlatform } from "@knitto/shared";
 import { agentScreenshotServeUrls } from "../../services/agent-screenshots.js";
 import { agentVideoServeUrl, agentVideoServeUrls } from "../../services/agent-videos.js";
 import { waitForJobVideoReady as waitForBrowserJobVideoReady } from "../../platforms/browser/driver/recording.js";
-import { waitForMobileJobVideoReady } from "../../mobile-automation/libs/recording.js";
+import { waitForMobileJobVideoReady } from "../../platforms/mobile/session/recording.js";
 import { existsSync } from "node:fs";
 import { resolveAgentScreenshotDirForJob } from "../../platforms/browser/job-context.js";
 

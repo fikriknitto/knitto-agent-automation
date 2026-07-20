@@ -1,6 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { ToolError } from "../platforms/browser/core/index.js";
+import { ToolError } from "../browser/core/index.js";
 import {
   mobile_launch_app,
   mobile_get_screen_snapshot,
@@ -18,7 +18,7 @@ import {
   mobile_close_app,
   mobile_close_session,
   mobile_stop_test_case_segment,
-} from "./libs/registry.js";
+} from "./registry.js";
 
 const ALL_TOOLS = [
   mobile_launch_app,
