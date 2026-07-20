@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { PromptShortcutController } from "../controllers/prompt-shortcut-controller.js";
-import type { AgentRegistryService } from "../services/agent-registry.service.js";
+import type { AgentRegistryService } from "../agents/agent-registry.service.js";
 
 export function createPromptShortcutRoutes(bridgeRegistry: AgentRegistryService): Router {
   const router = Router();

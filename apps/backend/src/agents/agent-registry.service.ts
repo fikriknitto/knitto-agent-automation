@@ -1,15 +1,15 @@
 import { randomBytes } from "node:crypto";
 import type { BridgeKind, BridgeInfo } from "@knitto/shared";
 import { createLogger } from "../automation/core/index.js";
-import { CursorAgentService } from "./agent-runners/cursor-agent.service.js";
-import { OpenaiAgentService } from "./agent-runners/openai-agent.service.js";
+import { CursorAgentService } from "./cursor-agent.service.js";
+import { OpenaiAgentService } from "./openai-agent.service.js";
 import type {
   AgentRuntime,
   ConfigChanged,
   CredentialsRequest,
   CredentialsStatusEmitter,
   JobBroadcast,
-} from "./agent-runners/agent-runtime.interface.js";
+} from "./agent-runtime.interface.js";
 
 const logger = createLogger("agent-registry");
 

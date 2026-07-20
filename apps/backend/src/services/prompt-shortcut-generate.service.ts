@@ -3,12 +3,12 @@ import { resolveModel } from "@knittotextile/knitto-agent-providers";
 import { generateText } from "ai";
 import type { BridgeKind } from "@knitto/shared";
 import type { GeneratePromptShortcutBody } from "../validators/prompt-shortcut-schemas.js";
-import type { AgentRegistryService } from "./agent-registry.service.js";
-import cursorConfig from "./agent-runners/cursor/config.js";
+import type { AgentRegistryService } from "../agents/agent-registry.service.js";
+import cursorConfig from "../agents/cursor/config.js";
 import openaiConfig, {
   openaiApiV1,
   normalizeOpenaiBaseUrl,
-} from "./agent-runners/openai/config.js";
+} from "../agents/openai/config.js";
 
 const GENERATE_TIMEOUT_MS = 60_000;
 

@@ -1,8 +1,8 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import config from "../../services/agent-runners/openai/config.js";
+import config from "../../agents/openai/config.js";
 import { buildOpenAIUserContent } from "../prompts/prompt-builder.js";
 import type { TestCaseAgentRunner } from "./test-case-orchestrator.js";
-import { runOpenAIAgentLoop, type ChatMessage } from "../../services/agent-runners/openai/openai-agent.js";
+import { runOpenAIAgentLoop, type ChatMessage } from "../../agents/openai/openai-agent.js";
 
 /** Multi-TC runner for OpenAI-compatible runtime (knitto-agent). */
 export function createOpenaiTestCaseRunner(

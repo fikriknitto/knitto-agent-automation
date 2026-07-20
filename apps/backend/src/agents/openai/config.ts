@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveAutomationMcpPath } from "../../../core/mcp/automation-mcp-config.js";
+import { resolveAutomationMcpPath } from "../../core/mcp/automation-mcp-config.js";
 
 export interface OpenaiCredentials {
   baseUrl: string;

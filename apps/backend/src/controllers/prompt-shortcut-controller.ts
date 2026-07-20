@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import type { AgentRegistryService } from "../services/agent-registry.service.js";
+import type { AgentRegistryService } from "../agents/agent-registry.service.js";
 import { generatePromptShortcutTemplate } from "../services/prompt-shortcut-generate.service.js";
 import {
   PromptShortcutConflictError,

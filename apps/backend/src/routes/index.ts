@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { AgentRegistryService } from "../services/agent-registry.service.js";
+import type { AgentRegistryService } from "../agents/agent-registry.service.js";
 import { createAgentScreenshotRoutes } from "./agent-screenshot-routes.js";
 import { createAgentVideoRoutes } from "./agent-video-routes.js";
 import { createAppMemoryRoutes } from "./app-memory-routes.js";

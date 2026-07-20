@@ -1,39 +1,39 @@
 import { Agent, CursorAgentError } from "@cursor/sdk";
-import { createLogger } from "../../../automation/core/index.js";
-import { resolveMonorepoRoot } from "../../../config/paths.js";
+import { createLogger } from "../../automation/core/index.js";
+import { resolveMonorepoRoot } from "../../config/paths.js";
 import {
   automationMcpSpawnArgs,
   cursorMcpServerConfig,
   resolveMcpPathForJob,
-} from "../../../core/mcp/automation-mcp-config.js";
-import { buildCursorSdkMessage, buildPromptForJob } from "../../../core/prompts/prompt-builder.js";
-import { resolveMemoryAppIdForJob } from "../../shared/resolve-memory-app-id-for-job.js";
+} from "../../core/mcp/automation-mcp-config.js";
+import { buildCursorSdkMessage, buildPromptForJob } from "../../core/prompts/prompt-builder.js";
+import { resolveMemoryAppIdForJob } from "../../services/shared/resolve-memory-app-id-for-job.js";
 import {
   cleanupJobAttachments,
   loadVisionAttachments,
   resolveJobAttachments,
-} from "../../../core/evidence/persist-attachments.js";
-import { ensureJobScreenshot, extractScreenshotBase64 } from "../../../core/evidence/tool-screenshot.js";
-import { jobMediaPayload, jobMediaPayloadAsync } from "../../../core/evidence/job-media-payload.js";
-import { agentMessages } from "../../../core/orchestration/agent-messages.js";
-import { releaseBrowserLock } from "../../../core/evidence/browser-lock.js";
-import { logAgentRunEvent } from "../../../core/orchestration/run-event-log.js";
-import { devicePool } from "../../../mobile-automation/libs/driver/device-pool.js";
-import { cleanupMobileJob } from "../../../core/orchestration/mobile-job-cleanup.js";
+} from "../../core/evidence/persist-attachments.js";
+import { ensureJobScreenshot, extractScreenshotBase64 } from "../../core/evidence/tool-screenshot.js";
+import { jobMediaPayload, jobMediaPayloadAsync } from "../../core/evidence/job-media-payload.js";
+import { agentMessages } from "../../core/orchestration/agent-messages.js";
+import { releaseBrowserLock } from "../../core/evidence/browser-lock.js";
+import { logAgentRunEvent } from "../../core/orchestration/run-event-log.js";
+import { devicePool } from "../../mobile-automation/libs/driver/device-pool.js";
+import { cleanupMobileJob } from "../../core/orchestration/mobile-job-cleanup.js";
 import {
   setMobileJobConfig,
   setMobileJobUdid,
-} from "../../../mobile-automation/libs/mobile-job-context.js";
+} from "../../mobile-automation/libs/mobile-job-context.js";
 import {
   resolveHybridMobileConfig,
   resolveJobTestCasesAsync,
   shouldUseOrchestrator,
-} from "../../../core/orchestration/test-case-parser.js";
-import { executeMultiTestBridgeJob } from "../../../core/orchestration/multi-test-bridge.js";
+} from "../../core/orchestration/test-case-parser.js";
+import { executeMultiTestBridgeJob } from "../../core/orchestration/multi-test-bridge.js";
 import {
   acquireCursorHybridDevice,
   createCursorTestCaseRunner,
-} from "../../../core/orchestration/multi-test-cursor.js";
+} from "../../core/orchestration/multi-test-cursor.js";
 import type { AgentJobMessage, BridgeJob } from "@knitto/shared";
 import config from "./config.js";
 
@@ -95,7 +95,7 @@ async function cleanupCursorJobResources(
       devicePool.release(job.id);
     }
   } else {
-    const { closeAutomationBrowser } = await import("../../../core/mcp/mcp-browser.js");
+    const { closeAutomationBrowser } = await import("../../core/mcp/mcp-browser.js");
     await closeAutomationBrowser().catch(() => undefined);
     releaseBrowserLock(job.id);
   }

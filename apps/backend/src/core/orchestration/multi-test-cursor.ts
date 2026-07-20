@@ -1,7 +1,7 @@
 import { Agent } from "@cursor/sdk";
 import type { TestCaseAgentRunner } from "./test-case-orchestrator.js";
 import { buildCursorSdkMessage } from "../prompts/prompt-builder.js";
-import config from "../../services/agent-runners/cursor/config.js";
+import config from "../../agents/cursor/config.js";
 import { resolveMonorepoRoot } from "../../config/paths.js";
 import {
   automationMcpSpawnArgs,
